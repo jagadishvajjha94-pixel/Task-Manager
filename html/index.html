@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en" class="layout-menu-fixed layout-compact" data-assets-path="/assets/" data-template="vertical-menu-template-free">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <title>Task Manager | App</title>
+    <link rel="icon" type="image/x-icon" href="/assets/img/favicon/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/vendor/fonts/iconify-icons.css" />
+    <link rel="stylesheet" href="/assets/vendor/css/core.css" />
+    <link rel="stylesheet" href="/assets/css/demo.css" />
+    <link rel="stylesheet" href="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    <style>
+      .kanban-board { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; min-height: 70vh; align-items: flex-start; }
+      .kanban-column { flex: 0 0 320px; background: var(--bs-body-bg, #fff); border-radius: 0.375rem; border: 1px solid rgba(0,0,0,.08); padding: 1rem; }
+      .kanban-column-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+      .kanban-column-cards { min-height: 120px; transition: background 0.2s, border-color 0.2s; }
+      .kanban-column-cards.kanban-drag-over { background: rgba(var(--bs-primary-rgb), 0.08); border-radius: 0.375rem; border: 2px dashed var(--bs-primary); }
+      .kanban-card { margin-bottom: 0.75rem; border-left-width: 4px; cursor: grab; user-select: none; }
+      .kanban-card:active { cursor: grabbing; }
+      .kanban-card.kanban-dragging { opacity: 0.6; cursor: grabbing; }
+      .kanban-drag-handle { padding: 0.2rem 0.25rem; display: inline-flex; align-items: center; color: var(--bs-secondary); flex-shrink: 0; pointer-events: none; }
+      .kanban-urgency-high { border-left-color: #dc3545 !important; background-color: #fff5f5; }
+      .kanban-urgency-medium { border-left-color: #ffc107 !important; background-color: #fffef5; }
+      .kanban-urgency-low { border-left-color: #28a745 !important; background-color: #f5fff5; }
+      .assignee-initial { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; color: #fff; background: var(--bs-primary); flex-shrink: 0; }
+      .assignee-initial.bg-secondary { background: #6c757d; }
+      .assignee-with-name { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; }
+      .assignee-name { color: var(--bs-body-color); font-weight: 500; }
+      .kanban-card-done { background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%) !important; border-left-color: #28a745 !important; }
+      .kanban-card-done .card-title { text-decoration: line-through; color: #155724; }
+      .kanban-card-done .card-text { text-decoration: line-through; color: #155724; opacity: 0.9; }
+      .kanban-card-done .task-completed-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; color: #155724; margin-top: 0.35rem; }
+      .notification-item { font-size: 0.8125rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(0,0,0,.06); }
+      .notification-item:last-child { border-bottom: 0; }
+      .tab-pane { display: none; }
+      .tab-pane.active { display: block; }
+      .task-row-assign { min-width: 180px; }
+      #login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--bs-body-bg) 0%, var(--bs-secondary-bg-subtle, #f8f9fa) 100%); }
+      #app-page { display: none; }
+      #app-page.logged-in { display: block; }
+      .login-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+      .login-card:hover { transform: translateY(-2px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15); }
+      #taskDetailsModal .modal-body { font-size: 1rem; line-height: 1.6; }
+      #taskDetailsModal .detail-row { padding: 0.75rem 0; border-bottom: 1px solid rgba(0,0,0,.08); }
+      #taskDetailsModal .detail-row:last-child { border-bottom: 0; }
+      #taskDetailsModal .detail-label { font-weight: 600; color: var(--bs-secondary); font-size: 0.875rem; margin-bottom: 0.25rem; }
+      #taskDetailsModal .detail-value { font-size: 1.0625rem; color: var(--bs-body-color); }
+      #taskDetailsModal .detail-value#detail-title { font-size: 1.125rem; font-weight: 600; }
+      #taskDetailsModal #detail-description { white-space: pre-wrap; }
+    </style>
+    <script src="/assets/vendor/js/helpers.js"></script>
+    <script src="/assets/js/config.js"></script>
+  </head>
+  <body>
+    <div id="login-page" class="p-4">
+      <div class="container py-5">
+        <h2 class="text-center mb-4">Task Manager</h2>
+        <p class="text-center text-muted mb-4">Role-based sign in</p>
+        <div class="row g-4 justify-content-center">
+          <div class="col-12 col-md-5">
+            <div class="card shadow-sm">
+              <div class="card-body p-4">
+                <div class="text-center mb-3"><i class="bx bx-user-circle text-primary" style="font-size: 2.5rem;"></i></div>
+                <h5 class="card-title text-center">Manager Login</h5>
+                <p class="card-text small text-muted text-center mb-3">Email and password (you can change password later)</p>
+                <form id="manager-login-form">
+                  <div class="mb-3">
+                    <label class="form-label" for="manager-email">Email</label>
+                    <input type="email" class="form-control" id="manager-email" required placeholder="manager@company.com" />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label" for="manager-password">Password</label>
+                    <input type="password" class="form-control" id="manager-password" required placeholder="Password" />
+                  </div>
+                  <button type="submit" class="btn btn-primary w-100">Sign in as Manager</button>
+                </form>
+                <p class="small text-muted mt-2 mb-0">Default: manager@company.com / Manager@123</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-5">
+            <div class="card shadow-sm">
+              <div class="card-body p-4">
+                <div class="text-center mb-3"><i class="bx bx-id-card text-secondary" style="font-size: 2.5rem;"></i></div>
+                <h5 class="card-title text-center">Employee Login</h5>
+                <p class="card-text small text-muted text-center mb-3">Enter your name to sign in.</p>
+                <form id="employee-login-form">
+                  <div class="mb-3">
+                    <label class="form-label" for="employee-name">Your name</label>
+                    <input type="text" class="form-control" id="employee-name" required placeholder="Enter your name" minlength="1" />
+                  </div>
+                  <button type="submit" class="btn btn-secondary w-100">Sign in as Employee</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="app-page" class="layout-wrapper layout-content-navbar">
+      <div class="layout-container">
+        <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+          <div class="app-brand demo">
+            <a href="/" class="app-brand-link">
+              <span class="app-brand-text demo menu-text fw-bold">Kanban</span>
+            </a>
+            <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">
+              <i class="bx bx-chevron-left d-block d-xl-none align-middle"></i>
+            </a>
+          </div>
+          <div class="menu-divider mt-0"></div>
+          <div class="menu-inner-shadow"></div>
+          <ul class="menu-inner py-1">
+            <li class="menu-item active" data-tab="kanban">
+              <a href="javascript:void(0);" class="menu-link tab-link">
+                <i class="menu-icon tf-icons bx bx-grid"></i>
+                <div class="text-truncate" data-i18n="Kanban">Kanban</div>
+              </a>
+            </li>
+            <li class="menu-item" data-tab="tasks">
+              <a href="javascript:void(0);" class="menu-link tab-link">
+                <i class="menu-icon tf-icons bx bx-list-check"></i>
+                <div class="text-truncate" data-i18n="Tasks">Tasks</div>
+              </a>
+            </li>
+            <li class="menu-item d-none" id="menu-item-stored-data" data-tab="stored-data">
+              <a href="javascript:void(0);" class="menu-link tab-link">
+                <i class="menu-icon tf-icons bx bx-data"></i>
+                <div class="text-truncate">Stored data</div>
+              </a>
+            </li>
+          </ul>
+        </aside>
+
+        <div class="layout-page">
+          <nav class="layout-navbar container-xxl navbar navbar-expand-xl align-items-center bg-navbar-theme" id="layout-navbar">
+            <div class="layout-menu-toggle navbar-nav align-items-xl-center me-4 me-xl-0 d-xl-none">
+              <a class="nav-item nav-link px-0 me-xl-6" href="javascript:void(0)"><i class="bx bx-menu"></i></a>
+            </div>
+            <div class="navbar-nav-right d-flex align-items-center gap-2 ms-4">
+              <span class="text-muted small me-2"><i class="bx bx-user me-1"></i><span id="current-role-label">Manager</span></span>
+              <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="btn-change-password" title="Change password">
+                <i class="bx bx-lock-alt"></i> Change password
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-logout" title="Sign out">
+                <i class="bx bx-log-out"></i> Logout
+              </button>
+              <div class="dropdown">
+                <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill position-relative" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Assignment status">
+                  <i class="bx bx-bell"></i>
+                  <span class="badge rounded-pill bg-danger badge-dot position-absolute top-0 end-0 border border-white d-none" id="notif-badge"></span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-lg" style="max-height: 320px; overflow-y: auto;" id="notifications-list">
+                  <li class="dropdown-header">Who assigned what to whom</li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li id="notifications-placeholder"><span class="text-muted small px-3 py-2">No assignment notifications yet.</span></li>
+                </ul>
+              </div>
+              <h5 class="mb-0 text-body" id="page-title">Kanban Board</h5>
+            </div>
+          </nav>
+
+          <div class="content-wrapper">
+            <div class="container-xxl flex-grow-1 container-p-y">
+              <div id="kanban-view" class="tab-pane active">
+                <div id="kanban-board" class="kanban-board"><p class="text-muted py-5">Loading board…</p></div>
+              </div>
+              <div id="stored-data-view" class="tab-pane">
+                <div class="card">
+                  <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Stored task data (Manager only)</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="refresh-stored-data" title="Reload from server">
+                      <i class="bx bx-refresh"></i> Refresh
+                    </button>
+                  </div>
+                  <div class="card-body">
+                    <p class="text-muted small mb-4">Data is stored in <code>data/board.json</code>. Shown in tabular format below.</p>
+                    <div id="stored-data-tables"></div>
+                  </div>
+                </div>
+              </div>
+              <div id="tasks-view" class="tab-pane">
+                <div class="card">
+                  <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Upcoming tasks (assign to employees)</h5>
+                    <button type="button" class="btn btn-primary btn-sm" id="add-upcoming-task" title="Only manager can add tasks">
+                      <i class="bx bx-plus"></i> Add task
+                    </button>
+                  </div>
+                  <div class="card-body p-0">
+                    <div class="table-responsive">
+                      <table class="table table-hover mb-0">
+                        <thead>
+                          <tr>
+                            <th>Task</th>
+                            <th>Urgency</th>
+                            <th class="task-row-assign">Assign to</th>
+                          </tr>
+                        </thead>
+                        <tbody id="upcoming-tasks-tbody">
+                          <tr><td colspan="3" class="text-muted text-center py-4">Loading…</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div class="modal fade" id="cardModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Card</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="cardForm">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label" for="cardTitle">Title</label>
+                <input type="text" class="form-control" id="cardTitle" required placeholder="Card title" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="cardDescription">Description</label>
+                <textarea class="form-control" id="cardDescription" rows="3" placeholder="Optional description"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="cardUrgency">Urgency</label>
+                <select class="form-select" id="cardUrgency">
+                  <option value="high">High (Red)</option>
+                  <option value="medium" selected>Medium (Yellow)</option>
+                  <option value="low">Low (Green)</option>
+                </select>
+              </div>
+              <div class="mb-3" id="assignee-group">
+                <label class="form-label" for="cardAssignee">Assign to (Manager only)</label>
+                <input type="text" class="form-control" id="cardAssignee" placeholder="Type employee name" />
+              </div>
+              <div class="mb-0 small text-muted" id="assigned-by-info" style="display: none;">Assigned by <span id="assigned-by-name"></span></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="taskDetailsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header border-bottom">
+            <h5 class="modal-title">Task details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body py-4" id="taskDetailsBody">
+            <div class="detail-row">
+              <div class="detail-label">Title</div>
+              <div class="detail-value" id="detail-title"></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Description</div>
+              <div class="detail-value" id="detail-description"></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Urgency</div>
+              <div class="detail-value" id="detail-urgency"></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Assigned to</div>
+              <div class="detail-value" id="detail-assignee"></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Assigned by</div>
+              <div class="detail-value" id="detail-assigned-by"></div>
+            </div>
+          </div>
+          <div class="modal-footer border-top">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Change password</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="change-password-form">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label" for="cp-email">Email</label>
+                <input type="email" class="form-control" id="cp-email" required readonly />
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="cp-current">Current password</label>
+                <input type="password" class="form-control" id="cp-current" required placeholder="Current password" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="cp-new">New password</label>
+                <input type="password" class="form-control" id="cp-new" required minlength="6" placeholder="At least 6 characters" />
+              </div>
+              <div class="mb-0">
+                <label class="form-label" for="cp-confirm">Confirm new password</label>
+                <input type="password" class="form-control" id="cp-confirm" required minlength="6" placeholder="Confirm new password" />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Change password</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="/assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="/assets/vendor/libs/popper/popper.js"></script>
+    <script src="/assets/vendor/js/bootstrap.js"></script>
+    <script src="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="/assets/vendor/js/menu.js"></script>
+    <script src="/assets/js/main.js"></script>
+    <script src="/assets/js/app-kanban.js"></script>
+  </body>
+</html>
