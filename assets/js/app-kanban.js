@@ -10,18 +10,21 @@
     { id: 'e3', name: 'Charlie', role: 'employee' }
   ];
 
+  const defaultDepartments = ['Training dept.', 'Placement dept.', 'H.R. dept.'];
+
   const defaultBoard = {
     columns: [
       { id: 'todo', title: 'To Do', cards: [{ id: 'c1', title: 'Sample task', description: 'Add your description', urgency: 'medium' }] },
       { id: 'progress', title: 'In Progress', cards: [{ id: 'c2', title: 'In progress task', description: '', urgency: 'high' }] },
       { id: 'done', title: 'Done', cards: [{ id: 'c3', title: 'Completed task', description: '', urgency: 'low' }] }
     ],
+    departments: defaultDepartments.slice(),
     upcomingTasks: [],
     notifications: [],
     users: []
   };
 
-  let board = { columns: [], upcomingTasks: [], notifications: [], users: [] };
+  let board = { columns: [], departments: [], upcomingTasks: [], notifications: [], users: [] };
   let draggedCard = null;
   let draggedFromColumn = null;
 
@@ -86,6 +89,7 @@
       if (data && (data.columns || data.upcomingTasks)) {
         board = data;
         if (!Array.isArray(board.columns)) board.columns = [];
+        if (!Array.isArray(board.departments)) board.departments = defaultDepartments.slice();
         if (!Array.isArray(board.upcomingTasks)) board.upcomingTasks = [];
         if (!Array.isArray(board.notifications)) board.notifications = [];
         if (!Array.isArray(board.users)) board.users = [];
@@ -103,6 +107,7 @@
       if (stored) {
         try {
           board = JSON.parse(stored);
+          if (!Array.isArray(board.departments)) board.departments = defaultDepartments.slice();
           if (!Array.isArray(board.upcomingTasks)) board.upcomingTasks = [];
           if (!Array.isArray(board.notifications)) board.notifications = [];
           if (!Array.isArray(board.users)) board.users = [];
@@ -121,8 +126,36 @@
     }
     render();
     renderTasksTab();
+    renderManagerTab();
     renderNotifications();
     updateRoleUI();
+  }
+
+  function getDepartments() {
+    return Array.isArray(board.departments) && board.departments.length ? board.departments : defaultDepartments.slice();
+  }
+
+  function renderManagerTab() {
+    const colsList = document.getElementById('manager-columns-list');
+    const deptsList = document.getElementById('manager-depts-list');
+    const accuracyTbody = document.getElementById('manager-accuracy-tbody');
+    if (!colsList || !deptsList) return;
+    const depts = getDepartments();
+    colsList.innerHTML = (board.columns || []).map((col) => `<li class="list-group-item d-flex justify-content-between align-items-center">${escapeHtml(col.title)}<span class="badge bg-label-primary">${(col.cards || []).length}</span></li>`).join('') || '<li class="list-group-item text-muted">No columns</li>';
+    deptsList.innerHTML = depts.map((d) => `<li class="list-group-item">${escapeHtml(d)}</li>`).join('');
+    const stats = computeEmployeeStats();
+    const names = Object.keys(stats).sort();
+    if (accuracyTbody) {
+      if (names.length === 0) {
+        accuracyTbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No assignees yet. Assign tasks to see accuracy.</td></tr>';
+      } else {
+        accuracyTbody.innerHTML = names.map((name) => {
+          const s = stats[name];
+          const pct = s.assigned > 0 ? Math.round((s.completed / s.assigned) * 100) : 0;
+          return `<tr><td>${escapeHtml(name)}</td><td>${s.assigned}</td><td>${s.completed}</td><td>${s.onTime}</td><td class="d-flex align-items-center gap-2"><span class="accuracy-circle-wrap" style="width:24px;height:24px"><svg viewBox="0 0 36 36" width="24" height="24" style="transform:rotate(-90deg)"><path fill="none" stroke="rgba(0,0,0,.08)" stroke-width="3" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/><path fill="none" stroke="var(--bs-success)" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="${pct} 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/></svg></span><strong>${pct}%</strong></td></tr>`;
+        }).join('');
+      }
+    }
   }
 
   function showConnectionBanner() {
@@ -156,10 +189,83 @@
     }
   }
 
+  function getAssigneesList(card) {
+    if (card.assignees && Array.isArray(card.assignees) && card.assignees.length > 0) {
+      return card.assignees.map((a) => (typeof a === 'string' ? a : (a && a.name) || '')).filter(Boolean);
+    }
+    if (card.assigneeName) return [card.assigneeName];
+    return [];
+  }
+
   function assigneeBlock(name) {
     if (!name || !name.trim()) return '';
     const initial = name.trim().charAt(0).toUpperCase();
-    return `<span class="assignee-with-name"><span class="assignee-initial" title="Assigned to">${escapeHtml(initial)}</span><span class="assignee-name">${escapeHtml(name.trim())}</span></span>`;
+    return `<span class="assignee-with-name"><span class="assignee-initial" title="${escapeHtml(name.trim())}">${escapeHtml(initial)}</span><span class="assignee-name">${escapeHtml(name.trim())}</span></span>`;
+  }
+
+  function assigneesInitialsOnly(names) {
+    if (!names || names.length === 0) return '';
+    return `<span class="assignee-initials-wrap" title="${escapeHtml(names.join(', '))}">${names.map((n) => {
+      const initial = (n || '').trim().charAt(0).toUpperCase();
+      return initial ? `<span class="assignee-initial">${escapeHtml(initial)}</span>` : '';
+    }).join('')}</span>`;
+  }
+
+  function formatDeadlineTimer(deadlineIso, completedAt, isDoneColumn) {
+    if (!deadlineIso) return '';
+    const deadline = new Date(deadlineIso);
+    const now = new Date();
+    if (completedAt) {
+      const completed = new Date(completedAt);
+      const onTime = completed <= deadline;
+      return onTime ? 'Completed on time' : 'Completed late';
+    }
+    if (isDoneColumn) return 'Completed';
+    if (now > deadline) {
+      const mins = Math.floor((now - deadline) / 60000);
+      if (mins < 60) return 'Overdue by ' + mins + ' min';
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return 'Overdue by ' + hours + ' hr';
+      return 'Overdue by ' + Math.floor(hours / 24) + ' days';
+    }
+    const mins = Math.floor((deadline - now) / 60000);
+    if (mins < 60) return 'Due in ' + mins + ' min';
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return 'Due in ' + hours + ' hr';
+    return 'Due in ' + Math.floor(hours / 24) + ' days';
+  }
+
+  function getDoneColumnId() {
+    const cols = board.columns || [];
+    const doneCol = cols.find((c) => {
+      const id = (c.id || '').toString().toLowerCase();
+      const title = (c.title || '').toString().toLowerCase();
+      return id === 'done' || title === 'done';
+    });
+    return doneCol ? doneCol.id : 'done';
+  }
+
+  function computeEmployeeStats() {
+    const stats = {};
+    const doneColId = getDoneColumnId();
+    (board.columns || []).forEach((col) => {
+      (col.cards || []).forEach((card) => {
+        const names = getAssigneesList(card);
+        names.forEach((name) => {
+          const n = (name || '').trim();
+          if (!n) return;
+          if (!stats[n]) stats[n] = { assigned: 0, completed: 0, onTime: 0 };
+          stats[n].assigned += 1;
+          if (col.id === doneColId) {
+            stats[n].completed += 1;
+            if (card.deadline && card.completedAt) {
+              if (new Date(card.completedAt) <= new Date(card.deadline)) stats[n].onTime += 1;
+            }
+          }
+        });
+      });
+    });
+    return stats;
   }
 
   function render() {
@@ -182,7 +288,10 @@
                 const urgency = card.urgency || 'medium';
                 const urgencyClass = isDone ? '' : (urgency === 'high' ? 'kanban-urgency-high' : urgency === 'low' ? 'kanban-urgency-low' : 'kanban-urgency-medium');
                 const doneClass = isDone ? 'kanban-card-done' : '';
-                const assigneeHtml = card.assigneeName ? assigneeBlock(card.assigneeName) : '';
+                const assigneeNames = getAssigneesList(card);
+                const assigneeHtml = assigneeNames.length > 0 ? assigneesInitialsOnly(assigneeNames) : '';
+                const deptHtml = card.department ? `<span class="badge bg-label-info me-1 small">${escapeHtml(card.department)}</span>` : '';
+                const deadlineHtml = card.deadline ? `<span class="card-deadline d-block mt-1 small ${!isDone && new Date(card.deadline) < new Date() ? 'overdue' : ''}">${escapeHtml(formatDeadlineTimer(card.deadline, card.completedAt, isDone))}</span>` : '';
                 const actions = manager
                   ? `<div class="dropdown">
                     <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button>
@@ -204,13 +313,15 @@
                 <div class="kanban-drag-handle"><i class="bx bx-dots-vertical-rounded"></i></div>
                 <div class="flex-grow-1 min-w-0">
                 <div class="d-flex justify-content-between align-items-start gap-2">
-                  <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
+                  <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0 flex-wrap">
                     ${assigneeHtml}
+                    ${deptHtml}
                     <h6 class="card-title mb-0 text-truncate">${escapeHtml(card.title)}</h6>
                   </div>
                   ${actions}
                 </div>
                 ${card.description ? `<p class="card-text small text-body-secondary mb-0 mt-1">${escapeHtml(card.description)}</p>` : ''}
+                ${deadlineHtml}
                 ${completedBadge}
                 </div>
               </div>
@@ -303,9 +414,13 @@
     const cardIndex = fromCol.cards.findIndex((c) => c.id === cardId);
     if (cardIndex === -1) return;
     const [card] = fromCol.cards.splice(cardIndex, 1);
+    const doneColId = getDoneColumnId();
+    if (toCol.id === doneColId && !card.completedAt) card.completedAt = new Date().toISOString();
     toCol.cards.push(card);
     saveBoard();
     render();
+    updateAccuracyUI();
+    renderManagerTab();
   }
 
   function onAddCard(e) {
@@ -351,6 +466,8 @@
     const titleEl = document.getElementById('detail-title');
     const descEl = document.getElementById('detail-description');
     const urgencyEl = document.getElementById('detail-urgency');
+    const deptEl = document.getElementById('detail-department');
+    const deadlineEl = document.getElementById('detail-deadline');
     const assigneeEl = document.getElementById('detail-assignee');
     const assignedByEl = document.getElementById('detail-assigned-by');
     if (titleEl) titleEl.textContent = card.title || '—';
@@ -359,12 +476,46 @@
       const u = (card.urgency || 'medium');
       urgencyEl.textContent = u.charAt(0).toUpperCase() + u.slice(1);
     }
+    if (deptEl) deptEl.textContent = card.department || '—';
+    if (deadlineEl) {
+      if (card.deadline) {
+        const d = new Date(card.deadline);
+        deadlineEl.textContent = d.toLocaleString() + ' (' + formatDeadlineTimer(card.deadline, card.completedAt) + ')';
+      } else deadlineEl.textContent = '—';
+    }
+    const names = getAssigneesList(card);
     if (assigneeEl) {
-      assigneeEl.innerHTML = card.assigneeName ? assigneeBlock(card.assigneeName) : '— Unassigned —';
+      assigneeEl.innerHTML = names.length > 0 ? names.map((n) => assigneeBlock(n)).join(' ') : '— Unassigned —';
     }
     if (assignedByEl) assignedByEl.textContent = card.assignedByName || '—';
     const bsModal = new bootstrap.Modal(modal);
     bsModal.show();
+  }
+
+  function fillDepartmentSelect(selectEl) {
+    if (!selectEl) return;
+    const current = selectEl.value;
+    const depts = getDepartments();
+    selectEl.innerHTML = '<option value="">— Select department —</option>' + depts.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+    if (current && depts.indexOf(current) !== -1) selectEl.value = current;
+  }
+
+  function renderAssigneesChips(container, names, onRemove) {
+    if (!container) return;
+    container.innerHTML = (names || []).map((name) => {
+      const n = (name || '').trim();
+      if (!n) return '';
+      return `<span class="assignee-chip" data-name="${escapeHtml(n)}">${escapeHtml(n)} <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-danger" data-remove-name="${escapeHtml(n)}" aria-label="Remove">&times;</button></span>`;
+    }).join('');
+    container.querySelectorAll('[data-remove-name]').forEach((btn) => {
+      btn.addEventListener('click', () => { onRemove(btn.dataset.removeName); });
+    });
+  }
+
+  function getAssigneesFromChips() {
+    const container = document.getElementById('card-assignees-chips');
+    if (!container) return [];
+    return [].map.call(container.querySelectorAll('.assignee-chip[data-name]'), (el) => el.dataset.name || '').filter(Boolean);
   }
 
   function openCardModal(card, columnId) {
@@ -372,22 +523,49 @@
     const titleInput = document.getElementById('cardTitle');
     const descInput = document.getElementById('cardDescription');
     const urgencySelect = document.getElementById('cardUrgency');
+    const departmentSelect = document.getElementById('cardDepartment');
     const assigneeInput = document.getElementById('cardAssignee');
+    const deadlineInput = document.getElementById('cardDeadline');
+    const assigneesChips = document.getElementById('card-assignees-chips');
     const assigneeGroup = document.getElementById('assignee-group');
+    const assigneeNameGroup = document.getElementById('assignee-name-group');
+    const deadlineGroup = document.getElementById('deadline-group');
     const assignedByInfo = document.getElementById('assigned-by-info');
     const assignedByNameEl = document.getElementById('assigned-by-name');
     const form = document.getElementById('cardForm');
+    const newDeptWrap = document.getElementById('card-new-dept-wrap');
     if (!modal || !form) return;
 
     const manager = isManager();
     if (assigneeGroup) assigneeGroup.style.display = manager ? 'block' : 'none';
+    if (assigneeNameGroup) assigneeNameGroup.style.display = manager ? 'block' : 'none';
+    if (deadlineGroup) deadlineGroup.style.display = manager ? 'block' : 'none';
     if (assignedByInfo) assignedByInfo.style.display = 'none';
+    if (newDeptWrap) newDeptWrap.classList.add('d-none');
+
+    fillDepartmentSelect(departmentSelect);
+
+    const assigneeNames = card ? getAssigneesList(card) : [];
+    function removeAssignee(name) {
+      const list = getAssigneesFromChips().filter((n) => n !== name);
+      renderAssigneesChips(assigneesChips, list, removeAssignee);
+    }
+    renderAssigneesChips(assigneesChips, assigneeNames, removeAssignee);
 
     if (card) {
       titleInput.value = card.title;
       descInput.value = card.description || '';
       if (urgencySelect) urgencySelect.value = card.urgency || 'medium';
-      if (assigneeInput) assigneeInput.value = card.assigneeName || '';
+      if (departmentSelect) departmentSelect.value = card.department || '';
+      if (assigneeInput) assigneeInput.value = '';
+      if (deadlineInput && card.deadline) {
+        try {
+          const d = new Date(card.deadline);
+          deadlineInput.value = d.toISOString().slice(0, 16);
+        } catch (_) {
+          deadlineInput.value = '';
+        }
+      } else if (deadlineInput) deadlineInput.value = '';
       if (assignedByInfo && assignedByNameEl && card.assignedByName) {
         assignedByNameEl.textContent = card.assignedByName;
         assignedByInfo.style.display = 'block';
@@ -397,7 +575,9 @@
       titleInput.value = '';
       descInput.value = '';
       if (urgencySelect) urgencySelect.value = 'medium';
+      if (departmentSelect) departmentSelect.value = '';
       if (assigneeInput) assigneeInput.value = '';
+      if (deadlineInput) deadlineInput.value = '';
       delete form.dataset.cardId;
     }
     form.dataset.columnId = columnId;
@@ -411,17 +591,24 @@
     const titleInput = document.getElementById('cardTitle');
     const descInput = document.getElementById('cardDescription');
     const urgencySelect = document.getElementById('cardUrgency');
+    const departmentSelect = document.getElementById('cardDepartment');
     const assigneeInput = document.getElementById('cardAssignee');
+    const deadlineInput = document.getElementById('cardDeadline');
     if (!form || !titleInput) return;
     const title = titleInput.value.trim();
     if (!title) return;
     const isUpcoming = form.dataset.isUpcoming === '1';
     const urgency = urgencySelect ? urgencySelect.value : 'medium';
+    const department = departmentSelect ? (departmentSelect.value || '').trim() : '';
+    const deadlineVal = deadlineInput ? deadlineInput.value : '';
+    const deadline = deadlineVal ? new Date(deadlineVal).toISOString() : undefined;
     const currentUser = getCurrentUser();
-    const assigneeName = assigneeInput ? assigneeInput.value.trim() : '';
+    const assigneesFromChips = getAssigneesFromChips();
+    const newName = assigneeInput ? assigneeInput.value.trim() : '';
+    const assigneeNames = newName ? (assigneesFromChips.indexOf(newName) === -1 ? assigneesFromChips.concat(newName) : assigneesFromChips) : assigneesFromChips;
 
     if (isUpcoming) {
-      const task = { id: uid(), title, description: descInput.value.trim(), urgency };
+      const task = { id: uid(), title, description: descInput.value.trim(), urgency, department, deadline };
       if (!board.upcomingTasks) board.upcomingTasks = [];
       board.upcomingTasks.push(task);
       bootstrap.Modal.getInstance(document.getElementById('cardModal')).hide();
@@ -437,35 +624,40 @@
     if (form.dataset.cardId) {
       const card = col.cards.find((c) => c.id === form.dataset.cardId);
       if (card) {
-        const prevAssignee = card.assigneeName;
         card.title = title;
         card.description = descInput.value.trim();
         card.urgency = urgency;
-        if (assigneeName && currentUser) {
-          card.assigneeName = assigneeName;
+        card.department = department || undefined;
+        card.deadline = deadline;
+        card.assignees = assigneeNames.length > 0 ? assigneeNames.slice() : undefined;
+        card.assigneeName = assigneeNames[0] || undefined;
+        if (assigneeNames.length > 0 && currentUser) {
           card.assignedById = currentUser.id;
           card.assignedByName = currentUser.name;
-          card.assignedAt = new Date().toISOString();
-          if (prevAssignee !== assigneeName) addNotification(card.title, assigneeName, currentUser.name);
+          card.assignedAt = card.assignedAt || new Date().toISOString();
+          addNotification(card.title, assigneeNames.join(', '), currentUser.name);
         } else {
-          card.assigneeId = card.assigneeName = card.assignedById = card.assignedByName = card.assignedAt = undefined;
+          card.assignedById = card.assignedByName = card.assignedAt = undefined;
         }
       }
     } else {
-      const card = { id: uid(), title, description: descInput.value.trim(), urgency };
-      if (assigneeName && currentUser) {
-        card.assigneeName = assigneeName;
+      const card = { id: uid(), title, description: descInput.value.trim(), urgency, department: department || undefined, deadline };
+      card.assignees = assigneeNames.length > 0 ? assigneeNames.slice() : undefined;
+      card.assigneeName = assigneeNames[0] || undefined;
+      if (assigneeNames.length > 0 && currentUser) {
         card.assignedById = currentUser.id;
         card.assignedByName = currentUser.name;
         card.assignedAt = new Date().toISOString();
-        addNotification(card.title, assigneeName, currentUser.name);
+        addNotification(card.title, assigneeNames.join(', '), currentUser.name);
       }
       col.cards.push(card);
     }
     bootstrap.Modal.getInstance(document.getElementById('cardModal')).hide();
     saveBoard();
     render();
+    renderManagerTab();
     renderNotifications();
+    updateAccuracyUI();
   }
 
   function renderTasksTab() {
@@ -477,7 +669,7 @@
 
     const tasks = board.upcomingTasks || [];
     if (tasks.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" class="text-muted text-center py-4">No upcoming tasks. Only the manager can add and assign tasks.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-4">No upcoming tasks. Only the manager can add and assign tasks.</td></tr>';
       return;
     }
 
@@ -490,6 +682,7 @@
           ${task.description ? `<br><span class="text-muted small">${escapeHtml(task.description)}</span>` : ''}
         </td>
         <td><span class="badge ${task.urgency === 'high' ? 'bg-danger' : task.urgency === 'low' ? 'bg-success' : 'bg-warning'}">${escapeHtml(task.urgency || 'medium')}</span></td>
+        <td>${escapeHtml(task.department || '—')}</td>
         <td class="task-row-assign">
           ${manager ? `<div class="input-group input-group-sm"><input type="text" class="form-control assign-upcoming-input" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}" placeholder="Employee name" /><button type="button" class="btn btn-primary btn-sm assign-upcoming-btn" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}">Assign</button></div>` : '<span class="text-muted">—</span>'}
         </td>
@@ -520,6 +713,7 @@
     const [task] = board.upcomingTasks.splice(taskIndex, 1);
     const currentUser = getCurrentUser();
     task.assigneeName = assigneeName;
+    task.assignees = [assigneeName];
     task.assignedById = currentUser ? currentUser.id : '';
     task.assignedByName = currentUser ? currentUser.name : 'Manager';
     task.assignedAt = new Date().toISOString();
@@ -571,6 +765,37 @@
     }
   }
 
+  function updateAccuracyUI() {
+    const widget = document.getElementById('accuracy-widget');
+    const circleFill = document.getElementById('accuracy-circle-fill');
+    const circleText = document.getElementById('accuracy-circle-text');
+    const badge = document.getElementById('accuracy-badge');
+    const u = getCurrentUser();
+    if (!widget) return;
+    if (!u || u.role === 'manager') {
+      widget.classList.add('d-none');
+      return;
+    }
+    const stats = computeEmployeeStats();
+    const myName = (u.name || '').trim();
+    const myKey = Object.keys(stats || {}).find((k) => (k || '').trim().toLowerCase() === myName.toLowerCase());
+    const my = myKey ? stats[myKey] : null;
+    if (!stats || Object.keys(stats).length === 0) {
+      if (circleFill) circleFill.setAttribute('stroke-dasharray', '0 100');
+      if (circleText) circleText.textContent = '0%';
+      if (badge) badge.textContent = 'accuracy';
+      widget.classList.remove('d-none');
+      return;
+    }
+    const assigned = my ? my.assigned : 0;
+    const completed = my ? my.completed : 0;
+    const pct = assigned > 0 ? Math.round((completed / assigned) * 100) : 0;
+    if (circleFill) circleFill.setAttribute('stroke-dasharray', pct + ' 100');
+    if (circleText) circleText.textContent = pct + '%';
+    if (badge) badge.textContent = 'accuracy';
+    widget.classList.remove('d-none');
+  }
+
   function updateRoleUI() {
     const label = document.getElementById('current-role-label');
     const u = getCurrentUser();
@@ -579,12 +804,15 @@
     if (addBtn) addBtn.style.display = isManager() ? 'inline-flex' : 'none';
     const storedDataMenuItem = document.getElementById('menu-item-stored-data');
     if (storedDataMenuItem) storedDataMenuItem.classList.toggle('d-none', !isManager());
+    const managerMenuItem = document.getElementById('menu-item-manager');
+    if (managerMenuItem) managerMenuItem.classList.toggle('d-none', !isManager());
     const btnChangePw = document.getElementById('btn-change-password');
     if (btnChangePw) btnChangePw.classList.toggle('d-none', !isManager());
+    updateAccuracyUI();
   }
 
   function switchTab(tabId) {
-    if (tabId === 'stored-data' && !isManager()) {
+    if ((tabId === 'stored-data' || tabId === 'manager') && !isManager()) {
       tabId = 'kanban';
     }
     document.querySelectorAll('.tab-pane').forEach((p) => p.classList.remove('active'));
@@ -597,9 +825,11 @@
     if (title) {
       if (tabId === 'tasks') title.textContent = 'Tasks (Upcoming)';
       else if (tabId === 'stored-data') title.textContent = 'Stored data';
+      else if (tabId === 'manager') title.textContent = 'Manager';
       else title.textContent = 'Kanban Board';
     }
     if (tabId === 'stored-data') renderStoredDataView();
+    if (tabId === 'manager') renderManagerTab();
   }
 
   function renderStoredDataView() {
@@ -616,22 +846,26 @@
     let html = '';
 
     html += '<h6 class="mb-2">Tasks on board</h6>';
-    html += '<div class="table-responsive mb-4"><table class="table table-bordered table-sm"><thead><tr><th>Column</th><th>Title</th><th>Description</th><th>Urgency</th><th>Assigned to</th><th>Assigned by</th><th>Assigned at</th></tr></thead><tbody>';
+    html += '<div class="table-responsive mb-4"><table class="table table-bordered table-sm"><thead><tr><th>Column</th><th>Title</th><th>Description</th><th>Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th>Assigned by</th><th>Assigned at</th></tr></thead><tbody>';
     cols.forEach((col) => {
       (col.cards || []).forEach((card) => {
         const assignedAt = card.assignedAt ? new Date(card.assignedAt).toLocaleString() : '—';
+        const deadlineStr = card.deadline ? new Date(card.deadline).toLocaleString() : '—';
+        const assigneesStr = getAssigneesList(card).join(', ') || '—';
         html += '<tr>';
         html += '<td>' + escapeHtml(col.title) + '</td>';
         html += '<td>' + escapeHtml(card.title) + '</td>';
         html += '<td>' + escapeHtml((card.description || '').slice(0, 80)) + (card.description && card.description.length > 80 ? '…' : '') + '</td>';
         html += '<td>' + escapeHtml(card.urgency || 'medium') + '</td>';
-        html += '<td>' + escapeHtml(card.assigneeName || '—') + '</td>';
+        html += '<td>' + escapeHtml(card.department || '—') + '</td>';
+        html += '<td>' + deadlineStr + '</td>';
+        html += '<td>' + escapeHtml(assigneesStr) + '</td>';
         html += '<td>' + escapeHtml(card.assignedByName || '—') + '</td>';
         html += '<td>' + assignedAt + '</td>';
         html += '</tr>';
       });
     });
-    if (cols.every((c) => !(c.cards && c.cards.length))) html += '<tr><td colspan="7" class="text-muted text-center">No tasks</td></tr>';
+    if (cols.every((c) => !(c.cards && c.cards.length))) html += '<tr><td colspan="9" class="text-muted text-center">No tasks</td></tr>';
     html += '</tbody></table></div>';
 
     html += '<h6 class="mb-2">Upcoming tasks (not yet assigned)</h6>';
@@ -659,14 +893,24 @@
     const titleInput = document.getElementById('cardTitle');
     const descInput = document.getElementById('cardDescription');
     const urgencySelect = document.getElementById('cardUrgency');
+    const departmentSelect = document.getElementById('cardDepartment');
     const assigneeGroup = document.getElementById('assignee-group');
+    const assigneeNameGroup = document.getElementById('assignee-name-group');
+    const deadlineGroup = document.getElementById('deadline-group');
+    const deadlineInput = document.getElementById('cardDeadline');
+    const assigneesChips = document.getElementById('card-assignees-chips');
     const assignedByInfo = document.getElementById('assigned-by-info');
     const form = document.getElementById('cardForm');
     if (!form) return;
     titleInput.value = '';
     descInput.value = '';
     if (urgencySelect) urgencySelect.value = 'medium';
-    if (assigneeGroup) assigneeGroup.style.display = 'none';
+    if (departmentSelect) departmentSelect.value = '';
+    if (assigneeGroup) assigneeGroup.style.display = 'block';
+    if (assigneeNameGroup) assigneeNameGroup.style.display = 'none';
+    if (deadlineGroup) deadlineGroup.style.display = 'block';
+    if (deadlineInput) deadlineInput.value = '';
+    if (assigneesChips) renderAssigneesChips(assigneesChips, [], () => {});
     if (assignedByInfo) assignedByInfo.style.display = 'none';
     delete form.dataset.cardId;
     form.dataset.columnId = 'todo';
@@ -706,6 +950,87 @@
 
     const refreshStored = document.getElementById('refresh-stored-data');
     if (refreshStored) refreshStored.addEventListener('click', () => { loadBoard().then(() => renderStoredDataView()); });
+
+    const addColumnWrap = document.getElementById('add-column-form-wrap');
+    const newColumnTitle = document.getElementById('new-column-title');
+    document.getElementById('add-column-btn')?.addEventListener('click', () => {
+      if (addColumnWrap) addColumnWrap.classList.remove('d-none');
+      if (newColumnTitle) { newColumnTitle.value = ''; newColumnTitle.focus(); }
+    });
+    document.getElementById('add-column-cancel')?.addEventListener('click', () => {
+      if (addColumnWrap) addColumnWrap.classList.add('d-none');
+      if (newColumnTitle) newColumnTitle.value = '';
+    });
+    document.getElementById('add-column-save')?.addEventListener('click', () => {
+      const title = (newColumnTitle?.value || '').trim();
+      if (!title) return;
+      if (!board.columns) board.columns = [];
+      const id = 'col_' + Date.now();
+      board.columns.push({ id, title, cards: [] });
+      saveBoard();
+      render();
+      renderManagerTab();
+      if (addColumnWrap) addColumnWrap.classList.add('d-none');
+      if (newColumnTitle) newColumnTitle.value = '';
+    });
+
+    const addDeptWrap = document.getElementById('add-dept-form-wrap');
+    const newDeptName = document.getElementById('new-dept-name');
+    document.getElementById('add-dept-btn')?.addEventListener('click', () => {
+      if (addDeptWrap) addDeptWrap.classList.remove('d-none');
+      if (newDeptName) { newDeptName.value = ''; newDeptName.focus(); }
+    });
+    document.getElementById('add-dept-cancel')?.addEventListener('click', () => {
+      if (addDeptWrap) addDeptWrap.classList.add('d-none');
+      if (newDeptName) newDeptName.value = '';
+    });
+    document.getElementById('add-dept-save')?.addEventListener('click', () => {
+      const name = (newDeptName?.value || '').trim();
+      if (!name) return;
+      if (!board.departments) board.departments = defaultDepartments.slice();
+      if (board.departments.indexOf(name) === -1) board.departments.push(name);
+      saveBoard();
+      renderManagerTab();
+      fillDepartmentSelect(document.getElementById('cardDepartment'));
+      if (addDeptWrap) addDeptWrap.classList.add('d-none');
+      if (newDeptName) newDeptName.value = '';
+    });
+
+    document.getElementById('card-create-dept-btn')?.addEventListener('click', () => {
+      const wrap = document.getElementById('card-new-dept-wrap');
+      const input = document.getElementById('card-new-dept-name');
+      if (wrap) wrap.classList.remove('d-none');
+      if (input) { input.value = ''; input.focus(); }
+    });
+    document.getElementById('card-new-dept-add')?.addEventListener('click', () => {
+      const input = document.getElementById('card-new-dept-name');
+      const name = (input?.value || '').trim();
+      if (!name) return;
+      if (!board.departments) board.departments = defaultDepartments.slice();
+      if (board.departments.indexOf(name) === -1) board.departments.push(name);
+      saveBoard();
+      const sel = document.getElementById('cardDepartment');
+      fillDepartmentSelect(sel);
+      if (sel) sel.value = name;
+      const wrap = document.getElementById('card-new-dept-wrap');
+      if (wrap) wrap.classList.add('d-none');
+      if (input) input.value = '';
+    });
+
+    document.getElementById('card-add-assignee-btn')?.addEventListener('click', () => {
+      const input = document.getElementById('cardAssignee');
+      const name = (input?.value || '').trim();
+      if (!name) return;
+      const container = document.getElementById('card-assignees-chips');
+      const current = getAssigneesFromChips();
+      if (current.indexOf(name) !== -1) return;
+      function removeAssignee(n) {
+        const list = getAssigneesFromChips().filter((x) => x !== n);
+        renderAssigneesChips(container, list, removeAssignee);
+      }
+      renderAssigneesChips(container, current.concat(name), removeAssignee);
+      if (input) input.value = '';
+    });
 
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) btnLogout.addEventListener('click', () => {
