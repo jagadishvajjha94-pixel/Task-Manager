@@ -6,7 +6,10 @@ const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_DIR = path.join(__dirname, 'data');
+const os = require('os');
+const DATA_DIR = process.env.VERCEL
+  ? path.join(os.tmpdir(), 'taskmanager-data')
+  : path.join(__dirname, 'data');
 const BOARD_FILE = path.join(DATA_DIR, 'board.json');
 const MANAGER_FILE = path.join(DATA_DIR, 'manager.json');
 const SALT = 'taskmanager-salt-v1';
