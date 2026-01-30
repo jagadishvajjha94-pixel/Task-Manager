@@ -348,6 +348,7 @@
                 const assigneeHtml = assigneeNames.length > 0 ? assigneesInitialsOnly(assigneeNames) : '';
                 const deptHtml = card.department ? `<span class="badge bg-label-info me-1 small">${escapeHtml(card.department)}</span>` : '';
                 const deadlineHtml = card.deadline ? `<span class="card-deadline d-block mt-1 small ${!isDone && new Date(card.deadline) < new Date() ? 'overdue' : ''}">${escapeHtml(formatDeadlineTimer(card.deadline, card.completedAt, isDone))}</span>` : '';
+                const assignedByHtml = card.assignedByName ? `<span class="card-assigned-by d-block mt-1 small text-muted"><i class="bx bx-user-plus me-1"></i>Assigned by ${escapeHtml(card.assignedByName)}</span>` : '';
                 const actions = manager
                   ? `<div class="dropdown">
                     <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button>
@@ -378,6 +379,7 @@
                 </div>
                 ${card.description ? `<p class="card-text small text-body-secondary mb-0 mt-1">${escapeHtml(card.description)}</p>` : ''}
                 ${deadlineHtml}
+                ${assignedByHtml}
                 ${completedBadge}
                 </div>
               </div>
@@ -717,38 +719,57 @@
   }
 
   function renderTasksTab() {
-    const tbody = document.getElementById('upcoming-tasks-tbody');
+    const container = document.getElementById('tasks-tab-body');
     const addBtn = document.getElementById('add-upcoming-task');
-    if (!tbody) return;
+    if (!container) return;
     const manager = isManager();
     if (addBtn) addBtn.style.display = manager ? 'inline-flex' : 'none';
 
     const tasks = board.upcomingTasks || [];
     if (tasks.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-4">No upcoming tasks. Only the manager can add and assign tasks.</td></tr>';
+      container.innerHTML = '<p class="text-muted text-center py-4 mb-0">No tasks yet. Only the manager can add and assign tasks.</p>';
       return;
     }
 
-    tbody.innerHTML = tasks
-      .map(
-        (task) => `
-      <tr data-task-id="${task.id}">
-        <td>
-          <strong>${escapeHtml(task.title)}</strong>
-          ${task.description ? `<br><span class="text-muted small">${escapeHtml(task.description)}</span>` : ''}
-        </td>
+    const byDept = {};
+    tasks.forEach((task) => {
+      const dept = (task.department || '').trim() || 'Other';
+      if (!byDept[dept]) byDept[dept] = [];
+      byDept[dept].push(task);
+    });
+
+    const deptOrder = getDepartments().slice();
+    Object.keys(byDept).forEach((d) => {
+      if (d !== 'Other' && deptOrder.indexOf(d) === -1) deptOrder.push(d);
+    });
+    if (byDept['Other']) deptOrder.push('Other');
+
+    let html = '';
+    deptOrder.forEach((dept) => {
+      const deptTasks = byDept[dept];
+      if (!deptTasks || deptTasks.length === 0) return;
+      html += '<div class="tasks-dept-section border-bottom pb-4 mb-4">';
+      html += '<h6 class="text-body mb-3"><i class="bx bx-building-house me-2"></i>' + escapeHtml(dept) + '</h6>';
+      html += '<div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Task</th><th>Urgency</th><th>Department</th><th>Assigned to</th><th class="task-row-assign">Assign to</th></tr></thead><tbody>';
+      deptTasks.forEach((task) => {
+        const assigneesStr = getAssigneesList(task).join(', ') || '—';
+        const assignInput = manager
+          ? `<div class="input-group input-group-sm"><input type="text" class="form-control assign-upcoming-input" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}" placeholder="Employee name" /><button type="button" class="btn btn-primary btn-sm assign-upcoming-btn" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}">Assign</button></div>`
+          : '<span class="text-muted">—</span>';
+        html += `<tr data-task-id="${task.id}">
+        <td><strong>${escapeHtml(task.title)}</strong>${task.description ? `<br><span class="text-muted small">${escapeHtml(task.description)}</span>` : ''}</td>
         <td><span class="badge ${task.urgency === 'high' ? 'bg-danger' : task.urgency === 'low' ? 'bg-success' : 'bg-warning'}">${escapeHtml(task.urgency || 'medium')}</span></td>
         <td>${escapeHtml(task.department || '—')}</td>
-        <td class="task-row-assign">
-          ${manager ? `<div class="input-group input-group-sm"><input type="text" class="form-control assign-upcoming-input" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}" placeholder="Employee name" /><button type="button" class="btn btn-primary btn-sm assign-upcoming-btn" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}">Assign</button></div>` : '<span class="text-muted">—</span>'}
-        </td>
-      </tr>
-    `
-      )
-      .join('');
+        <td>${escapeHtml(assigneesStr)}</td>
+        <td class="task-row-assign">${assignInput}</td>
+      </tr>`;
+      });
+      html += '</tbody></table></div></div>';
+    });
+    container.innerHTML = html;
 
     if (manager) {
-      tbody.querySelectorAll('.assign-upcoming-btn').forEach((btn) => {
+      container.querySelectorAll('.assign-upcoming-btn').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           const input = e.target.closest('tr').querySelector('.assign-upcoming-input');
           if (input) onAssignUpcoming(input);
@@ -764,23 +785,21 @@
     const assigneeName = (inputEl.value || '').trim();
     if (!assigneeName) return;
 
-    const taskIndex = (board.upcomingTasks || []).findIndex((t) => t.id === taskId);
-    if (taskIndex === -1) return;
-    const [task] = board.upcomingTasks.splice(taskIndex, 1);
+    const task = (board.upcomingTasks || []).find((t) => t.id === taskId);
+    if (!task) return;
     const currentUser = getCurrentUser();
     task.assigneeName = assigneeName;
     task.assignees = [assigneeName];
     task.assignedById = currentUser ? currentUser.id : '';
     task.assignedByName = currentUser ? currentUser.name : 'Manager';
-    task.assignedAt = new Date().toISOString();
+    task.assignedAt = task.assignedAt || new Date().toISOString();
 
+    const alreadyOnBoard = (board.columns || []).some((col) => (col.cards || []).some((c) => c.id === task.id));
     const todoCol = (board.columns || []).find((c) => (c.id || '').toString().toLowerCase() === 'todo');
-    if (!todoCol) {
-      (board.upcomingTasks || []).unshift(task);
-      return;
+    if (!alreadyOnBoard && todoCol) {
+      todoCol.cards = todoCol.cards || [];
+      todoCol.cards.push(task);
     }
-    todoCol.cards = todoCol.cards || [];
-    todoCol.cards.push(task);
 
     addNotification(taskTitle, assigneeName, task.assignedByName);
     saveBoard();
