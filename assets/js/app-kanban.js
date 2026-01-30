@@ -718,8 +718,12 @@
     task.assignedByName = currentUser ? currentUser.name : 'Manager';
     task.assignedAt = new Date().toISOString();
 
-    const todoCol = board.columns.find((c) => c.id === 'todo');
-    if (todoCol) todoCol.cards = todoCol.cards || [];
+    const todoCol = (board.columns || []).find((c) => (c.id || '').toString().toLowerCase() === 'todo');
+    if (!todoCol) {
+      (board.upcomingTasks || []).unshift(task);
+      return;
+    }
+    todoCol.cards = todoCol.cards || [];
     todoCol.cards.push(task);
 
     addNotification(taskTitle, assigneeName, task.assignedByName);
