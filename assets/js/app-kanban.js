@@ -12,17 +12,58 @@
 
   const defaultDepartments = ['Training dept.', 'Placement dept.', 'H.R. dept.'];
 
-  const defaultBoard = {
-    columns: [
-      { id: 'todo', title: 'To Do', cards: [{ id: 'c1', title: 'Sample task', description: 'Add your description', urgency: 'medium' }] },
-      { id: 'progress', title: 'In Progress', cards: [{ id: 'c2', title: 'In progress task', description: '', urgency: 'high' }] },
-      { id: 'done', title: 'Done', cards: [{ id: 'c3', title: 'Completed task', description: '', urgency: 'low' }] }
-    ],
-    departments: defaultDepartments.slice(),
-    upcomingTasks: [],
-    notifications: [],
-    users: []
-  };
+  function getMockBoard() {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const nextWeek = new Date(now);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const lastWeek = new Date(now);
+    lastWeek.setDate(lastWeek.getDate() - 7);
+    const fmt = (d) => d.toISOString().slice(0, 16);
+    return {
+      columns: [
+        {
+          id: 'todo',
+          title: 'To Do',
+          cards: [
+            { id: 'mc1', title: 'Onboard new interns', description: 'Prepare materials and schedule orientation', urgency: 'high', assignees: ['Alice'], department: 'H.R. dept.', deadline: fmt(tomorrow), assignedByName: 'Manager', assignedAt: now.toISOString() },
+            { id: 'mc2', title: 'Update training slides', description: 'Q4 product updates for Training dept.', urgency: 'medium', assignees: ['Bob'], department: 'Training dept.', deadline: fmt(nextWeek), assignedByName: 'Manager', assignedAt: now.toISOString() },
+            { id: 'mc3', title: 'Placement drive coordination', description: 'Coordinate with colleges for campus drive', urgency: 'high', assignees: ['Alice', 'Charlie'], department: 'Placement dept.', deadline: fmt(tomorrow), assignedByName: 'Manager', assignedAt: now.toISOString() },
+            { id: 'mc4', title: 'Policy document review', description: 'Review and sign off HR policy changes', urgency: 'low', assignees: ['Alice'], department: 'H.R. dept.', deadline: fmt(nextWeek), assignedByName: 'Manager', assignedAt: now.toISOString() }
+          ]
+        },
+        {
+          id: 'progress',
+          title: 'In Progress',
+          cards: [
+            { id: 'mc5', title: 'Conduct skill assessment', description: 'Run assessments for Training batch', urgency: 'high', assignees: ['Bob'], department: 'Training dept.', deadline: fmt(tomorrow), assignedByName: 'Manager', assignedAt: now.toISOString() },
+            { id: 'mc6', title: 'Interview scheduling', description: 'Schedule rounds for shortlisted candidates', urgency: 'medium', assignees: ['Charlie'], department: 'Placement dept.', deadline: fmt(nextWeek), assignedByName: 'Manager', assignedAt: now.toISOString() }
+          ]
+        },
+        {
+          id: 'done',
+          title: 'Done',
+          cards: [
+            { id: 'mc7', title: 'Quarterly report submitted', description: 'Q3 metrics and placement report', urgency: 'low', assignees: ['Alice'], department: 'Placement dept.', deadline: fmt(lastWeek), completedAt: lastWeek.toISOString(), assignedByName: 'Manager', assignedAt: now.toISOString() },
+            { id: 'mc8', title: 'Training session completed', description: 'New joiner induction completed', urgency: 'medium', assignees: ['Bob'], department: 'Training dept.', deadline: fmt(lastWeek), completedAt: lastWeek.toISOString(), assignedByName: 'Manager', assignedAt: now.toISOString() }
+          ]
+        }
+      ],
+      departments: defaultDepartments.slice(),
+      upcomingTasks: [
+        { id: 'ut1', title: 'Annual appraisal forms', description: 'Send and collect appraisal forms', urgency: 'high', department: 'H.R. dept.' },
+        { id: 'ut2', title: 'Campus recruitment calendar', description: 'Finalize calendar with colleges', urgency: 'medium', department: 'Placement dept.' }
+      ],
+      notifications: [
+        { id: 'n1', message: 'Manager assigned "Onboard new interns" to Alice', taskTitle: 'Onboard new interns', assigneeName: 'Alice', assignedByName: 'Manager', at: now.toISOString() },
+        { id: 'n2', message: 'Manager assigned "Conduct skill assessment" to Bob', taskTitle: 'Conduct skill assessment', assigneeName: 'Bob', assignedByName: 'Manager', at: now.toISOString() }
+      ],
+      users: []
+    };
+  }
+
+  const defaultBoard = getMockBoard();
 
   let board = { columns: [], departments: [], upcomingTasks: [], notifications: [], users: [] };
   let draggedCard = null;
@@ -172,6 +213,21 @@
   function hideConnectionBanner() {
     const el = document.getElementById('connection-banner');
     if (el) el.remove();
+  }
+
+  function loadDemoData() {
+    board = JSON.parse(JSON.stringify(getMockBoard()));
+    if (!Array.isArray(board.columns)) board.columns = [];
+    if (!Array.isArray(board.departments)) board.departments = defaultDepartments.slice();
+    if (!Array.isArray(board.upcomingTasks)) board.upcomingTasks = [];
+    if (!Array.isArray(board.notifications)) board.notifications = [];
+    if (!Array.isArray(board.users)) board.users = [];
+    saveBoard();
+    render();
+    renderTasksTab();
+    renderManagerTab();
+    renderNotifications();
+    updateRoleUI();
   }
 
   async function saveBoard() {
@@ -1040,6 +1096,9 @@
     if (btnLogout) btnLogout.addEventListener('click', () => {
       localStorage.removeItem('kanban-current-user');
       showLoginPage();
+    });
+    document.getElementById('btn-load-demo-data')?.addEventListener('click', () => {
+      loadDemoData();
     });
 
     const managerLoginForm = document.getElementById('manager-login-form');
