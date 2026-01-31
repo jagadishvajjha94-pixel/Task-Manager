@@ -7,32 +7,70 @@
     <link rel="icon" type="image/x-icon" href="/assets/img/favicon/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/vendor/fonts/iconify-icons.css" />
     <link rel="stylesheet" href="/assets/vendor/css/core.css" />
     <link rel="stylesheet" href="/assets/css/demo.css" />
     <link rel="stylesheet" href="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
     <link rel="stylesheet" href="/assets/vendor/libs/apex-charts/apex-charts.css" />
     <style>
-      .kanban-board { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; min-height: 70vh; align-items: flex-start; }
-      .kanban-column { flex: 0 0 320px; background: var(--bs-body-bg, #fff); border-radius: 0.375rem; border: 1px solid rgba(0,0,0,.08); padding: 1rem; }
-      .kanban-column-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-      .kanban-column-cards { min-height: 120px; transition: background 0.2s, border-color 0.2s; }
-      .kanban-column-cards.kanban-drag-over { background: rgba(var(--bs-primary-rgb), 0.08); border-radius: 0.375rem; border: 2px dashed var(--bs-primary); }
-      .kanban-card { margin-bottom: 0.75rem; border-left-width: 4px; cursor: grab; user-select: none; }
+      :root { --app-font: 'Plus Jakarta Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; --pro-bg: #f0f4f8; --pro-card-bg: #ffffff; --pro-border: #e2e8f0; --pro-accent: #1e3a5f; --pro-text: #1e293b; }
+      html { background: var(--pro-bg); }
+      body { font-family: var(--app-font) !important; background: linear-gradient(165deg, #f0f4f8 0%, #e8eef4 50%, #f5f7fa 100%) !important; min-height: 100vh; color: var(--pro-text); }
+      .layout-wrapper { background: transparent !important; }
+      .content-wrapper { font-family: var(--app-font) !important; background: transparent !important; }
+      .layout-page { background: transparent !important; }
+      .container-xxl { font-family: var(--app-font) !important; }
+      .content-wrapper .container-xxl { padding: 1.5rem; }
+      .card { background: var(--pro-card-bg); border: 1px solid var(--pro-border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+      .card-header { background: linear-gradient(180deg, #fafbfc 0%, #f8fafc 100%); border-bottom: 1px solid var(--pro-border); padding: 1rem 1.25rem; font-weight: 600; border-radius: 12px 12px 0 0; }
+      .layout-navbar { background: #fff !important; border-bottom: 1px solid var(--pro-border); box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+      .layout-menu { background: linear-gradient(180deg, #1e3a5f 0%, #152a47 100%) !important; }
+      .menu-inner .menu-link { color: rgba(255,255,255,.85) !important; }
+      .menu-inner .menu-item.active .menu-link { background: rgba(255,255,255,.12) !important; color: #fff !important; }
+      .menu-inner .menu-link:hover { background: rgba(255,255,255,.08) !important; color: #fff !important; }
+      .app-brand-text.demo { color: #fff !important; font-weight: 700; }
+      .menu-divider { border-color: rgba(255,255,255,.15) !important; }
+      h1,h2,h3,h4,h5,h6,.card-title,.modal-title,.nav-link { font-family: var(--app-font) !important; font-weight: 600; }
+      .table, .table th, .table td, .form-control, .form-label, .btn { font-family: var(--app-font) !important; }
+      .kanban-board { display: flex; gap: 1.25rem; overflow-x: auto; padding: 1.25rem; min-height: 70vh; align-items: flex-start; background: transparent; scrollbar-width: thin; }
+      .kanban-board::-webkit-scrollbar { height: 8px; }
+      .kanban-board::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 4px; }
+      .kanban-board::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+      .tab-pane { background: transparent; }
+      #kanban-view { padding: 0.5rem 0; }
+      #kanban-view .input-group { border-radius: 10px; box-shadow: 0 2px 8px rgba(30,58,95,.06); border: 1px solid #e2e8f0; overflow: hidden; }
+      #kanban-view .input-group .form-control { border: 0; }
+      #kanban-view .input-group-text { background: linear-gradient(180deg,#fafbfc,#f8fafc); border: 0; color: #64748b; }
+      .kanban-column { flex: 0 0 340px; background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 0; box-shadow: 0 4px 20px rgba(30,58,95,.06); overflow: hidden; transition: transform .2s, box-shadow .2s; }
+      .kanban-column:hover { box-shadow: 0 8px 28px rgba(30,58,95,.1); transform: translateY(-1px); }
+      .kanban-column-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; margin-bottom: 0; background: linear-gradient(135deg,#fafbfc 0%,#f1f5f9 100%); border-bottom: 1px solid #e2e8f0; }
+      .kanban-column-header h6 { font-size: 0.95rem; font-weight: 700; color: #1e3a5f; letter-spacing: 0.02em; }
+      .kanban-column-header .badge { background: linear-gradient(135deg,#1e3a5f,#152a47) !important; font-size: 0.7rem; font-weight: 600; padding: 0.35rem 0.6rem; border-radius: 20px; }
+      .kanban-column-cards { min-height: 140px; padding: 1rem; transition: background 0.2s, border-color 0.2s; }
+      .kanban-column-cards.kanban-drag-over { background: rgba(30,58,95,.06); border-radius: 12px; border: 2px dashed #1e3a5f; }
+      .kanban-card { margin-bottom: 0.85rem; border-left-width: 5px; user-select: none; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.04); transition: transform .15s, box-shadow .15s, border-color .15s; }
+      .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(30,58,95,.1); border-color: #cbd5e1; }
+      .kanban-card-clickable { cursor: pointer; }
+      .kanban-card-title { font-family: var(--app-font) !important; font-weight: 600; font-size: 0.95rem; letter-spacing: 0.01em; color: #1e293b; }
+      .kanban-card-description { font-weight: 600; color: #64748b; line-height: 1.45; }
+      .kanban-card-right { flex-wrap: wrap; justify-content: flex-end; }
       .kanban-card:active { cursor: grabbing; }
-      .kanban-card.kanban-dragging { opacity: 0.6; cursor: grabbing; }
+      .kanban-card.kanban-dragging { opacity: 0.7; cursor: grabbing; transform: scale(1.02); box-shadow: 0 8px 24px rgba(0,0,0,.15); }
       .kanban-drag-handle { padding: 0.2rem 0.25rem; display: inline-flex; align-items: center; color: var(--bs-secondary); flex-shrink: 0; pointer-events: none; }
-      .kanban-urgency-high { border-left-color: #dc3545 !important; background-color: #fff5f5; }
-      .kanban-urgency-medium { border-left-color: #ffc107 !important; background-color: #fffef5; }
-      .kanban-urgency-low { border-left-color: #28a745 !important; background-color: #f5fff5; }
-      .assignee-initial { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; color: #fff; background: var(--bs-primary); flex-shrink: 0; border: 2px solid var(--bs-body-bg, #fff); margin-left: -6px; }
+      .kanban-urgency-high { border-left-color: #ef4444 !important; background: linear-gradient(135deg,#fef2f2 0%,#fff5f5 100%); }
+      .kanban-urgency-high:hover { box-shadow: 0 6px 20px rgba(239,68,68,.12); }
+      .kanban-urgency-medium { border-left-color: #f59e0b !important; background: linear-gradient(135deg,#fffbeb 0%,#fffef5 100%); }
+      .kanban-urgency-medium:hover { box-shadow: 0 6px 20px rgba(245,158,11,.12); }
+      .kanban-urgency-low { border-left-color: #10b981 !important; background: linear-gradient(135deg,#ecfdf5 0%,#f5fff5 100%); }
+      .kanban-urgency-low:hover { box-shadow: 0 6px 20px rgba(16,185,129,.12); }
+      .assignee-initial { width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; background: linear-gradient(135deg,#1e3a5f,#2d4a6f); flex-shrink: 0; border: 2px solid #fff; margin-left: -6px; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
       .assignee-initial:first-of-type { margin-left: 0; }
       .assignee-initial.bg-secondary { background: #6c757d; }
       .assignee-initials-wrap { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0.25rem; }
       .assignee-with-name { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; }
       .assignee-clickable { cursor: pointer; border-radius: 999px; padding: 0.1rem 0.35rem; transition: background 0.2s; }
-      .assignee-clickable:hover { background: rgba(var(--bs-primary-rgb, 105, 108, 255), 0.12); }
+      .assignee-clickable:hover { background: rgba(30,58,95,.1); }
       .card-deadline { font-size: 0.75rem; color: var(--bs-secondary); }
       .card-deadline.overdue { color: var(--bs-danger); font-weight: 600; }
       .assignee-chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0.5rem; background: var(--bs-secondary-bg); border-radius: 999px; font-size: 0.8125rem; }
@@ -42,35 +80,62 @@
       .accuracy-circle-fill { fill: none; stroke: var(--bs-success); stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 0.3s ease; }
       .accuracy-circle-text { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 0.65rem; font-weight: 600; color: var(--bs-body-color); }
       .assignee-name { color: var(--bs-body-color); font-weight: 500; }
-      .kanban-card-done { background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%) !important; border-left-color: #28a745 !important; }
-      .kanban-card-done .card-title { text-decoration: line-through; color: #155724; }
-      .kanban-card-done .card-text { text-decoration: line-through; color: #155724; opacity: 0.9; }
-      .kanban-card-done .task-completed-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; color: #155724; margin-top: 0.35rem; }
-      .kanban-date-column { flex: 0 0 320px; }
-      .kanban-part-rollover { border-left: 3px solid var(--bs-warning); background: rgba(255, 193, 7, 0.04); border-radius: 0 8px 8px 0; }
-      .kanban-part-today { border-left: 3px solid var(--bs-primary); background: rgba(105, 108, 255, 0.04); border-radius: 0 8px 8px 0; }
-      .kanban-board-rows { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; }
-      .kanban-board-row { display: flex; flex-direction: row; flex-wrap: wrap; gap: 1rem; width: 100%; }
-      .kanban-board-row .kanban-date-column { flex: 1 1 300px; }
-      .kanban-done-toggle-btn { width: 38px; height: 38px; border-radius: 50%; border: 2px solid rgba(0,0,0,.15); background: var(--bs-body-bg); color: var(--bs-secondary); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease; }
-      .kanban-done-toggle-btn:hover { border-color: var(--bs-primary); color: var(--bs-primary); transform: scale(1.05); }
-      .kanban-done-toggle-btn.done { border-color: #28a745; background: linear-gradient(135deg, #d4edda, #c3e6cb); color: #155724; }
-      .kanban-done-toggle-btn.done:hover { transform: scale(1.05); }
-      .kanban-done-toggle-btn i { font-size: 1.25rem; }
-      .rollover-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; color: #856404; background: rgba(255, 193, 7, 0.2); padding: 0.2rem 0.5rem; border-radius: 0.25rem; margin-bottom: 0.35rem; font-weight: 600; }
+      .kanban-card-done { background: linear-gradient(135deg,#d1fae5 0%,#a7f3d0 50%,#6ee7b7 100%) !important; border-left-color: #059669 !important; box-shadow: 0 2px 12px rgba(5,150,105,.15); }
+      .kanban-card-done:hover { box-shadow: 0 6px 24px rgba(5,150,105,.2); }
+      .kanban-card-done .card-title { text-decoration: line-through; color: #047857; }
+      .kanban-card-done .card-text { text-decoration: line-through; color: #047857; opacity: 0.9; }
+      .kanban-card-done .task-completed-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; color: #047857; margin-top: 0.35rem; }
+      .kanban-date-column { flex: 0 0 340px; }
+      .kanban-part-rollover { border-left: 4px solid #f59e0b !important; background: linear-gradient(135deg,rgba(245,158,11,.08) 0%,rgba(251,191,36,.04) 100%); border-radius: 0 16px 16px 0; box-shadow: 0 4px 24px rgba(245,158,11,.08); }
+      .kanban-part-rollover .kanban-column-header { background: linear-gradient(135deg,#fffbeb 0%,#fef3c7 50%,#fef9c3 100%); border-bottom-color: #fde68a; }
+      .kanban-part-rollover .kanban-column-header h6 { color: #b45309; }
+      .kanban-part-rollover .kanban-column-header .badge { background: linear-gradient(135deg,#f59e0b,#d97706) !important; }
+      .kanban-part-today { border-left: 4px solid #1e3a5f !important; background: linear-gradient(135deg,rgba(30,58,95,.06) 0%,rgba(30,58,95,.02) 100%); border-radius: 0 16px 16px 0; box-shadow: 0 4px 24px rgba(30,58,95,.08); }
+      .kanban-part-today .kanban-column-header { background: linear-gradient(135deg,#e0e7ff 0%,#c7d2fe 50%,#e0e7ff 100%); border-bottom-color: #a5b4fc; }
+      .kanban-part-today .kanban-column-header h6 { color: #1e3a5f; }
+      .kanban-board-rows { display: flex; flex-direction: column; gap: 1.75rem; width: 100%; }
+      .kanban-board-row { display: flex; flex-direction: row; flex-wrap: wrap; gap: 1.25rem; width: 100%; }
+      .kanban-board-row .kanban-date-column { flex: 1 1 320px; }
+      .kanban-board .add-card { border-radius: 10px; font-weight: 600; padding: 0.5rem 1rem; margin: 0 1rem 1rem; border-style: dashed; transition: all .2s; }
+      .kanban-board .add-card:hover { background: rgba(30,58,95,.06); border-color: #1e3a5f; color: #1e3a5f; }
+      .kanban-done-toggle-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #cbd5e1; background: #fff; color: #64748b; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+      .kanban-done-toggle-btn:hover { border-color: #1e3a5f; color: #1e3a5f; transform: scale(1.08); box-shadow: 0 4px 12px rgba(30,58,95,.2); }
+      .kanban-done-toggle-btn.done { border-color: #059669; background: linear-gradient(135deg,#10b981,#059669); color: #fff; box-shadow: 0 2px 8px rgba(5,150,105,.3); }
+      .kanban-done-toggle-btn.done:hover { transform: scale(1.08); box-shadow: 0 4px 14px rgba(5,150,105,.4); }
+      .kanban-done-toggle-btn i { font-size: 1.3rem; }
+      .rollover-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; color: #b45309; background: linear-gradient(135deg,rgba(245,158,11,.25),rgba(251,191,36,.15)); padding: 0.25rem 0.6rem; border-radius: 8px; margin-bottom: 0.35rem; font-weight: 600; border: 1px solid rgba(245,158,11,.3); }
       .task-assigned-date { display: block; margin-bottom: 0.35rem; }
-      .kanban-card-rollover { border-left-width: 4px; border-left-color: var(--bs-warning) !important; }
+      .kanban-card-rollover { border-left-width: 5px; border-left-color: #f59e0b !important; }
+      .kanban-card .badge.bg-label-info { background: linear-gradient(135deg,#e9d5ff,#ddd6fe) !important; color: #5b21b6 !important; font-weight: 700; border-radius: 6px; border: 1px solid #c4b5fd; }
+      .kanban-card .badge.bg-label-secondary { background: linear-gradient(135deg,#f1f5f9,#e2e8f0) !important; color: #475569; font-weight: 600; border-radius: 6px; }
       .kanban-column-header h6 { line-height: 1.3; }
       .notification-item { font-size: 0.8125rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(0,0,0,.06); }
       .notification-item:last-child { border-bottom: 0; }
       .tab-pane { display: none; }
       .tab-pane.active { display: block; }
-      .task-row-assign { min-width: 180px; }
-      #tasks-tab-content { padding: 0 1.25rem 1.25rem; }
-      .tasks-dept-section { padding-top: 0.5rem; }
+      .task-row-assign, .tasks-assign-col { min-width: 180px; }
+      #tasks-tab-content { padding: 1.25rem; font-family: var(--app-font); }
+      .tasks-dept-section { padding-top: 1rem; margin-bottom: 2rem; }
       .tasks-dept-section:last-child { border-bottom: 0; padding-bottom: 0; margin-bottom: 0 !important; }
+      .tasks-dept-section .table { font-size: 0.9rem; border-collapse: separate; border-spacing: 0; }
+      .tasks-dept-section .table thead th { background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%); color: #2d3748; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.875rem 1rem; border-bottom: 2px solid #dee2e6; white-space: nowrap; }
+      .tasks-dept-section .table tbody td { padding: 0.875rem 1rem; vertical-align: middle; border-bottom: 1px solid #eee; color: #2d3748; }
+      .tasks-dept-section .table tbody tr:hover { background: #f8fafc; }
+      .tasks-dept-section .table .tasks-sno { width: 48px; text-align: center; font-weight: 600; color: #64748b; }
+      .tasks-dept-section .table .tasks-title { font-weight: 600; color: #1e293b; min-width: 140px; }
+      .tasks-dept-section .table .tasks-desc { max-width: 220px; font-size: 0.85rem; color: #64748b; line-height: 1.4; }
+      .tasks-dept-section .table .tasks-urgency { white-space: nowrap; }
+      .tasks-dept-section .table .tasks-dept { font-weight: 600; color: #5b21b6; }
+      .tasks-dept-section .table .tasks-assignees { font-weight: 500; color: #475569; min-width: 100px; }
+      .tasks-dept-section .table .tasks-assign-col { min-width: 200px; }
+      .tasks-dept-section .table .tasks-deadline { min-width: 140px; font-size: 0.85rem; color: #64748b; }
+      .tasks-dept-section h6 { font-weight: 700; font-size: 1rem; color: #5b21b6; letter-spacing: 0.02em; }
       .table-align-middle td { vertical-align: middle; }
-      #login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--bs-body-bg) 0%, var(--bs-secondary-bg-subtle, #f8f9fa) 100%); }
+      #login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(145deg, #e8eef4 0%, #dce4ec 30%, #f0f4f8 70%, #e6ecf2 100%) !important; padding: 2rem; }
+      #login-page .card { border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 24px rgba(30,58,95,.08); overflow: hidden; }
+      #login-page .card:hover { box-shadow: 0 8px 32px rgba(30,58,95,.1); }
+      #login-page h2 { color: #1e3a5f; font-weight: 700; }
+      #login-page .text-muted { color: #64748b !important; }
       #app-page { display: none; }
       #app-page.logged-in { display: block; }
       .login-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
@@ -84,7 +149,7 @@
       #taskDetailsModal #detail-description { white-space: pre-wrap; }
       .employee-modal-content { border: none; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,.25); animation: empModalIn .3s ease-out; }
       @keyframes empModalIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-      .employee-modal-header { background: linear-gradient(135deg, #696cff 0%, #5f61e6 50%, #585bdc 100%); border: none; padding: 1.5rem 1.75rem; color: #fff; }
+      .employee-modal-header { background: linear-gradient(135deg, #1e3a5f 0%, #152a47 50%, #0f2038 100%); border: none; padding: 1.5rem 1.75rem; color: #fff; }
       .employee-modal-header .modal-title { color: #fff !important; }
       .employee-modal-avatar { width: 56px; height: 56px; border-radius: 14px; background: rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: #fff; flex-shrink: 0; }
       .employee-modal-body { padding: 1.75rem; background: #fff; color: #212529; }
@@ -127,6 +192,8 @@
       #assignee-dropdown .dropdown-item:hover { background-color: #f8f9fa; }
       #kanban-search-input { border-right: 0; }
       #kanban-search-clear { border-left: 0; }
+      #open-kanban-calendar-btn { border-radius: 10px; font-weight: 600; }
+      #kanban-board > p.text-muted { padding: 3rem 2rem !important; text-align: center; font-size: 1rem; color: #64748b; background: linear-gradient(135deg,#fafbfc,#f8fafc); border-radius: 16px; border: 2px dashed #e2e8f0; margin: 1rem 0; }
       .employee-name-link:hover { text-decoration: underline; }
       .accuracy-click-wrap:hover { background: rgba(105,108,255,0.1); }
       .employee-modal-avatar-wrap { position: relative; }
@@ -145,6 +212,28 @@
         color: #fff !important;
         border-color: rgba(255,255,255,0.2);
       }
+      .stored-table { font-family: var(--app-font) !important; font-size: 0.9rem; }
+      .stored-table thead th { background: #f1f5f9; color: #334155; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+      .card-header h5 { font-weight: 600; letter-spacing: 0.02em; color: #1e293b; }
+      .list-group-item { font-family: var(--app-font); font-weight: 500; }
+      .navbar-brand, #page-title { font-weight: 700; letter-spacing: 0.02em; color: #1e3a5f; }
+      .form-control, .form-select { border-color: #e2e8f0; border-radius: 8px; }
+      .form-control:focus, .form-select:focus { border-color: #1e3a5f; box-shadow: 0 0 0 3px rgba(30,58,95,.12); }
+      .login-card .card-title { font-weight: 700; font-size: 1.25rem; }
+      .form-label { font-weight: 500; color: #475569; }
+      #login-page h2 { font-weight: 700; letter-spacing: 0.02em; }
+      #manager-view .table th, #manager-view .table td { font-family: var(--app-font); font-weight: 500; }
+      #manager-view .table th { font-weight: 600; font-size: 0.85rem; }
+      #stored-data-tables h6 { font-weight: 600; font-size: 1rem; color: #1e293b; margin-bottom: 0.5rem; }
+      .modal-content { border: 1px solid var(--pro-border); border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.12); }
+      .modal-header { background: linear-gradient(180deg, #fafbfc 0%, #f8fafc 100%); border-bottom: 1px solid var(--pro-border); border-radius: 12px 12px 0 0; }
+      .btn-primary { background: linear-gradient(180deg, #1e3a5f 0%, #152a47 100%); border-color: #1e3a5f; }
+      .btn-primary:hover { background: linear-gradient(180deg, #152a47 0%, #0f2038 100%); border-color: #152a47; opacity: 0.95; }
+      .dropdown-menu { border: 1px solid var(--pro-border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+      .btn-outline-primary { border-color: #1e3a5f; color: #1e3a5f; }
+      .btn-outline-primary:hover { background: rgba(30,58,95,.08); border-color: #1e3a5f; color: #1e3a5f; }
+      .table { --bs-table-border-color: #e2e8f0; }
+      .stored-table { border: 1px solid var(--pro-border); border-radius: 8px; overflow: hidden; }
     </style>
     <script src="/assets/vendor/js/helpers.js"></script>
     <script src="/assets/js/config.js"></script>
@@ -201,7 +290,7 @@
         <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
           <div class="app-brand demo">
             <a href="/" class="app-brand-link">
-              <span class="app-brand-text demo menu-text fw-bold">Kanban</span>
+              <span class="app-brand-text demo menu-text fw-bold">Task Manager</span>
             </a>
             <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">
               <i class="bx bx-chevron-left d-block d-xl-none align-middle"></i>
@@ -309,6 +398,8 @@
                           <i class="bx bx-download me-1"></i> Export to Excel
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
+                          <li><a class="dropdown-item" href="#" id="export-stored-data">Stored data (all columns)</a></li>
+                          <li><hr class="dropdown-divider"></li>
                           <li><a class="dropdown-item" href="#" id="export-day">Day-wise</a></li>
                           <li><a class="dropdown-item" href="#" id="export-week">Week-wise</a></li>
                           <li><a class="dropdown-item" href="#" id="export-month">Month-wise</a></li>
@@ -368,10 +459,10 @@
                   <div class="col-12">
                     <div class="card">
                       <div class="card-header">
-                        <h5 class="mb-0"><i class="bx bx-refresh me-2"></i>Daily Recurring Tasks</h5>
+                        <h5 class="mb-0"><i class="bx bx-refresh me-2"></i>Recurring Tasks</h5>
                       </div>
                       <div class="card-body">
-                        <p class="text-muted small mb-3">These tasks auto-generate every day for assigned employees. Toggle to activate/deactivate.</p>
+                        <p class="text-muted small mb-3">Tasks auto-generate daily, weekly, or monthly for assigned employees. Toggle to activate/deactivate.</p>
                         <div id="recurring-tasks-list"></div>
                       </div>
                     </div>
@@ -392,6 +483,12 @@
                     </div>
                   </div>
                   <div class="card-body p-0" id="tasks-tab-body">
+                    <div class="p-3 border-bottom bg-light d-flex align-items-center gap-2 flex-wrap">
+                      <div class="input-group input-group-sm" style="max-width: 360px;">
+                        <span class="input-group-text bg-white"><i class="bx bx-search text-muted"></i></span>
+                        <input type="text" class="form-control" id="tasks-tab-search" placeholder="Search tasks by title, description, department, assignee..." />
+                      </div>
+                    </div>
                     <div class="d-none p-3 border-bottom bg-light" id="tasks-create-dept-wrap">
                       <label class="form-label small mb-2">New department</label>
                       <div class="input-group input-group-sm" style="max-width: 320px;">
@@ -465,19 +562,30 @@
                 <input type="datetime-local" class="form-control" id="cardDeadline" />
               </div>
               <div class="mb-3" id="recurring-task-group">
-                <div class="form-check form-switch">
+                <div class="form-check form-switch mb-2">
                   <input class="form-check-input" type="checkbox" id="cardRecurring" />
                   <label class="form-check-label" for="cardRecurring">
-                    <strong>Daily Recurring Task</strong>
-                    <small class="d-block text-muted">This task will auto-add every day for the assigned employees</small>
+                    <strong>Recurring Task</strong>
+                    <small class="d-block text-muted">Auto-add task for assigned employees</small>
                   </label>
+                </div>
+                <div class="d-none ms-4" id="recurring-frequency-wrap">
+                  <label class="form-label small mb-1">Frequency</label>
+                  <select class="form-select form-select-sm" id="cardRecurringFrequency" style="max-width: 200px;">
+                    <option value="daily">Daily (every day)</option>
+                    <option value="weekly">Weekly (same day each week)</option>
+                    <option value="monthly">Monthly (same date each month)</option>
+                  </select>
                 </div>
               </div>
               <div class="mb-0 small text-muted" id="assigned-by-info" style="display: none;">Assigned by <span id="assigned-by-name"></span></div>
             </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn btn-primary">Save</button>
+            <div class="modal-footer d-flex justify-content-between">
+              <button type="button" class="btn btn-outline-danger d-none" id="card-modal-delete-btn">Delete</button>
+              <div class="ms-auto d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+              </div>
             </div>
           </form>
         </div>

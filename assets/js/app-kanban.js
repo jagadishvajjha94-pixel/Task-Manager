@@ -67,6 +67,7 @@
 
   let board = { columns: [], departments: [], upcomingTasks: [], notifications: [], users: [], recurringTasks: [], employeeProfiles: {} };
   let searchQuery = '';
+  let tasksTabSearchQuery = '';
   let lastRecurringCheckDate = '';
 
   function getEmployeeProfile(name) {
@@ -247,19 +248,23 @@
     if (recurringList) {
       const recurring = board.recurringTasks || [];
       if (recurring.length === 0) {
-        recurringList.innerHTML = '<p class="text-muted mb-0">No recurring tasks yet. Create one by enabling "Daily Recurring Task" when adding a task.</p>';
+        recurringList.innerHTML = '<p class="text-muted mb-0">No recurring tasks yet. Create one by enabling "Recurring Task" when adding a task and choose Daily, Weekly, or Monthly.</p>';
       } else {
         recurringList.innerHTML = recurring.map((rt) => {
           const assigneeNames = (rt.assignees || []).join(', ');
           const activeClass = rt.active ? 'bg-success' : 'bg-secondary';
           const statusText = rt.active ? 'Active' : 'Paused';
+          const freq = (rt.frequency || 'daily').toLowerCase();
+          const freqLabel = freq === 'weekly' ? 'Weekly' : freq === 'monthly' ? 'Monthly' : 'Daily';
+          const freqBadgeClass = freq === 'weekly' ? 'bg-label-warning' : freq === 'monthly' ? 'bg-label-info' : 'bg-label-primary';
           return `
             <div class="d-flex align-items-center justify-content-between border rounded p-3 mb-2 recurring-task-item" data-recurring-id="${escapeHtml(rt.id)}">
               <div class="flex-grow-1">
                 <div class="d-flex align-items-center gap-2 mb-1">
                   <strong>${escapeHtml(rt.title)}</strong>
                   <span class="badge ${activeClass}">${statusText}</span>
-                  ${rt.department ? `<span class="badge bg-label-info">${escapeHtml(rt.department)}</span>` : ''}
+                  <span class="badge ${freqBadgeClass}">${freqLabel}</span>
+                  ${rt.department ? `<span class="badge bg-label-secondary">${escapeHtml(rt.department)}</span>` : ''}
                 </div>
                 <div class="small text-muted">
                   <i class="bx bx-user me-1"></i>Assigned to: ${escapeHtml(assigneeNames || 'No one')}
@@ -416,6 +421,23 @@
     return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0');
   }
 
+  function shouldRunRecurringToday(template) {
+    const freq = (template.frequency || 'daily').toLowerCase();
+    const now = new Date();
+    if (freq === 'daily') return true;
+    if (freq === 'weekly') {
+      const dayOfWeek = template.dayOfWeek !== undefined ? template.dayOfWeek : (template.createdAt ? new Date(template.createdAt).getDay() : 0);
+      return now.getDay() === dayOfWeek;
+    }
+    if (freq === 'monthly') {
+      const dayOfMonth = template.dayOfMonth !== undefined ? template.dayOfMonth : (template.createdAt ? new Date(template.createdAt).getDate() : 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const runDay = Math.min(dayOfMonth, lastDay);
+      return now.getDate() === runDay;
+    }
+    return true;
+  }
+
   function generateRecurringTasksForToday() {
     const todayKey = getTodayDateKey();
     if (lastRecurringCheckDate === todayKey) return false;
@@ -429,6 +451,7 @@
     let tasksAdded = false;
     board.recurringTasks.forEach((template) => {
       if (!template.active) return;
+      if (!shouldRunRecurringToday(template)) return;
       const assignees = template.assignees || [];
       if (assignees.length === 0) return;
 
@@ -452,7 +475,8 @@
         deadline: endOfDay.toISOString(),
         assignedByName: 'Auto (Recurring)',
         recurringTemplateId: template.id,
-        isRecurringTask: true
+        isRecurringTask: true,
+        recurringFrequency: template.frequency || 'daily'
       };
       if (!todoCol.cards) todoCol.cards = [];
       todoCol.cards.push(newCard);
@@ -974,15 +998,58 @@
     return rows;
   }
 
+  function escapeCsvCell(val) {
+    const s = String(val ?? '');
+    const needsQuote = /[",\n\r]/.test(s);
+    return needsQuote ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function exportStoredDataToExcel() {
+    const cols = board.columns || [];
+    const allCards = [];
+    cols.forEach((col) => (col.cards || []).forEach((card) => allCards.push(card)));
+
+    const headers = ['S.No', 'ID', 'Date', 'Title', 'Description', 'Status', 'Urgency', 'Department', 'Deadline', 'Assigned to', 'Assigned by', 'Completed at'];
+    const rows = [];
+    rows.push(['TASK DATA EXPORT']);
+    rows.push(['Generated: ' + new Date().toLocaleString()]);
+    rows.push([]);
+    rows.push(headers);
+
+    allCards.forEach((card, idx) => {
+      const dateStr = card.assignedAt ? new Date(card.assignedAt).toLocaleString() : '';
+      const deadlineStr = card.deadline ? new Date(card.deadline).toLocaleString() : '';
+      const completedStr = card.completedAt ? new Date(card.completedAt).toLocaleString() : '';
+      const status = isCardDone(card) ? 'Completed' : 'Pending';
+      const assigneesStr = getAssigneesList(card).join(', ') || '';
+      rows.push([
+        idx + 1,
+        card.id || '',
+        dateStr,
+        card.title || '',
+        card.description || '',
+        status,
+        card.urgency || 'medium',
+        card.department || '',
+        deadlineStr,
+        assigneesStr,
+        card.assignedByName || '',
+        completedStr
+      ]);
+    });
+
+    const csv = rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'stored-task-data-' + getTodayDateKey() + '.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
   function exportToExcel(period) {
     const rows = getEmployeePerformanceByPeriod(period);
-    const csv = rows.map((row) =>
-      row.map((cell) => {
-        const s = String(cell ?? '');
-        const needsQuote = /[",\n\r]/.test(s);
-        return needsQuote ? '"' + s.replace(/"/g, '""') + '"' : s;
-      }).join(',')
-    ).join('\r\n');
+    const csv = rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -1139,46 +1206,36 @@
                 const deptHtml = card.department ? `<span class="badge bg-label-info me-1 small">${escapeHtml(card.department)}</span>` : '';
                 const deadlineHtml = card.deadline ? `<span class="card-deadline d-block mt-1 small ${!isDone && new Date(card.deadline) < new Date() ? 'overdue' : ''}">${escapeHtml(formatDeadlineTimer(card.deadline, card.completedAt, isDone))}</span>` : '';
                 const assignedByHtml = card.assignedByName ? `<span class="card-assigned-by d-block mt-1 small text-muted"><i class="bx bx-user-plus me-1"></i>Assigned by ${escapeHtml(card.assignedByName)}</span>` : '';
-                const recurringBadge = card.isRecurringTask ? '<span class="badge bg-label-secondary me-1 small"><i class="bx bx-refresh me-1"></i>Daily</span>' : '';
-                const actions = manager
-                  ? `<div class="dropdown">
-                    <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                      <li><a class="dropdown-item edit-card" href="#" data-card-id="${card.id}">Edit</a></li>
-                      <li><a class="dropdown-item delete-card" href="#" data-card-id="${card.id}">Delete</a></li>
-                    </ul>
-                  </div>`
-                  : `<div class="dropdown">
-                    <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill dropdown-toggle hide-arrow" data-bs-toggle="dropdown" title="View task"><i class="bx bx-dots-vertical-rounded"></i></button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                      <li><a class="dropdown-item view-card-details" href="#" data-card-id="${card.id}">View details</a></li>
-                    </ul>
-                  </div>`;
+                const recFreq = (card.recurringFrequency || 'daily').toLowerCase();
+                const recLabel = recFreq === 'weekly' ? 'Weekly' : recFreq === 'monthly' ? 'Monthly' : 'Daily';
+                const recurringBadge = card.isRecurringTask ? '<span class="badge bg-label-secondary me-1 small"><i class="bx bx-refresh me-1"></i>' + recLabel + '</span>' : '';
                 const completedBadge = isDone ? '<span class="task-completed-badge"><i class="bx bx-like"></i> Completed</span>' : '';
                 const todoCol = (board.columns || []).find((c) => (c.id || '').toString().toLowerCase() === 'todo') || (board.columns || [])[0];
                 const colId = card._columnId || (todoCol ? todoCol.id : 'todo');
                 const toggleBtnClass = isDone ? 'kanban-done-toggle-btn done' : 'kanban-done-toggle-btn';
                 const toggleIcon = isDone ? 'bx-like' : 'bx-circle';
                 const toggleTitle = isDone ? 'Mark as not done' : 'Mark as done';
+                const clickTitle = manager ? 'Click to edit' : 'Click to view';
                 return `
-            <div class="card kanban-card ${urgencyClass} ${doneClass} ${rolloverClass}" data-card-id="${card.id}" data-column-id="${colId}">
-              <div class="card-body py-3 d-flex gap-2">
+            <div class="card kanban-card kanban-card-clickable ${urgencyClass} ${doneClass} ${rolloverClass}" data-card-id="${card.id}" data-column-id="${colId}" title="${clickTitle}">
+              <div class="card-body py-3 d-flex gap-2 align-items-start">
                 <button type="button" class="${toggleBtnClass}" data-card-id="${escapeHtml(card.id)}" title="${toggleTitle}" aria-label="${toggleTitle}">
                   <i class="bx ${toggleIcon}"></i>
                 </button>
-                <div class="flex-grow-1 min-w-0">
+                <div class="flex-grow-1 min-w-0 kanban-card-main">
                 ${rolloverBadge}
                 ${taskDateHtml}
                 <div class="d-flex justify-content-between align-items-start gap-2">
                   <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0 flex-wrap">
+                    ${recurringBadge}
+                    <h6 class="kanban-card-title mb-0 text-truncate">${escapeHtml(card.title)}</h6>
+                  </div>
+                  <div class="kanban-card-right d-flex align-items-center gap-2 flex-shrink-0">
                     ${assigneeHtml}
                     ${deptHtml}
-                    ${recurringBadge}
-                    <h6 class="card-title mb-0 text-truncate">${escapeHtml(card.title)}</h6>
                   </div>
-                  ${actions}
                 </div>
-                ${card.description ? `<p class="card-text small text-body-secondary mb-0 mt-1">${escapeHtml(card.description)}</p>` : ''}
+                ${card.description ? `<p class="kanban-card-description card-text small mb-0 mt-1">${escapeHtml(card.description)}</p>` : ''}
                 ${deadlineHtml}
                 ${assignedByHtml}
                 ${completedBadge}
@@ -1226,9 +1283,20 @@
     if (manager) {
       container.querySelectorAll('.add-card').forEach((btn) => btn.addEventListener('click', onAddCard));
     }
-    container.querySelectorAll('.edit-card').forEach((a) => a.addEventListener('click', onEditCard));
-    container.querySelectorAll('.delete-card').forEach((a) => a.addEventListener('click', onDeleteCard));
-    container.querySelectorAll('.view-card-details').forEach((a) => a.addEventListener('click', onViewCardDetails));
+    container.querySelectorAll('.kanban-card-clickable').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('.kanban-done-toggle-btn')) return;
+        if (e.target.closest('.assignee-clickable')) return;
+        const cardId = el.dataset.cardId;
+        if (!cardId) return;
+        const col = board.columns.find((c) => (c.cards || []).some((card) => card.id === cardId));
+        if (!col) return;
+        const card = col.cards.find((c) => c.id === cardId);
+        if (!card) return;
+        if (manager) openCardModal(card, col.id);
+        else openTaskDetailsModal(card);
+      });
+    });
     container.querySelectorAll('.assignee-clickable').forEach((el) => {
       el.addEventListener('click', (e) => {
         e.preventDefault();
@@ -1387,6 +1455,10 @@
     if (newDeptWrap) newDeptWrap.classList.add('d-none');
     if (recurringGroup) recurringGroup.style.display = (manager && !card) ? 'block' : 'none';
     if (recurringCheckbox) recurringCheckbox.checked = false;
+    const freqWrap = document.getElementById('recurring-frequency-wrap');
+    if (freqWrap) freqWrap.classList.add('d-none');
+    const deleteBtn = document.getElementById('card-modal-delete-btn');
+    if (deleteBtn) deleteBtn.classList.toggle('d-none', !(manager && card));
 
     fillDepartmentSelect(departmentSelect);
 
@@ -1458,6 +1530,9 @@
 
     if (isRecurring && assigneeNames.length > 0) {
       if (!board.recurringTasks) board.recurringTasks = [];
+      const now = new Date();
+      const freqSelect = document.getElementById('cardRecurringFrequency');
+      const frequency = (freqSelect?.value || 'daily').toLowerCase();
       const recurringTemplate = {
         id: 'recurring_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
         title,
@@ -1466,7 +1541,10 @@
         department: department || undefined,
         assignees: assigneeNames.slice(),
         active: true,
-        createdAt: new Date().toISOString(),
+        frequency,
+        dayOfWeek: now.getDay(),
+        dayOfMonth: now.getDate(),
+        createdAt: now.toISOString(),
         createdBy: currentUser ? currentUser.name : 'Manager'
       };
       board.recurringTasks.push(recurringTemplate);
@@ -1544,7 +1622,17 @@
     if (addBtn) addBtn.style.display = manager ? 'inline-flex' : 'none';
     if (addDeptBtn) addDeptBtn.classList.toggle('d-none', !manager);
 
-    const tasks = board.upcomingTasks || [];
+    let tasks = board.upcomingTasks || [];
+    if (tasksTabSearchQuery) {
+      const q = tasksTabSearchQuery.toLowerCase();
+      tasks = tasks.filter((task) => {
+        const title = (task.title || '').toLowerCase();
+        const desc = (task.description || '').toLowerCase();
+        const dept = (task.department || '').toLowerCase();
+        const assignees = (getAssigneesList(task) || []).join(' ').toLowerCase();
+        return title.includes(q) || desc.includes(q) || dept.includes(q) || assignees.includes(q);
+      });
+    }
     const byDept = {};
     tasks.forEach((task) => {
       const dept = (task.department || '').trim() || 'Other';
@@ -1557,6 +1645,10 @@
       if (d !== 'Other' && deptOrder.indexOf(d) === -1) deptOrder.push(d);
     });
     if (byDept['Other']) deptOrder.push('Other');
+    if (deptOrder.length === 0 && tasksTabSearchQuery) {
+      container.innerHTML = '<p class="text-muted text-center py-4 mb-0 px-3">No tasks match your search.</p>';
+      return;
+    }
     if (deptOrder.length === 0 && manager) {
       container.innerHTML = '<p class="text-muted text-center py-4 mb-0 px-3">No departments yet. Click <strong>Create dept</strong> above to add one, then add tasks.</p>';
       return;
@@ -1569,29 +1661,33 @@
     let html = '';
     deptOrder.forEach((dept) => {
       const deptTasks = byDept[dept] || [];
-      html += '<div class="tasks-dept-section border-bottom pb-4 mb-4">';
-      html += '<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 px-0">';
-      html += '<h6 class="text-body mb-0 d-flex align-items-center"><i class="bx bx-building-house me-2"></i>' + escapeHtml(dept) + '</h6>';
+      html += '<div class="tasks-dept-section border-bottom">';
+      html += '<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">';
+      html += '<h6 class="mb-0 d-flex align-items-center"><i class="bx bx-building-house me-2"></i>' + escapeHtml(dept) + '</h6>';
       if (manager) {
         html += '<button type="button" class="btn btn-sm btn-primary add-task-for-dept" data-dept="' + escapeHtml(dept) + '" title="Add task for ' + escapeHtml(dept) + '"><i class="bx bx-plus me-1"></i> Add task</button>';
       }
       html += '</div>';
-      html += '<div class="table-responsive"><table class="table table-hover table-align-middle mb-0"><thead><tr><th>Task</th><th>Urgency</th><th>Department</th><th>Assigned to</th><th class="task-row-assign text-nowrap">Assign to</th></tr></thead><tbody>';
-      deptTasks.forEach((task) => {
+      html += '<div class="table-responsive rounded border"><table class="table table-hover table-align-middle mb-0 tasks-dept-table"><thead><tr><th class="tasks-sno">S.No</th><th>Task</th><th>Description</th><th class="tasks-urgency">Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th class="tasks-assign-col">Assign to</th></tr></thead><tbody>';
+      deptTasks.forEach((task, idx) => {
         const assigneesStr = getAssigneesList(task).join(', ') || '—';
+        const deadlineStr = task.deadline ? new Date(task.deadline).toLocaleString() : '—';
         const assignInput = manager
           ? `<div class="input-group input-group-sm"><input type="text" class="form-control assign-upcoming-input" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}" placeholder="Employee name" /><button type="button" class="btn btn-primary btn-sm assign-upcoming-btn" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}">Assign</button></div>`
           : '<span class="text-muted">—</span>';
         html += `<tr data-task-id="${task.id}">
-        <td><strong>${escapeHtml(task.title)}</strong>${task.description ? `<br><span class="text-muted small">${escapeHtml(task.description)}</span>` : ''}</td>
-        <td><span class="badge ${task.urgency === 'high' ? 'bg-danger' : task.urgency === 'low' ? 'bg-success' : 'bg-warning'}">${escapeHtml(task.urgency || 'medium')}</span></td>
-        <td>${escapeHtml(task.department || '—')}</td>
-        <td>${escapeHtml(assigneesStr)}</td>
-        <td class="task-row-assign">${assignInput}</td>
+        <td class="tasks-sno">${idx + 1}</td>
+        <td class="tasks-title">${escapeHtml(task.title)}</td>
+        <td class="tasks-desc">${escapeHtml(task.description || '—')}</td>
+        <td class="tasks-urgency"><span class="badge ${task.urgency === 'high' ? 'bg-danger' : task.urgency === 'low' ? 'bg-success' : 'bg-warning'}">${escapeHtml(task.urgency || 'medium')}</span></td>
+        <td class="tasks-dept">${escapeHtml(task.department || '—')}</td>
+        <td class="tasks-deadline small">${escapeHtml(deadlineStr)}</td>
+        <td class="tasks-assignees">${escapeHtml(assigneesStr)}</td>
+        <td class="tasks-assign-col">${assignInput}</td>
       </tr>`;
       });
       if (deptTasks.length === 0) {
-        html += '<tr><td colspan="5" class="text-muted text-center py-3">No tasks in this department. Click <strong>Add task</strong> above to add one.</td></tr>';
+        html += '<tr><td colspan="8" class="text-muted text-center py-4">No tasks in this department. Click <strong>Add task</strong> above to add one.</td></tr>';
       }
       html += '</tbody></table></div></div>';
     });
@@ -1863,6 +1959,8 @@
     if (assignedByInfo) assignedByInfo.style.display = 'none';
     if (recurringGroup) recurringGroup.style.display = manager ? 'block' : 'none';
     if (recurringCheckbox) recurringCheckbox.checked = false;
+    const freqWrap = document.getElementById('recurring-frequency-wrap');
+    if (freqWrap) freqWrap.classList.add('d-none');
     delete form.dataset.cardId;
     form.dataset.columnId = 'todo';
     form.dataset.isUpcoming = '0';
@@ -1925,6 +2023,27 @@
   function init() {
     const form = document.getElementById('cardForm');
     if (form) form.addEventListener('submit', (e) => { e.preventDefault(); saveCardFromModal(); });
+
+    document.getElementById('card-modal-delete-btn')?.addEventListener('click', () => {
+      const formEl = document.getElementById('cardForm');
+      const cardId = formEl?.dataset?.cardId;
+      if (!cardId || !confirm('Delete this task?')) return;
+      const col = board.columns.find((c) => (c.cards || []).some((card) => card.id === cardId));
+      if (col) {
+        col.cards = col.cards.filter((c) => c.id !== cardId);
+        saveBoard();
+        render();
+        renderManagerTab();
+        renderStoredDataView();
+        updateAccuracyUI();
+        bootstrap.Modal.getInstance(document.getElementById('cardModal')).hide();
+      }
+    });
+
+    document.getElementById('cardRecurring')?.addEventListener('change', (e) => {
+      const wrap = document.getElementById('recurring-frequency-wrap');
+      if (wrap) wrap.classList.toggle('d-none', !e.target.checked);
+    });
 
     const employeeModal = document.getElementById('employeeDetailsModal');
     if (employeeModal) employeeModal.addEventListener('hidden.bs.modal', onEmployeeModalHidden);
@@ -2007,6 +2126,7 @@
       });
     }
 
+    document.getElementById('export-stored-data')?.addEventListener('click', (e) => { e.preventDefault(); exportStoredDataToExcel(); });
     document.getElementById('export-day')?.addEventListener('click', (e) => { e.preventDefault(); exportToExcel('day'); });
     document.getElementById('export-week')?.addEventListener('click', (e) => { e.preventDefault(); exportToExcel('week'); });
     document.getElementById('export-month')?.addEventListener('click', (e) => { e.preventDefault(); exportToExcel('month'); });
@@ -2033,6 +2153,14 @@
         searchQuery = '';
         if (kanbanSearchInput) kanbanSearchInput.value = '';
         render();
+      });
+    }
+
+    const tasksTabSearch = document.getElementById('tasks-tab-search');
+    if (tasksTabSearch) {
+      tasksTabSearch.addEventListener('input', (e) => {
+        tasksTabSearchQuery = e.target.value.trim();
+        renderTasksTab();
       });
     }
 
