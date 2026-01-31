@@ -305,6 +305,25 @@
     return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  function getUrgencyOrder(urgency) {
+    const u = (urgency || 'medium').toLowerCase();
+    if (u === 'high') return 0;
+    if (u === 'low') return 2;
+    return 1;
+  }
+
+  function sortCardsByPriority(cards) {
+    return cards.slice().sort((a, b) => {
+      const doneA = isCardDone(a) ? 1 : 0;
+      const doneB = isCardDone(b) ? 1 : 0;
+      if (doneA !== doneB) return doneA - doneB;
+      const orderA = getUrgencyOrder(a.urgency);
+      const orderB = getUrgencyOrder(b.urgency);
+      if (orderA !== orderB) return orderA - orderB;
+      return (a._originalDateKey || '').localeCompare(b._originalDateKey || '');
+    });
+  }
+
   function getTasksByDate() {
     const allCards = [];
     (board.columns || []).forEach((col) => {
@@ -323,6 +342,7 @@
       const assignedAt = card.assignedAt || card.createdAt || '';
       const assignedDateKey = assignedAt ? assignedAt.slice(0, 10) : fallbackDate;
       const done = isCardDone(card);
+      const deadlinePassed = !done && card.deadline && new Date(card.deadline) < new Date();
 
       let displayDateKey;
       let isRollover = false;
@@ -332,6 +352,9 @@
         displayDateKey = assignedDateKey;
       } else {
         if (assignedDateKey < todayKey) {
+          displayDateKey = todayKey;
+          isRollover = true;
+        } else if (deadlinePassed) {
           displayDateKey = todayKey;
           isRollover = true;
         } else {
@@ -721,12 +744,39 @@
       return;
     }
 
-    container.innerHTML = dateGroups
-      .map(
-        (group) => `
-      <div class="kanban-column kanban-date-column" data-date-key="${group.dateKey}">
+    const todayKey = getTodayDateKey();
+    const groupsToRender = [];
+    dateGroups.forEach((group) => {
+      if (group.dateKey === todayKey) {
+        const rolloverPending = group.cards.filter((c) => !isCardDone(c) && c._isRollover === true);
+        const todayRest = group.cards.filter((c) => !c._isRollover || isCardDone(c));
+        groupsToRender.push({
+          dateKey: group.dateKey,
+          label: 'Pending – Rollover to today',
+          cards: sortCardsByPriority(rolloverPending),
+          isRolloverPart: true
+        });
+        groupsToRender.push({
+          dateKey: group.dateKey,
+          label: 'Today (' + formatDateForLabel(todayKey) + ')',
+          cards: sortCardsByPriority(todayRest),
+          isTodayPart: true
+        });
+      } else {
+        groupsToRender.push({
+          dateKey: group.dateKey,
+          label: formatDateLabelWithFullDate(group.dateKey),
+          cards: sortCardsByPriority(group.cards)
+        });
+      }
+    });
+
+    function renderColumn(group) {
+      const partClass = group.isRolloverPart ? ' kanban-part-rollover' : (group.isTodayPart ? ' kanban-part-today' : '');
+      return `
+      <div class="kanban-column kanban-date-column${partClass}" data-date-key="${group.dateKey}">
         <div class="kanban-column-header">
-          <h6 class="mb-0">${escapeHtml(formatDateLabelWithFullDate(group.dateKey))}</h6>
+          <h6 class="mb-0">${escapeHtml(group.label)}</h6>
           <span class="badge bg-label-primary">${group.cards.length}</span>
         </div>
         <div class="kanban-column-cards" data-date-key="${group.dateKey}">
@@ -798,9 +848,26 @@
         </div>
         ${manager ? `<button type="button" class="btn btn-sm btn-outline-primary w-100 mt-2 add-card" data-column-id="${((board.columns || [])[0] && (board.columns[0].id)) || 'todo'}">+ Add card</button>` : ''}
       </div>
-    `
-      )
-      .join('');
+    `;
+    }
+
+    let boardHtml = '';
+    if (groupsToRender.length >= 2 && groupsToRender[0].isRolloverPart && groupsToRender[1].isTodayPart) {
+      boardHtml += '<div class="kanban-board-rows">';
+      boardHtml += '<div class="kanban-board-row">' + renderColumn(groupsToRender[0]) + '</div>';
+      boardHtml += '<div class="kanban-board-row">' + renderColumn(groupsToRender[1]) + '</div>';
+      if (groupsToRender.length > 2) {
+        boardHtml += '<div class="kanban-board-row">';
+        for (let i = 2; i < groupsToRender.length; i++) boardHtml += renderColumn(groupsToRender[i]);
+        boardHtml += '</div>';
+      }
+      boardHtml += '</div>';
+    } else {
+      boardHtml += '<div class="kanban-board-rows"><div class="kanban-board-row">';
+      groupsToRender.forEach((g) => { boardHtml += renderColumn(g); });
+      boardHtml += '</div></div>';
+    }
+    container.innerHTML = boardHtml;
 
     container.querySelectorAll('.kanban-done-toggle-btn').forEach((btn) => {
       btn.addEventListener('click', onToggleDone);

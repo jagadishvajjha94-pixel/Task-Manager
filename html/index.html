@@ -47,6 +47,11 @@
       .kanban-card-done .card-text { text-decoration: line-through; color: #155724; opacity: 0.9; }
       .kanban-card-done .task-completed-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; color: #155724; margin-top: 0.35rem; }
       .kanban-date-column { flex: 0 0 320px; }
+      .kanban-part-rollover { border-left: 3px solid var(--bs-warning); background: rgba(255, 193, 7, 0.04); border-radius: 0 8px 8px 0; }
+      .kanban-part-today { border-left: 3px solid var(--bs-primary); background: rgba(105, 108, 255, 0.04); border-radius: 0 8px 8px 0; }
+      .kanban-board-rows { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; }
+      .kanban-board-row { display: flex; flex-direction: row; flex-wrap: wrap; gap: 1rem; width: 100%; }
+      .kanban-board-row .kanban-date-column { flex: 1 1 300px; }
       .kanban-done-toggle-btn { width: 38px; height: 38px; border-radius: 50%; border: 2px solid rgba(0,0,0,.15); background: var(--bs-body-bg); color: var(--bs-secondary); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease; }
       .kanban-done-toggle-btn:hover { border-color: var(--bs-primary); color: var(--bs-primary); transform: scale(1.05); }
       .kanban-done-toggle-btn.done { border-color: #28a745; background: linear-gradient(135deg, #d4edda, #c3e6cb); color: #155724; }
