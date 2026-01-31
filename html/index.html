@@ -78,38 +78,42 @@
       #taskDetailsModal .modal-body { font-size: 1rem; line-height: 1.6; }
       #taskDetailsModal .detail-row { padding: 0.75rem 0; border-bottom: 1px solid rgba(0,0,0,.08); }
       #taskDetailsModal .detail-row:last-child { border-bottom: 0; }
-      #taskDetailsModal .detail-label { font-weight: 600; color: var(--bs-secondary); font-size: 0.875rem; margin-bottom: 0.25rem; }
-      #taskDetailsModal .detail-value { font-size: 1.0625rem; color: var(--bs-body-color); }
+      #taskDetailsModal .detail-label { font-weight: 600; color: #495057; font-size: 0.875rem; margin-bottom: 0.25rem; }
+      #taskDetailsModal .detail-value { font-size: 1.0625rem; color: #212529; }
       #taskDetailsModal .detail-value#detail-title { font-size: 1.125rem; font-weight: 600; }
       #taskDetailsModal #detail-description { white-space: pre-wrap; }
       .employee-modal-content { border: none; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,.25); animation: empModalIn .3s ease-out; }
       @keyframes empModalIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-      .employee-modal-header { background: linear-gradient(135deg, #696cff 0%, #5f61e6 50%, #585bdc 100%); border: none; padding: 1.5rem 1.75rem; }
+      .employee-modal-header { background: linear-gradient(135deg, #696cff 0%, #5f61e6 50%, #585bdc 100%); border: none; padding: 1.5rem 1.75rem; color: #fff; }
+      .employee-modal-header .modal-title { color: #fff !important; }
       .employee-modal-avatar { width: 56px; height: 56px; border-radius: 14px; background: rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: #fff; flex-shrink: 0; }
-      .employee-modal-body { padding: 1.75rem; background: #f8f9fa; }
+      .employee-modal-body { padding: 1.75rem; background: #fff; color: #212529; }
       .emp-stats-circle-wrap .emp-chart-body { justify-content: center; }
       .emp-performance-card .emp-chart-header { padding: 1rem 1.25rem; }
-      .emp-performance-card .emp-chart-header h6 { font-size: 1rem; font-weight: 700; color: #333; }
-      .emp-performance-card .emp-chart-header small { font-size: .8125rem; color: #697a8d; }
-      .emp-performance-card .apexcharts-legend-text { font-size: 13px !important; font-weight: 500; }
-      .emp-performance-card .apexcharts-datalabel-value { font-size: 15px !important; }
+      .emp-performance-card .emp-chart-header h6 { font-size: 1rem; font-weight: 700; color: #212529; }
+      .emp-performance-card .emp-chart-header small { font-size: .8125rem; color: #495057; }
+      .emp-performance-card .apexcharts-legend-text { font-size: 13px !important; font-weight: 500; color: #212529 !important; }
+      .emp-performance-card .apexcharts-datalabel-value { font-size: 15px !important; color: #212529 !important; }
       .emp-chart-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
       .emp-chart-compact .emp-chart-body { padding: 1rem; }
       .emp-chart-compact .emp-chart-header { padding: .75rem 1rem; }
       .emp-charts-row { margin-bottom: 0 !important; }
       .emp-chart-compact .emp-chart-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .25rem; }
-      .emp-chart-header { padding: 1rem 1.25rem; border-bottom: 1px solid #eee; background: #fff; }
-      .emp-chart-body { padding: 1.25rem; }
+      .emp-chart-header { padding: 1rem 1.25rem; border-bottom: 1px solid #eee; background: #fff; color: #212529; }
+      .emp-chart-header h6 { color: #212529; }
+      .emp-chart-header small { color: #495057; }
+      .emp-chart-body { padding: 1.25rem; color: #212529; }
       .emp-tasks-section { margin-top: 1.5rem; }
-      .emp-section-title { font-weight: 600; color: #333; }
+      .emp-section-title { font-weight: 600; color: #212529; }
       .emp-tasks-table-wrap { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06); max-height: 260px; overflow-y: auto; }
-      .emp-tasks-table { margin: 0; }
+      .emp-tasks-table { margin: 0; color: #212529; }
       .emp-tasks-table thead { position: sticky; top: 0; background: #f8f9fa; z-index: 1; }
-      .emp-tasks-table th { padding: .75rem 1rem; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; color: #697a8d; }
-      .emp-tasks-table td { padding: .875rem 1rem; vertical-align: middle; }
+      .emp-tasks-table th { padding: .75rem 1rem; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; color: #495057; font-weight: 600; }
+      .emp-tasks-table td { padding: .875rem 1rem; vertical-align: middle; color: #212529; }
       .emp-tasks-table tbody tr { transition: background .15s; }
       .emp-tasks-table tbody tr:hover { background: #f8f9fa; }
-      .employee-modal-footer { padding: 1rem 1.75rem; background: #fff; border-top: 1px solid #eee; }
+      .emp-tasks-table .text-muted { color: #495057 !important; }
+      .employee-modal-footer { padding: 1rem 1.75rem; background: #fff; border-top: 1px solid #eee; color: #212529; }
       .kanban-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
       .kanban-calendar .cal-day-name { padding: .5rem; text-align: center; font-size: .75rem; font-weight: 600; color: #697a8d; }
       .kanban-calendar .cal-day { min-height: 48px; padding: 4px; border-radius: 8px; cursor: pointer; transition: background .15s; border: 1px solid transparent; }
@@ -118,6 +122,29 @@
       .kanban-calendar .cal-day.selected { background: rgba(105,108,255,.2); border-color: #696cff; }
       .kanban-calendar .cal-day .cal-num { font-size: .875rem; font-weight: 600; }
       .kanban-calendar .cal-day .cal-count { font-size: .65rem; color: #697a8d; }
+      #assignee-dropdown { border: 1px solid #d0d5dd; border-radius: 0.375rem; margin-top: 2px; }
+      #assignee-dropdown .dropdown-item { padding: 0.5rem 1rem; cursor: pointer; font-size: 0.875rem; }
+      #assignee-dropdown .dropdown-item:hover { background-color: #f8f9fa; }
+      #kanban-search-input { border-right: 0; }
+      #kanban-search-clear { border-left: 0; }
+      .employee-name-link:hover { text-decoration: underline; }
+      .accuracy-click-wrap:hover { background: rgba(105,108,255,0.1); }
+      .employee-modal-avatar-wrap { position: relative; }
+      .employee-modal-avatar-wrap .employee-modal-avatar { display: flex; }
+      .employee-modal-avatar-wrap .employee-profile-pic.d-none + .employee-modal-avatar { display: flex; }
+      .employee-modal-avatar-wrap .employee-profile-pic:not(.d-none) + .employee-modal-avatar { display: none; }
+      .notif-btn-glass {
+        background: rgba(0,0,0,0.35) !important;
+        border: 1px solid rgba(255,255,255,0.15);
+        color: #fff !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+      .notif-btn-glass:hover {
+        background: rgba(0,0,0,0.5) !important;
+        color: #fff !important;
+        border-color: rgba(255,255,255,0.2);
+      }
     </style>
     <script src="/assets/vendor/js/helpers.js"></script>
     <script src="/assets/js/config.js"></script>
@@ -234,7 +261,7 @@
                 <i class="bx bx-log-out"></i> Logout
               </button>
               <div class="dropdown">
-                <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill position-relative" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Assignment status">
+                <button class="btn btn-sm btn-icon rounded-pill position-relative notif-btn-glass" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Assignment status">
                   <i class="bx bx-bell"></i>
                   <span class="badge rounded-pill bg-danger badge-dot position-absolute top-0 end-0 border border-white d-none" id="notif-badge"></span>
                 </button>
@@ -254,23 +281,47 @@
           <div class="content-wrapper">
             <div class="container-xxl flex-grow-1 container-p-y">
               <div id="kanban-view" class="tab-pane active">
-                <div class="d-flex justify-content-end mb-3 d-none" id="kanban-calendar-btn-wrap">
-                  <button type="button" class="btn btn-outline-primary" id="open-kanban-calendar-btn" title="View day-wise tasks calendar">
-                    <i class="bx bx-calendar me-1"></i> Calendar
-                  </button>
+                <div class="d-flex justify-content-between align-items-center mb-3 gap-3">
+                  <div class="flex-grow-1" style="max-width: 400px;">
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="bx bx-search"></i></span>
+                      <input type="text" class="form-control" id="kanban-search-input" placeholder="Search by task or employee name..." />
+                      <button type="button" class="btn btn-outline-secondary" id="kanban-search-clear" title="Clear search">
+                        <i class="bx bx-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="d-none" id="kanban-calendar-btn-wrap">
+                    <button type="button" class="btn btn-outline-primary" id="open-kanban-calendar-btn" title="View day-wise tasks calendar">
+                      <i class="bx bx-calendar me-1"></i> Calendar
+                    </button>
+                  </div>
                 </div>
                 <div id="kanban-board" class="kanban-board"><p class="text-muted py-5">Loading board…</p></div>
               </div>
               <div id="stored-data-view" class="tab-pane">
                 <div class="card">
-                  <div class="card-header d-flex justify-content-between align-items-center">
+                  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">Stored task data (Manager only)</h5>
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="refresh-stored-data" title="Reload from server">
-                      <i class="bx bx-refresh"></i> Refresh
-                    </button>
+                    <div class="d-flex gap-2">
+                      <div class="dropdown" id="export-dropdown-wrap">
+                        <button class="btn btn-sm btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Export to Excel">
+                          <i class="bx bx-download me-1"></i> Export to Excel
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                          <li><a class="dropdown-item" href="#" id="export-day">Day-wise</a></li>
+                          <li><a class="dropdown-item" href="#" id="export-week">Week-wise</a></li>
+                          <li><a class="dropdown-item" href="#" id="export-month">Month-wise</a></li>
+                          <li><hr class="dropdown-divider"></li>
+                          <li><a class="dropdown-item" href="#" id="export-overall">Overall</a></li>
+                        </ul>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-primary" id="refresh-stored-data" title="Reload from server">
+                        <i class="bx bx-refresh"></i> Refresh
+                      </button>
+                    </div>
                   </div>
                   <div class="card-body">
-                    <p class="text-muted small mb-4">Data is stored in <code>data/board.json</code>. Shown in tabular format below.</p>
                     <div id="stored-data-tables"></div>
                   </div>
                 </div>
@@ -311,6 +362,17 @@
                             <button type="button" class="btn btn-outline-secondary" id="add-dept-cancel">Cancel</button>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="card">
+                      <div class="card-header">
+                        <h5 class="mb-0"><i class="bx bx-refresh me-2"></i>Daily Recurring Tasks</h5>
+                      </div>
+                      <div class="card-body">
+                        <p class="text-muted small mb-3">These tasks auto-generate every day for assigned employees. Toggle to activate/deactivate.</p>
+                        <div id="recurring-tasks-list"></div>
                       </div>
                     </div>
                   </div>
@@ -392,14 +454,24 @@
               <div class="mb-3" id="assignee-name-group">
                 <label class="form-label">Assign to (multiple people)</label>
                 <div class="d-flex flex-wrap gap-2 align-items-center mb-2" id="card-assignees-chips"></div>
-                <div class="input-group input-group-sm">
-                  <input type="text" class="form-control" id="cardAssignee" placeholder="Type name and click Add" />
+                <div class="input-group input-group-sm position-relative">
+                  <input type="text" class="form-control" id="cardAssignee" placeholder="Type name to search..." autocomplete="off" />
                   <button type="button" class="btn btn-outline-primary" id="card-add-assignee-btn">Add</button>
+                  <div class="dropdown-menu shadow-sm" id="assignee-dropdown" style="position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; z-index: 1000;"></div>
                 </div>
               </div>
               <div class="mb-3" id="deadline-group">
                 <label class="form-label" for="cardDeadline">Deadline (date & time)</label>
                 <input type="datetime-local" class="form-control" id="cardDeadline" />
+              </div>
+              <div class="mb-3" id="recurring-task-group">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="cardRecurring" />
+                  <label class="form-check-label" for="cardRecurring">
+                    <strong>Daily Recurring Task</strong>
+                    <small class="d-block text-muted">This task will auto-add every day for the assigned employees</small>
+                  </label>
+                </div>
               </div>
               <div class="mb-0 small text-muted" id="assigned-by-info" style="display: none;">Assigned by <span id="assigned-by-name"></span></div>
             </div>
@@ -484,11 +556,22 @@
         <div class="modal-content employee-modal-content">
           <div class="modal-header employee-modal-header">
             <div class="d-flex align-items-center gap-3">
-              <div class="employee-modal-avatar" id="employee-modal-avatar">A</div>
+              <div class="employee-modal-avatar-wrap" id="employee-modal-avatar-wrap">
+                <img id="employee-modal-profile-pic" class="employee-profile-pic d-none" src="" alt="" style="width:56px;height:56px;border-radius:14px;object-fit:cover;border:2px solid rgba(255,255,255,0.5);" />
+                <div class="employee-modal-avatar" id="employee-modal-avatar">A</div>
+              </div>
               <div>
                 <h5 class="modal-title mb-0"><span id="employee-modal-name">Employee</span></h5>
-                <p class="mb-0 text-white-50 small">Performance & task completion details</p>
+                <p class="mb-0 small" id="employee-modal-designation" style="color: rgba(255,255,255,0.95);"></p>
+                <div class="mt-2 small" id="employee-modal-contact" style="color: rgba(255,255,255,0.95);">
+                  <span id="employee-modal-dept"></span>
+                  <span id="employee-modal-mobile" class="ms-2"></span>
+                  <span id="employee-modal-mail" class="ms-2"></span>
+                </div>
               </div>
+              <button type="button" class="btn btn-sm btn-outline-light ms-auto d-none" id="employee-edit-profile-btn" title="Edit my profile">
+                <i class="bx bx-edit me-1"></i> Edit Profile
+              </button>
             </div>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
@@ -522,6 +605,57 @@
           <div class="modal-footer employee-modal-footer">
             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="employeeProfileModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bx bx-user me-2"></i>Edit Profile</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="employeeProfileForm">
+            <div class="modal-body">
+              <div class="text-center mb-3">
+                <div class="position-relative d-inline-block">
+                  <img id="profile-pic-preview" class="rounded-circle d-none" src="" alt="Profile" style="width:100px;height:100px;object-fit:cover;border:4px solid var(--bs-primary);" />
+                  <div id="profile-pic-placeholder" class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width:100px;height:100px;font-size:2.5rem;color:#999;">?</div>
+                  <label class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-pill" style="cursor:pointer;">
+                    <i class="bx bx-camera"></i>
+                    <input type="file" id="profile-pic-input" accept="image/*" class="d-none" />
+                  </label>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="profile-name">Name</label>
+                <input type="text" class="form-control" id="profile-name" required placeholder="Full name" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="profile-department">Department</label>
+                <select class="form-select" id="profile-department">
+                  <option value="">— Select —</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="profile-designation">Designation</label>
+                <input type="text" class="form-control" id="profile-designation" placeholder="Job title" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="profile-mobile">Mobile</label>
+                <input type="text" class="form-control" id="profile-mobile" placeholder="Phone number" />
+              </div>
+              <div class="mb-0">
+                <label class="form-label" for="profile-mail">Email</label>
+                <input type="email" class="form-control" id="profile-mail" placeholder="Email address" />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

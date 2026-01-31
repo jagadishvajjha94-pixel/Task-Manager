@@ -65,7 +65,27 @@
 
   const defaultBoard = getMockBoard();
 
-  let board = { columns: [], departments: [], upcomingTasks: [], notifications: [], users: [] };
+  let board = { columns: [], departments: [], upcomingTasks: [], notifications: [], users: [], recurringTasks: [], employeeProfiles: {} };
+  let searchQuery = '';
+  let lastRecurringCheckDate = '';
+
+  function getEmployeeProfile(name) {
+    if (!board.employeeProfiles) board.employeeProfiles = {};
+    const key = (name || '').trim().toLowerCase();
+    const profiles = board.employeeProfiles;
+    const exact = profiles[key];
+    if (exact) return exact;
+    const found = Object.keys(profiles).find((k) => k.toLowerCase() === key);
+    return found ? profiles[found] : null;
+  }
+
+  function setEmployeeProfile(name, data) {
+    if (!board.employeeProfiles) board.employeeProfiles = {};
+    const key = (name || '').trim();
+    if (!key) return;
+    const lowerKey = key.toLowerCase();
+    board.employeeProfiles[lowerKey] = { ...(board.employeeProfiles[lowerKey] || {}), ...data };
+  }
 
   function getCurrentUser() {
     try {
@@ -132,6 +152,8 @@
         if (!Array.isArray(board.upcomingTasks)) board.upcomingTasks = [];
         if (!Array.isArray(board.notifications)) board.notifications = [];
         if (!Array.isArray(board.users)) board.users = [];
+        if (!Array.isArray(board.recurringTasks)) board.recurringTasks = [];
+        if (typeof board.employeeProfiles !== 'object') board.employeeProfiles = {};
         board.columns.forEach((col) => {
           (col.cards || []).forEach((card) => {
             if (!card.urgency) card.urgency = 'medium';
@@ -150,6 +172,8 @@
           if (!Array.isArray(board.upcomingTasks)) board.upcomingTasks = [];
           if (!Array.isArray(board.notifications)) board.notifications = [];
           if (!Array.isArray(board.users)) board.users = [];
+          if (!Array.isArray(board.recurringTasks)) board.recurringTasks = [];
+        if (typeof board.employeeProfiles !== 'object') board.employeeProfiles = {};
           board.columns.forEach((col) => {
             (col.cards || []).forEach((card) => {
               if (!card.urgency) card.urgency = 'medium';
@@ -162,6 +186,10 @@
         board = JSON.parse(JSON.stringify(defaultBoard));
       }
       showConnectionBanner();
+    }
+    const recurringAdded = generateRecurringTasksForToday();
+    if (recurringAdded) {
+      await saveBoard();
     }
     render();
     renderTasksTab();
@@ -177,6 +205,7 @@
   function renderManagerTab() {
     const deptsList = document.getElementById('manager-depts-list');
     const accuracyTbody = document.getElementById('manager-accuracy-tbody');
+    const recurringList = document.getElementById('recurring-tasks-list');
     if (!deptsList) return;
     const depts = getDepartments();
     deptsList.innerHTML = depts.map((d) => `<li class="list-group-item">${escapeHtml(d)}</li>`).join('');
@@ -189,8 +218,86 @@
         accuracyTbody.innerHTML = names.map((name) => {
           const s = stats[name];
           const pct = s.assigned > 0 ? Math.round((s.completed / s.assigned) * 100) : 0;
-          return `<tr><td>${escapeHtml(name)}</td><td>${s.assigned}</td><td>${s.completed}</td><td>${s.onTime}</td><td class="d-flex align-items-center gap-2"><span class="accuracy-circle-wrap" style="width:24px;height:24px"><svg viewBox="0 0 36 36" width="24" height="24" style="transform:rotate(-90deg)"><path fill="none" stroke="rgba(0,0,0,.08)" stroke-width="3" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/><path fill="none" stroke="var(--bs-success)" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="${pct} 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/></svg></span><strong>${pct}%</strong></td></tr>`;
+          return `<tr>
+            <td class="employee-name-link" data-employee="${escapeHtml(name)}" style="cursor:pointer;color:var(--bs-primary);" title="Click to view performance">${escapeHtml(name)}</td>
+            <td>${s.assigned}</td>
+            <td>${s.completed}</td>
+            <td>${s.onTime}</td>
+            <td class="d-flex align-items-center gap-2">
+              <span class="accuracy-click-wrap" data-employee="${escapeHtml(name)}" style="cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem;padding:0.25rem 0.5rem;border-radius:6px;transition:background 0.15s;" title="Click to view performance">
+                <span class="accuracy-circle-wrap" style="width:24px;height:24px">
+                  <svg viewBox="0 0 36 36" width="24" height="24" style="transform:rotate(-90deg)">
+                    <path fill="none" stroke="rgba(0,0,0,.08)" stroke-width="3" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path fill="none" stroke="var(--bs-success)" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="${pct} 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  </svg>
+                </span>
+                <strong>${pct}%</strong>
+              </span>
+            </td>
+          </tr>`;
         }).join('');
+        accuracyTbody.querySelectorAll('.employee-name-link, .accuracy-click-wrap').forEach((el) => {
+          el.addEventListener('click', () => {
+            const empName = el.dataset.employee;
+            if (empName) openEmployeeModal(empName);
+          });
+        });
+      }
+    }
+    if (recurringList) {
+      const recurring = board.recurringTasks || [];
+      if (recurring.length === 0) {
+        recurringList.innerHTML = '<p class="text-muted mb-0">No recurring tasks yet. Create one by enabling "Daily Recurring Task" when adding a task.</p>';
+      } else {
+        recurringList.innerHTML = recurring.map((rt) => {
+          const assigneeNames = (rt.assignees || []).join(', ');
+          const activeClass = rt.active ? 'bg-success' : 'bg-secondary';
+          const statusText = rt.active ? 'Active' : 'Paused';
+          return `
+            <div class="d-flex align-items-center justify-content-between border rounded p-3 mb-2 recurring-task-item" data-recurring-id="${escapeHtml(rt.id)}">
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <strong>${escapeHtml(rt.title)}</strong>
+                  <span class="badge ${activeClass}">${statusText}</span>
+                  ${rt.department ? `<span class="badge bg-label-info">${escapeHtml(rt.department)}</span>` : ''}
+                </div>
+                <div class="small text-muted">
+                  <i class="bx bx-user me-1"></i>Assigned to: ${escapeHtml(assigneeNames || 'No one')}
+                </div>
+                ${rt.description ? `<div class="small text-muted mt-1">${escapeHtml(rt.description)}</div>` : ''}
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <div class="form-check form-switch mb-0">
+                  <input class="form-check-input recurring-toggle" type="checkbox" data-recurring-id="${escapeHtml(rt.id)}" ${rt.active ? 'checked' : ''} title="Toggle active/paused">
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger delete-recurring-btn" data-recurring-id="${escapeHtml(rt.id)}" title="Delete recurring task">
+                  <i class="bx bx-trash"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+        recurringList.querySelectorAll('.recurring-toggle').forEach((toggle) => {
+          toggle.addEventListener('change', (e) => {
+            const id = e.target.dataset.recurringId;
+            const rt = (board.recurringTasks || []).find((r) => r.id === id);
+            if (rt) {
+              rt.active = e.target.checked;
+              saveBoard();
+              renderManagerTab();
+            }
+          });
+        });
+        recurringList.querySelectorAll('.delete-recurring-btn').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            const id = btn.dataset.recurringId;
+            if (confirm('Delete this recurring task? This will not delete already generated tasks.')) {
+              board.recurringTasks = (board.recurringTasks || []).filter((r) => r.id !== id);
+              saveBoard();
+              renderManagerTab();
+            }
+          });
+        });
       }
     }
   }
@@ -218,6 +325,8 @@
     if (!Array.isArray(board.upcomingTasks)) board.upcomingTasks = [];
     if (!Array.isArray(board.notifications)) board.notifications = [];
     if (!Array.isArray(board.users)) board.users = [];
+    if (!Array.isArray(board.recurringTasks)) board.recurringTasks = [];
+    if (typeof board.employeeProfiles !== 'object') board.employeeProfiles = {};
     saveBoard();
     render();
     renderTasksTab();
@@ -247,6 +356,19 @@
     }
     if (card.assigneeName) return [card.assigneeName];
     return [];
+  }
+
+  function getAllEmployeeNames() {
+    const namesSet = new Set();
+    (board.upcomingTasks || []).forEach((task) => {
+      getAssigneesList(task).forEach((name) => namesSet.add(name));
+    });
+    (board.columns || []).forEach((col) => {
+      (col.cards || []).forEach((card) => {
+        getAssigneesList(card).forEach((name) => namesSet.add(name));
+      });
+    });
+    return Array.from(namesSet).sort();
   }
 
   function assigneeBlock(name) {
@@ -292,6 +414,52 @@
   function getTodayDateKey() {
     const n = new Date();
     return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0');
+  }
+
+  function generateRecurringTasksForToday() {
+    const todayKey = getTodayDateKey();
+    if (lastRecurringCheckDate === todayKey) return false;
+    lastRecurringCheckDate = todayKey;
+
+    if (!board.recurringTasks || board.recurringTasks.length === 0) return false;
+
+    const todoCol = (board.columns || []).find((c) => (c.id || '').toString().toLowerCase() === 'todo') || (board.columns || [])[0];
+    if (!todoCol) return false;
+
+    let tasksAdded = false;
+    board.recurringTasks.forEach((template) => {
+      if (!template.active) return;
+      const assignees = template.assignees || [];
+      if (assignees.length === 0) return;
+
+      const existingToday = (todoCol.cards || []).find((card) => 
+        card.recurringTemplateId === template.id && 
+        card.assignedAt && 
+        card.assignedAt.slice(0, 10) === todayKey
+      );
+      if (existingToday) return;
+
+      const now = new Date();
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      const newCard = {
+        id: 'card_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        title: template.title,
+        description: template.description || '',
+        urgency: template.urgency || 'medium',
+        department: template.department || '',
+        assignees: assignees.slice(),
+        assignedAt: now.toISOString(),
+        deadline: endOfDay.toISOString(),
+        assignedByName: 'Auto (Recurring)',
+        recurringTemplateId: template.id,
+        isRecurringTask: true
+      };
+      if (!todoCol.cards) todoCol.cards = [];
+      todoCol.cards.push(newCard);
+      tasksAdded = true;
+    });
+
+    return tasksAdded;
   }
 
   function addDaysToDateKey(dateKey, days) {
@@ -516,13 +684,39 @@
     const modal = document.getElementById('employeeDetailsModal');
     const nameEl = document.getElementById('employee-modal-name');
     const avatarEl = document.getElementById('employee-modal-avatar');
+    const profilePicEl = document.getElementById('employee-modal-profile-pic');
+    const designationEl = document.getElementById('employee-modal-designation');
+    const deptEl = document.getElementById('employee-modal-dept');
+    const mobileEl = document.getElementById('employee-modal-mobile');
+    const mailEl = document.getElementById('employee-modal-mail');
+    const editProfileBtn = document.getElementById('employee-edit-profile-btn');
     const tasksTbody = document.getElementById('employee-tasks-tbody');
     const chartEl = document.getElementById('employeeChart');
     if (!modal || !nameEl) return;
 
     const name = (employeeName || '').trim();
+    const profile = getEmployeeProfile(name);
+    const currentUser = getCurrentUser();
+    const isOwnProfile = currentUser && currentUser.role === 'employee' && (currentUser.name || '').trim().toLowerCase() === name.toLowerCase();
+
     nameEl.textContent = name || 'Employee';
     if (avatarEl) avatarEl.textContent = name ? name.charAt(0).toUpperCase() : '?';
+
+    if (profilePicEl) {
+      if (profile && profile.profilePic) {
+        profilePicEl.src = profile.profilePic;
+        profilePicEl.classList.remove('d-none');
+        if (avatarEl) avatarEl.classList.add('d-none');
+      } else {
+        profilePicEl.classList.add('d-none');
+        if (avatarEl) avatarEl.classList.remove('d-none');
+      }
+    }
+    if (designationEl) designationEl.textContent = profile && profile.designation ? profile.designation : '';
+    if (deptEl) deptEl.textContent = profile && profile.department ? profile.department : '';
+    if (mobileEl) mobileEl.textContent = profile && profile.mobile ? profile.mobile : '';
+    if (mailEl) mailEl.textContent = profile && profile.mail ? profile.mail : '';
+    if (editProfileBtn) editProfileBtn.classList.toggle('d-none', !isOwnProfile);
 
     const stats = computeEmployeeStats();
     const statsKey = Object.keys(stats || {}).find((k) => (k || '').trim().toLowerCase() === name.toLowerCase());
@@ -659,6 +853,144 @@
     }
   }
 
+  function openEmployeeProfileModal(employeeName) {
+    const modal = document.getElementById('employeeProfileModal');
+    const form = document.getElementById('employeeProfileForm');
+    const nameInput = document.getElementById('profile-name');
+    const deptSelect = document.getElementById('profile-department');
+    const designationInput = document.getElementById('profile-designation');
+    const mobileInput = document.getElementById('profile-mobile');
+    const mailInput = document.getElementById('profile-mail');
+    const preview = document.getElementById('profile-pic-preview');
+    const placeholder = document.getElementById('profile-pic-placeholder');
+    const picInput = document.getElementById('profile-pic-input');
+    if (!modal || !form) return;
+    const name = (employeeName || '').trim();
+    const profile = getEmployeeProfile(name);
+    form.dataset.employeeName = name;
+    if (nameInput) nameInput.value = name;
+    if (designationInput) designationInput.value = profile?.designation || '';
+    if (mobileInput) mobileInput.value = profile?.mobile || '';
+    if (mailInput) mailInput.value = profile?.mail || '';
+    fillDepartmentSelect(deptSelect);
+    if (deptSelect) deptSelect.value = profile?.department || '';
+    if (profile?.profilePic) {
+      if (preview) { preview.src = profile.profilePic; preview.classList.remove('d-none'); }
+      if (placeholder) placeholder.classList.add('d-none');
+    } else {
+      if (preview) preview.classList.add('d-none');
+      if (placeholder) placeholder.classList.remove('d-none');
+    }
+    if (picInput) picInput.value = '';
+    delete form.dataset.profilePicData;
+    new bootstrap.Modal(modal).show();
+  }
+
+  function saveEmployeeProfile() {
+    const form = document.getElementById('employeeProfileForm');
+    const name = form?.dataset?.employeeName?.trim();
+    if (!name) return;
+    const data = {
+      name: document.getElementById('profile-name')?.value?.trim() || name,
+      department: document.getElementById('profile-department')?.value?.trim() || '',
+      designation: document.getElementById('profile-designation')?.value?.trim() || '',
+      mobile: document.getElementById('profile-mobile')?.value?.trim() || '',
+      mail: document.getElementById('profile-mail')?.value?.trim() || ''
+    };
+    if (form.dataset.profilePicData) data.profilePic = form.dataset.profilePicData;
+    setEmployeeProfile(name, data);
+    saveBoard();
+    bootstrap.Modal.getInstance(document.getElementById('employeeProfileModal')).hide();
+    openEmployeeModal(name);
+    render();
+    renderManagerTab();
+  }
+
+  function getEmployeePerformanceByPeriod(period) {
+    const stats = computeEmployeeStats();
+    const names = Object.keys(stats || {}).sort();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tasksByEmployee = {};
+    names.forEach((n) => { tasksByEmployee[n] = getEmployeeTasks(n); });
+
+    function filterByPeriod(tasks, periodType) {
+      if (!tasks || tasks.length === 0) return [];
+      const now = new Date();
+      if (periodType === 'day') {
+        const dayStart = new Date(now);
+        dayStart.setHours(0, 0, 0, 0);
+        return tasks.filter((t) => {
+          const d = t.assignedAt ? new Date(t.assignedAt) : null;
+          if (!d) return false;
+          return d >= dayStart;
+        });
+      }
+      if (periodType === 'week') {
+        const weekStart = new Date(now);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+        return tasks.filter((t) => {
+          const d = t.assignedAt ? new Date(t.assignedAt) : null;
+          if (!d) return false;
+          return d >= weekStart;
+        });
+      }
+      if (periodType === 'month') {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        return tasks.filter((t) => {
+          const d = t.assignedAt ? new Date(t.assignedAt) : null;
+          if (!d) return false;
+          return d >= monthStart;
+        });
+      }
+      return tasks;
+    }
+
+    const rows = [];
+    const periodLabel = { day: 'Day-wise', week: 'Week-wise', month: 'Month-wise', overall: 'Overall' }[period] || period;
+    rows.push(['Employee Performance Report - ' + periodLabel]);
+    rows.push(['Generated: ' + new Date().toLocaleString()]);
+    rows.push([]);
+    rows.push(['Employee', 'Department', 'Assigned', 'Completed', 'On Time', 'Accuracy %', 'Period']);
+
+    names.forEach((empName) => {
+      let empTasks = tasksByEmployee[empName] || [];
+      if (period !== 'overall') empTasks = filterByPeriod(empTasks, period);
+      const assigned = empTasks.length;
+      const completed = empTasks.filter((t) => isCardDone(t)).length;
+      const onTime = empTasks.filter((t) => {
+        if (!isCardDone(t)) return false;
+        const d = t.completedAt ? new Date(t.completedAt) : null;
+        const dead = t.deadline ? new Date(t.deadline) : null;
+        return !dead || !d || d <= dead;
+      }).length;
+      const accuracy = assigned > 0 ? Math.round((completed / assigned) * 100) : 0;
+      const profile = getEmployeeProfile(empName);
+      const dept = profile?.department || '';
+      rows.push([empName, dept, assigned, completed, onTime, accuracy + '%', periodLabel]);
+    });
+
+    return rows;
+  }
+
+  function exportToExcel(period) {
+    const rows = getEmployeePerformanceByPeriod(period);
+    const csv = rows.map((row) =>
+      row.map((cell) => {
+        const s = String(cell ?? '');
+        const needsQuote = /[",\n\r]/.test(s);
+        return needsQuote ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }).join(',')
+    ).join('\r\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'employee-performance-' + period + '-' + getTodayDateKey() + '.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
   let kanbanCalendarMonth = new Date();
   kanbanCalendarMonth.setDate(1);
 
@@ -747,9 +1079,19 @@
     const todayKey = getTodayDateKey();
     const groupsToRender = [];
     dateGroups.forEach((group) => {
+      let filteredCards = group.cards;
+      if (searchQuery) {
+        const lowerQuery = searchQuery.toLowerCase();
+        filteredCards = filteredCards.filter((card) => {
+          const titleMatch = (card.title || '').toLowerCase().includes(lowerQuery);
+          const descMatch = (card.description || '').toLowerCase().includes(lowerQuery);
+          const assigneeMatch = getAssigneesList(card).some((name) => name.toLowerCase().includes(lowerQuery));
+          return titleMatch || descMatch || assigneeMatch;
+        });
+      }
       if (group.dateKey === todayKey) {
-        const rolloverPending = group.cards.filter((c) => !isCardDone(c) && c._isRollover === true);
-        const todayRest = group.cards.filter((c) => !c._isRollover || isCardDone(c));
+        const rolloverPending = filteredCards.filter((c) => !isCardDone(c) && c._isRollover === true);
+        const todayRest = filteredCards.filter((c) => !c._isRollover || isCardDone(c));
         groupsToRender.push({
           dateKey: group.dateKey,
           label: 'Pending – Rollover to today',
@@ -766,7 +1108,7 @@
         groupsToRender.push({
           dateKey: group.dateKey,
           label: formatDateLabelWithFullDate(group.dateKey),
-          cards: sortCardsByPriority(group.cards)
+          cards: sortCardsByPriority(filteredCards)
         });
       }
     });
@@ -797,6 +1139,7 @@
                 const deptHtml = card.department ? `<span class="badge bg-label-info me-1 small">${escapeHtml(card.department)}</span>` : '';
                 const deadlineHtml = card.deadline ? `<span class="card-deadline d-block mt-1 small ${!isDone && new Date(card.deadline) < new Date() ? 'overdue' : ''}">${escapeHtml(formatDeadlineTimer(card.deadline, card.completedAt, isDone))}</span>` : '';
                 const assignedByHtml = card.assignedByName ? `<span class="card-assigned-by d-block mt-1 small text-muted"><i class="bx bx-user-plus me-1"></i>Assigned by ${escapeHtml(card.assignedByName)}</span>` : '';
+                const recurringBadge = card.isRecurringTask ? '<span class="badge bg-label-secondary me-1 small"><i class="bx bx-refresh me-1"></i>Daily</span>' : '';
                 const actions = manager
                   ? `<div class="dropdown">
                     <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button>
@@ -830,6 +1173,7 @@
                   <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0 flex-wrap">
                     ${assigneeHtml}
                     ${deptHtml}
+                    ${recurringBadge}
                     <h6 class="card-title mb-0 text-truncate">${escapeHtml(card.title)}</h6>
                   </div>
                   ${actions}
@@ -852,19 +1196,26 @@
     }
 
     let boardHtml = '';
-    if (groupsToRender.length >= 2 && groupsToRender[0].isRolloverPart && groupsToRender[1].isTodayPart) {
+    const nonEmptyGroups = groupsToRender.filter((g) => g.cards.length > 0);
+    if (nonEmptyGroups.length === 0) {
+      container.innerHTML = searchQuery 
+        ? '<p class="text-muted py-5">No tasks found matching your search.</p>' 
+        : '<p class="text-muted py-5">No tasks yet. Add tasks from the Tasks tab or use "Load demo data".</p>';
+      return;
+    }
+    if (nonEmptyGroups.length >= 2 && nonEmptyGroups[0].isRolloverPart && nonEmptyGroups[1].isTodayPart) {
       boardHtml += '<div class="kanban-board-rows">';
-      boardHtml += '<div class="kanban-board-row">' + renderColumn(groupsToRender[0]) + '</div>';
-      boardHtml += '<div class="kanban-board-row">' + renderColumn(groupsToRender[1]) + '</div>';
-      if (groupsToRender.length > 2) {
+      boardHtml += '<div class="kanban-board-row">' + renderColumn(nonEmptyGroups[0]) + '</div>';
+      boardHtml += '<div class="kanban-board-row">' + renderColumn(nonEmptyGroups[1]) + '</div>';
+      if (nonEmptyGroups.length > 2) {
         boardHtml += '<div class="kanban-board-row">';
-        for (let i = 2; i < groupsToRender.length; i++) boardHtml += renderColumn(groupsToRender[i]);
+        for (let i = 2; i < nonEmptyGroups.length; i++) boardHtml += renderColumn(nonEmptyGroups[i]);
         boardHtml += '</div>';
       }
       boardHtml += '</div>';
     } else {
       boardHtml += '<div class="kanban-board-rows"><div class="kanban-board-row">';
-      groupsToRender.forEach((g) => { boardHtml += renderColumn(g); });
+      nonEmptyGroups.forEach((g) => { boardHtml += renderColumn(g); });
       boardHtml += '</div></div>';
     }
     container.innerHTML = boardHtml;
@@ -1016,6 +1367,8 @@
     const departmentSelect = document.getElementById('cardDepartment');
     const assigneeInput = document.getElementById('cardAssignee');
     const deadlineInput = document.getElementById('cardDeadline');
+    const recurringCheckbox = document.getElementById('cardRecurring');
+    const recurringGroup = document.getElementById('recurring-task-group');
     const assigneesChips = document.getElementById('card-assignees-chips');
     const departmentGroup = document.getElementById('department-group');
     const assigneeNameGroup = document.getElementById('assignee-name-group');
@@ -1032,6 +1385,8 @@
     if (deadlineGroup) deadlineGroup.style.display = manager ? 'block' : 'none';
     if (assignedByInfo) assignedByInfo.style.display = 'none';
     if (newDeptWrap) newDeptWrap.classList.add('d-none');
+    if (recurringGroup) recurringGroup.style.display = (manager && !card) ? 'block' : 'none';
+    if (recurringCheckbox) recurringCheckbox.checked = false;
 
     fillDepartmentSelect(departmentSelect);
 
@@ -1084,6 +1439,7 @@
     const departmentSelect = document.getElementById('cardDepartment');
     const assigneeInput = document.getElementById('cardAssignee');
     const deadlineInput = document.getElementById('cardDeadline');
+    const recurringCheckbox = document.getElementById('cardRecurring');
     if (!form || !titleInput) return;
     const title = titleInput.value.trim();
     if (!title) return;
@@ -1098,6 +1454,33 @@
     const assigneesFromChips = getAssigneesFromChips();
     const newName = assigneeInput ? assigneeInput.value.trim() : '';
     const assigneeNames = newName ? (assigneesFromChips.indexOf(newName) === -1 ? assigneesFromChips.concat(newName) : assigneesFromChips) : assigneesFromChips;
+    const isRecurring = recurringCheckbox ? recurringCheckbox.checked : false;
+
+    if (isRecurring && assigneeNames.length > 0) {
+      if (!board.recurringTasks) board.recurringTasks = [];
+      const recurringTemplate = {
+        id: 'recurring_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        title,
+        description: descInput.value.trim(),
+        urgency,
+        department: department || undefined,
+        assignees: assigneeNames.slice(),
+        active: true,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser ? currentUser.name : 'Manager'
+      };
+      board.recurringTasks.push(recurringTemplate);
+      lastRecurringCheckDate = '';
+      const added = generateRecurringTasksForToday();
+      bootstrap.Modal.getInstance(document.getElementById('cardModal')).hide();
+      saveBoard();
+      render();
+      renderManagerTab();
+      renderTasksTab();
+      renderNotifications();
+      updateAccuracyUI();
+      return;
+    }
 
     if (isUpcoming) {
       const task = { id: uid(), title, description: descInput.value.trim(), urgency, department, deadline };
@@ -1380,14 +1763,15 @@
 
     html += '<h6 class="mb-2">Tasks on board</h6>';
     html += '<div class="mb-2"><input type="text" class="form-control form-control-sm stored-search" id="stored-search-tasks" placeholder="Search task, name, status..." style="max-width: 280px;" /></div>';
-    html += '<div class="table-responsive mb-4"><table class="table table-bordered table-sm stored-table" id="stored-tasks-table"><thead><tr><th>S.No</th><th>Title</th><th>Description</th><th>Status</th><th>Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th>Assigned by</th><th>Assigned at</th></tr></thead><tbody>';
+    html += '<div class="table-responsive mb-4"><table class="table table-bordered table-sm stored-table" id="stored-tasks-table"><thead><tr><th>S.No</th><th>Date</th><th>Title</th><th>Description</th><th>Status</th><th>Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th>Assigned by</th></tr></thead><tbody>';
     allCards.forEach((card, idx) => {
-      const assignedAt = card.assignedAt ? new Date(card.assignedAt).toLocaleString() : '—';
+      const dateStr = card.assignedAt ? new Date(card.assignedAt).toLocaleString() : '—';
       const deadlineStr = card.deadline ? new Date(card.deadline).toLocaleString() : '—';
       const assigneesStr = getAssigneesList(card).join(', ') || '—';
       const status = isCardDone(card) ? 'Completed' : 'Pending';
       html += '<tr data-search="' + escapeHtml((card.title || '') + ' ' + (card.description || '') + ' ' + assigneesStr + ' ' + status).toLowerCase() + '">';
       html += '<td>' + (idx + 1) + '</td>';
+      html += '<td>' + dateStr + '</td>';
       html += '<td>' + escapeHtml(card.title) + '</td>';
       html += '<td>' + escapeHtml((card.description || '').slice(0, 80)) + (card.description && card.description.length > 80 ? '…' : '') + '</td>';
       html += '<td><span class="badge ' + (status === 'Completed' ? 'bg-success' : 'bg-warning') + '">' + escapeHtml(status) + '</span></td>';
@@ -1396,7 +1780,6 @@
       html += '<td>' + deadlineStr + '</td>';
       html += '<td>' + escapeHtml(assigneesStr) + '</td>';
       html += '<td>' + escapeHtml(card.assignedByName || '—') + '</td>';
-      html += '<td>' + assignedAt + '</td>';
       html += '</tr>';
     });
     if (allCards.length === 0) html += '<tr><td colspan="10" class="text-muted text-center">No tasks</td></tr>';
@@ -1454,8 +1837,11 @@
     const deadlineInput = document.getElementById('cardDeadline');
     const assigneesChips = document.getElementById('card-assignees-chips');
     const assignedByInfo = document.getElementById('assigned-by-info');
+    const recurringCheckbox = document.getElementById('cardRecurring');
+    const recurringGroup = document.getElementById('recurring-task-group');
     const form = document.getElementById('cardForm');
     if (!form) return;
+    const manager = isManager();
     titleInput.value = '';
     descInput.value = '';
     if (urgencySelect) urgencySelect.value = 'medium';
@@ -1470,14 +1856,16 @@
       }
     }
     if (assigneeGroup) assigneeGroup.style.display = 'block';
-    if (assigneeNameGroup) assigneeNameGroup.style.display = 'none';
+    if (assigneeNameGroup) assigneeNameGroup.style.display = manager ? 'block' : 'none';
     if (deadlineGroup) deadlineGroup.style.display = 'block';
     if (deadlineInput) deadlineInput.value = '';
     if (assigneesChips) renderAssigneesChips(assigneesChips, [], () => {});
     if (assignedByInfo) assignedByInfo.style.display = 'none';
+    if (recurringGroup) recurringGroup.style.display = manager ? 'block' : 'none';
+    if (recurringCheckbox) recurringCheckbox.checked = false;
     delete form.dataset.cardId;
     form.dataset.columnId = 'todo';
-    form.dataset.isUpcoming = '1';
+    form.dataset.isUpcoming = '0';
     if (predefinedDept) form.dataset.predefinedDept = predefinedDept;
     else delete form.dataset.predefinedDept;
     const bsModal = new bootstrap.Modal(modal);
@@ -1496,6 +1884,42 @@
     const appEl = document.getElementById('app-page');
     if (loginEl) loginEl.style.display = 'none';
     if (appEl) { appEl.style.display = 'block'; appEl.classList.add('logged-in'); }
+    startAutoRefresh();
+  }
+
+  let autoRefreshInterval = null;
+
+  function startAutoRefresh() {
+    if (autoRefreshInterval) return;
+    autoRefreshInterval = setInterval(async () => {
+      const currentUser = getCurrentUser();
+      if (!currentUser) return;
+      try {
+        const todayKey = getTodayDateKey();
+        if (lastRecurringCheckDate !== todayKey) {
+          lastRecurringCheckDate = '';
+        }
+        const oldBoardStr = JSON.stringify(board);
+        await loadBoard();
+        const newBoardStr = JSON.stringify(board);
+        if (oldBoardStr !== newBoardStr) {
+          render();
+          renderTasksTab();
+          renderManagerTab();
+          renderStoredDataView();
+          updateAccuracyUI();
+        }
+      } catch (e) {
+        console.error('Auto-refresh error:', e);
+      }
+    }, 5000);
+  }
+
+  function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+    }
   }
 
   function init() {
@@ -1550,6 +1974,43 @@
 
     const refreshStored = document.getElementById('refresh-stored-data');
     if (refreshStored) refreshStored.addEventListener('click', () => { loadBoard().then(() => renderStoredDataView()); });
+
+    document.getElementById('employee-edit-profile-btn')?.addEventListener('click', () => {
+      const nameEl = document.getElementById('employee-modal-name');
+      const name = (nameEl?.textContent || '').trim();
+      if (!name) return;
+      openEmployeeProfileModal(name);
+    });
+
+    const profileForm = document.getElementById('employeeProfileForm');
+    if (profileForm) {
+      profileForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        saveEmployeeProfile();
+      });
+    }
+    const profilePicInput = document.getElementById('profile-pic-input');
+    if (profilePicInput && profileForm) {
+      profilePicInput.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file && file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const preview = document.getElementById('profile-pic-preview');
+            const placeholder = document.getElementById('profile-pic-placeholder');
+            if (preview) { preview.src = ev.target.result; preview.classList.remove('d-none'); }
+            if (placeholder) placeholder.classList.add('d-none');
+            profileForm.dataset.profilePicData = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+
+    document.getElementById('export-day')?.addEventListener('click', (e) => { e.preventDefault(); exportToExcel('day'); });
+    document.getElementById('export-week')?.addEventListener('click', (e) => { e.preventDefault(); exportToExcel('week'); });
+    document.getElementById('export-month')?.addEventListener('click', (e) => { e.preventDefault(); exportToExcel('month'); });
+    document.getElementById('export-overall')?.addEventListener('click', (e) => { e.preventDefault(); exportToExcel('overall'); });
     const openCalBtn = document.getElementById('open-kanban-calendar-btn');
     if (openCalBtn) {
       openCalBtn.addEventListener('click', () => {
@@ -1558,6 +2019,63 @@
         if (calModal) new bootstrap.Modal(calModal).show();
       });
     }
+
+    const kanbanSearchInput = document.getElementById('kanban-search-input');
+    const kanbanSearchClear = document.getElementById('kanban-search-clear');
+    if (kanbanSearchInput) {
+      kanbanSearchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim();
+        render();
+      });
+    }
+    if (kanbanSearchClear) {
+      kanbanSearchClear.addEventListener('click', () => {
+        searchQuery = '';
+        if (kanbanSearchInput) kanbanSearchInput.value = '';
+        render();
+      });
+    }
+
+    const assigneeInput = document.getElementById('cardAssignee');
+    const assigneeDropdown = document.getElementById('assignee-dropdown');
+    if (assigneeInput && assigneeDropdown) {
+      assigneeInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim().toLowerCase();
+        if (query.length === 0) {
+          assigneeDropdown.classList.remove('show');
+          assigneeDropdown.innerHTML = '';
+          return;
+        }
+        const allEmployees = getAllEmployeeNames();
+        const matches = allEmployees.filter((name) => name.toLowerCase().includes(query));
+        if (matches.length > 0) {
+          assigneeDropdown.innerHTML = matches.map((name) => 
+            `<a class="dropdown-item" href="#" data-name="${escapeHtml(name)}">${escapeHtml(name)}</a>`
+          ).join('');
+          assigneeDropdown.classList.add('show');
+          assigneeDropdown.querySelectorAll('a').forEach((link) => {
+            link.addEventListener('click', (ev) => {
+              ev.preventDefault();
+              const selectedName = link.dataset.name;
+              assigneeInput.value = selectedName;
+              assigneeDropdown.classList.remove('show');
+              assigneeDropdown.innerHTML = '';
+              document.getElementById('card-add-assignee-btn')?.click();
+            });
+          });
+        } else {
+          assigneeDropdown.classList.remove('show');
+          assigneeDropdown.innerHTML = '';
+        }
+      });
+      assigneeInput.addEventListener('blur', () => {
+        setTimeout(() => {
+          assigneeDropdown.classList.remove('show');
+          assigneeDropdown.innerHTML = '';
+        }, 200);
+      });
+    }
+
     document.getElementById('kanban-calendar-prev')?.addEventListener('click', () => {
       kanbanCalendarMonth.setMonth(kanbanCalendarMonth.getMonth() - 1);
       renderKanbanCalendar();
@@ -1651,6 +2169,7 @@
 
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) btnLogout.addEventListener('click', () => {
+      stopAutoRefresh();
       localStorage.removeItem('kanban-current-user');
       showLoginPage();
     });
