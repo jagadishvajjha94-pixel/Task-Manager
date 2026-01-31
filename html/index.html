@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/assets/vendor/css/core.css" />
     <link rel="stylesheet" href="/assets/css/demo.css" />
     <link rel="stylesheet" href="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    <link rel="stylesheet" href="/assets/vendor/libs/apex-charts/apex-charts.css" />
     <style>
       .kanban-board { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; min-height: 70vh; align-items: flex-start; }
       .kanban-column { flex: 0 0 320px; background: var(--bs-body-bg, #fff); border-radius: 0.375rem; border: 1px solid rgba(0,0,0,.08); padding: 1rem; }
@@ -28,8 +29,10 @@
       .assignee-initial { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; color: #fff; background: var(--bs-primary); flex-shrink: 0; border: 2px solid var(--bs-body-bg, #fff); margin-left: -6px; }
       .assignee-initial:first-of-type { margin-left: 0; }
       .assignee-initial.bg-secondary { background: #6c757d; }
-      .assignee-initials-wrap { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0; }
+      .assignee-initials-wrap { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0.25rem; }
       .assignee-with-name { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; }
+      .assignee-clickable { cursor: pointer; border-radius: 999px; padding: 0.1rem 0.35rem; transition: background 0.2s; }
+      .assignee-clickable:hover { background: rgba(var(--bs-primary-rgb, 105, 108, 255), 0.12); }
       .card-deadline { font-size: 0.75rem; color: var(--bs-secondary); }
       .card-deadline.overdue { color: var(--bs-danger); font-weight: 600; }
       .assignee-chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0.5rem; background: var(--bs-secondary-bg); border-radius: 999px; font-size: 0.8125rem; }
@@ -43,11 +46,25 @@
       .kanban-card-done .card-title { text-decoration: line-through; color: #155724; }
       .kanban-card-done .card-text { text-decoration: line-through; color: #155724; opacity: 0.9; }
       .kanban-card-done .task-completed-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; color: #155724; margin-top: 0.35rem; }
+      .kanban-date-column { flex: 0 0 320px; }
+      .kanban-done-toggle-btn { width: 38px; height: 38px; border-radius: 50%; border: 2px solid rgba(0,0,0,.15); background: var(--bs-body-bg); color: var(--bs-secondary); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease; }
+      .kanban-done-toggle-btn:hover { border-color: var(--bs-primary); color: var(--bs-primary); transform: scale(1.05); }
+      .kanban-done-toggle-btn.done { border-color: #28a745; background: linear-gradient(135deg, #d4edda, #c3e6cb); color: #155724; }
+      .kanban-done-toggle-btn.done:hover { transform: scale(1.05); }
+      .kanban-done-toggle-btn i { font-size: 1.25rem; }
+      .rollover-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; color: #856404; background: rgba(255, 193, 7, 0.2); padding: 0.2rem 0.5rem; border-radius: 0.25rem; margin-bottom: 0.35rem; font-weight: 600; }
+      .task-assigned-date { display: block; margin-bottom: 0.35rem; }
+      .kanban-card-rollover { border-left-width: 4px; border-left-color: var(--bs-warning) !important; }
+      .kanban-column-header h6 { line-height: 1.3; }
       .notification-item { font-size: 0.8125rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(0,0,0,.06); }
       .notification-item:last-child { border-bottom: 0; }
       .tab-pane { display: none; }
       .tab-pane.active { display: block; }
       .task-row-assign { min-width: 180px; }
+      #tasks-tab-content { padding: 0 1.25rem 1.25rem; }
+      .tasks-dept-section { padding-top: 0.5rem; }
+      .tasks-dept-section:last-child { border-bottom: 0; padding-bottom: 0; margin-bottom: 0 !important; }
+      .table-align-middle td { vertical-align: middle; }
       #login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--bs-body-bg) 0%, var(--bs-secondary-bg-subtle, #f8f9fa) 100%); }
       #app-page { display: none; }
       #app-page.logged-in { display: block; }
@@ -60,6 +77,42 @@
       #taskDetailsModal .detail-value { font-size: 1.0625rem; color: var(--bs-body-color); }
       #taskDetailsModal .detail-value#detail-title { font-size: 1.125rem; font-weight: 600; }
       #taskDetailsModal #detail-description { white-space: pre-wrap; }
+      .employee-modal-content { border: none; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,.25); animation: empModalIn .3s ease-out; }
+      @keyframes empModalIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+      .employee-modal-header { background: linear-gradient(135deg, #696cff 0%, #5f61e6 50%, #585bdc 100%); border: none; padding: 1.5rem 1.75rem; }
+      .employee-modal-avatar { width: 56px; height: 56px; border-radius: 14px; background: rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+      .employee-modal-body { padding: 1.75rem; background: #f8f9fa; }
+      .emp-stats-circle-wrap .emp-chart-body { justify-content: center; }
+      .emp-performance-card .emp-chart-header { padding: 1rem 1.25rem; }
+      .emp-performance-card .emp-chart-header h6 { font-size: 1rem; font-weight: 700; color: #333; }
+      .emp-performance-card .emp-chart-header small { font-size: .8125rem; color: #697a8d; }
+      .emp-performance-card .apexcharts-legend-text { font-size: 13px !important; font-weight: 500; }
+      .emp-performance-card .apexcharts-datalabel-value { font-size: 15px !important; }
+      .emp-chart-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+      .emp-chart-compact .emp-chart-body { padding: 1rem; }
+      .emp-chart-compact .emp-chart-header { padding: .75rem 1rem; }
+      .emp-charts-row { margin-bottom: 0 !important; }
+      .emp-chart-compact .emp-chart-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .25rem; }
+      .emp-chart-header { padding: 1rem 1.25rem; border-bottom: 1px solid #eee; background: #fff; }
+      .emp-chart-body { padding: 1.25rem; }
+      .emp-tasks-section { margin-top: 1.5rem; }
+      .emp-section-title { font-weight: 600; color: #333; }
+      .emp-tasks-table-wrap { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06); max-height: 260px; overflow-y: auto; }
+      .emp-tasks-table { margin: 0; }
+      .emp-tasks-table thead { position: sticky; top: 0; background: #f8f9fa; z-index: 1; }
+      .emp-tasks-table th { padding: .75rem 1rem; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; color: #697a8d; }
+      .emp-tasks-table td { padding: .875rem 1rem; vertical-align: middle; }
+      .emp-tasks-table tbody tr { transition: background .15s; }
+      .emp-tasks-table tbody tr:hover { background: #f8f9fa; }
+      .employee-modal-footer { padding: 1rem 1.75rem; background: #fff; border-top: 1px solid #eee; }
+      .kanban-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+      .kanban-calendar .cal-day-name { padding: .5rem; text-align: center; font-size: .75rem; font-weight: 600; color: #697a8d; }
+      .kanban-calendar .cal-day { min-height: 48px; padding: 4px; border-radius: 8px; cursor: pointer; transition: background .15s; border: 1px solid transparent; }
+      .kanban-calendar .cal-day:hover { background: #f0f0f0; }
+      .kanban-calendar .cal-day.has-tasks { background: rgba(105,108,255,.08); }
+      .kanban-calendar .cal-day.selected { background: rgba(105,108,255,.2); border-color: #696cff; }
+      .kanban-calendar .cal-day .cal-num { font-size: .875rem; font-weight: 600; }
+      .kanban-calendar .cal-day .cal-count { font-size: .65rem; color: #697a8d; }
     </style>
     <script src="/assets/vendor/js/helpers.js"></script>
     <script src="/assets/js/config.js"></script>
@@ -196,6 +249,11 @@
           <div class="content-wrapper">
             <div class="container-xxl flex-grow-1 container-p-y">
               <div id="kanban-view" class="tab-pane active">
+                <div class="d-flex justify-content-end mb-3 d-none" id="kanban-calendar-btn-wrap">
+                  <button type="button" class="btn btn-outline-primary" id="open-kanban-calendar-btn" title="View day-wise tasks calendar">
+                    <i class="bx bx-calendar me-1"></i> Calendar
+                  </button>
+                </div>
                 <div id="kanban-board" class="kanban-board"><p class="text-muted py-5">Loading board…</p></div>
               </div>
               <div id="stored-data-view" class="tab-pane">
@@ -214,27 +272,6 @@
               </div>
               <div id="manager-view" class="tab-pane">
                 <div class="row g-4">
-                  <div class="col-12 col-lg-6">
-                    <div class="card">
-                      <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Board columns</h5>
-                        <button type="button" class="btn btn-sm btn-primary" id="add-column-btn" title="Add new column">
-                          <i class="bx bx-plus"></i> New column
-                        </button>
-                      </div>
-                      <div class="card-body">
-                        <p class="text-muted small mb-3">Columns appear on the Kanban board. Add or reorder as needed.</p>
-                        <ul class="list-group list-group-flush" id="manager-columns-list"></ul>
-                        <div class="mt-3 d-none" id="add-column-form-wrap">
-                          <div class="input-group input-group-sm">
-                            <input type="text" class="form-control" id="new-column-title" placeholder="Column title (e.g. Review)" />
-                            <button type="button" class="btn btn-primary" id="add-column-save">Add</button>
-                            <button type="button" class="btn btn-outline-secondary" id="add-column-cancel">Cancel</button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                   <div class="col-12">
                     <div class="card mb-4">
                       <div class="card-header">
@@ -276,14 +313,27 @@
               </div>
               <div id="tasks-view" class="tab-pane">
                 <div class="card">
-                  <div class="card-header d-flex justify-content-between align-items-center">
+                  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">Tasks by department (assign to employees)</h5>
-                    <button type="button" class="btn btn-primary btn-sm" id="add-upcoming-task" title="Only manager can add tasks">
-                      <i class="bx bx-plus"></i> Add task
-                    </button>
+                    <div class="d-flex gap-2 align-items-center">
+                      <button type="button" class="btn btn-outline-primary btn-sm d-none" id="add-dept-tasks-btn" title="Create department">
+                        <i class="bx bx-building-house me-1"></i> Create dept
+                      </button>
+                      <button type="button" class="btn btn-primary btn-sm" id="add-upcoming-task" title="Add task – choose department in form">
+                        <i class="bx bx-plus me-1"></i> Add task
+                      </button>
+                    </div>
                   </div>
                   <div class="card-body p-0" id="tasks-tab-body">
-                    <p class="text-muted text-center py-4 mb-0">Loading…</p>
+                    <div class="d-none p-3 border-bottom bg-light" id="tasks-create-dept-wrap">
+                      <label class="form-label small mb-2">New department</label>
+                      <div class="input-group input-group-sm" style="max-width: 320px;">
+                        <input type="text" class="form-control" id="tasks-new-dept-name" placeholder="Department name" />
+                        <button type="button" class="btn btn-primary" id="tasks-new-dept-save">Add</button>
+                        <button type="button" class="btn btn-outline-secondary" id="tasks-new-dept-cancel">Cancel</button>
+                      </div>
+                    </div>
+                    <div id="tasks-tab-content"><p class="text-muted text-center py-4 mb-0 px-3">Loading…</p></div>
                   </div>
                 </div>
               </div>
@@ -319,7 +369,7 @@
                   <option value="low">Low (Green)</option>
                 </select>
               </div>
-              <div class="mb-3" id="assignee-group">
+              <div class="mb-3" id="department-group">
                 <label class="form-label" for="cardDepartment">Department (Manager only)</label>
                 <div class="d-flex gap-2 align-items-center flex-wrap">
                   <select class="form-select flex-grow-1" id="cardDepartment" style="max-width: 220px;">
@@ -401,6 +451,76 @@
       </div>
     </div>
 
+    <div class="modal fade" id="kanbanCalendarModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bx bx-calendar me-2"></i>Day-wise tasks</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="kanban-calendar-prev"><i class="bx bx-chevron-left"></i></button>
+              <span id="kanban-calendar-month" class="fw-semibold" style="min-width: 160px; text-align: center;"></span>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="kanban-calendar-next"><i class="bx bx-chevron-right"></i></button>
+            </div>
+            <div id="kanban-calendar" class="kanban-calendar"></div>
+            <div id="kanban-calendar-day-detail" class="mt-3 p-3 rounded bg-light d-none">
+              <h6 class="mb-2" id="kanban-day-detail-title">Tasks for selected day</h6>
+              <div id="kanban-day-detail-body"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="employeeDetailsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content employee-modal-content">
+          <div class="modal-header employee-modal-header">
+            <div class="d-flex align-items-center gap-3">
+              <div class="employee-modal-avatar" id="employee-modal-avatar">A</div>
+              <div>
+                <h5 class="modal-title mb-0"><span id="employee-modal-name">Employee</span></h5>
+                <p class="mb-0 text-white-50 small">Performance & task completion details</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body employee-modal-body">
+            <div class="row g-3 mb-3">
+              <div class="col-12">
+                <div class="emp-chart-card emp-chart-compact emp-stats-circle-wrap emp-performance-card">
+                  <div class="emp-chart-header"><h6 class="mb-0"><i class="bx bx-trending-up me-2"></i>Performance</h6><small class="text-muted">Assigned · Completed · On time · Accuracy</small></div>
+                  <div class="emp-chart-body d-flex justify-content-center"><div id="employeeStatsChart" style="min-height: 280px; width: 100%; max-width: 360px;"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="row g-3 emp-charts-row">
+              <div class="col-12">
+                <div class="emp-chart-card emp-chart-compact">
+                  <div class="emp-chart-header"><h6 class="mb-0"><i class="bx bx-task me-2"></i>Tasks</h6><small class="text-muted">Target: 100%</small></div>
+                  <div class="emp-chart-body"><div id="employeeChart" style="min-height: 180px;"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="emp-tasks-section">
+              <h6 class="emp-section-title mb-3"><i class="bx bx-list-check me-2"></i>Assigned tasks</h6>
+              <div class="emp-tasks-table-wrap">
+                <table class="table emp-tasks-table">
+                  <thead><tr><th>Task</th><th>Status</th><th>Urgency</th><th>Deadline</th></tr></thead>
+                  <tbody id="employee-tasks-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer employee-modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -439,6 +559,7 @@
     <script src="/assets/vendor/libs/jquery/jquery.js"></script>
     <script src="/assets/vendor/libs/popper/popper.js"></script>
     <script src="/assets/vendor/js/bootstrap.js"></script>
+    <script src="/assets/vendor/libs/apex-charts/apexcharts.js"></script>
     <script src="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
     <script src="/assets/vendor/js/menu.js"></script>
     <script src="/assets/js/main.js"></script>
