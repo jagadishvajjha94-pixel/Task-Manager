@@ -24,9 +24,16 @@ const KEYS = { employees: 'taskmanager:employees', manager: 'taskmanager:manager
 let upstashRedis = null;
 let nodeRedisClient = null;
 
+function getEnv(name) {
+  const raw = (process.env.REDIS_ENV_PREFIX || '').trim();
+  if (!raw) return process.env[name];
+  const prefix = raw.endsWith('_') ? raw : raw + '_';
+  return process.env[prefix + name] || process.env[name];
+}
+
 const redisUrl = process.env.REDIS_URL;
-const upstashUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+const upstashUrl = getEnv('UPSTASH_REDIS_REST_URL') || getEnv('KV_REST_API_URL');
+const upstashToken = getEnv('UPSTASH_REDIS_REST_TOKEN') || getEnv('KV_REST_API_TOKEN');
 
 if (upstashUrl && upstashToken) {
   try {
@@ -178,11 +185,18 @@ async function setBoard(data) {
   fs.writeFileSync(path.join(DATA_DIR, 'board.json'), JSON.stringify(data, null, 2), 'utf8');
 }
 
+function getStoreBackend() {
+  if (upstashRedis) return 'upstash';
+  if (redisUrl) return 'redis';
+  return 'file';
+}
+
 module.exports = {
   getEmployees,
   setEmployees,
   getManager,
   setManager,
   getBoard,
-  setBoard
+  setBoard,
+  getStoreBackend
 };

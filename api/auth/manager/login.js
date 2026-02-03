@@ -64,7 +64,12 @@ module.exports = async (req, res) => {
     m = await store.getManager();
   }
   if (!m) {
-    return res.status(500).json({ error: 'Manager not configured' });
+    const backend = store.getStoreBackend();
+    return res.status(503).json({
+      error:
+        'Storage not configured. Connect Upstash Redis to this Vercel project (Storage → Create Database → Upstash Redis → Connect to Project), then redeploy. Check /api/store-status to verify.',
+      backend
+    });
   }
   const hash = hashPassword(password);
   if (m.email.toLowerCase() !== email.toLowerCase() || m.passwordHash !== hash) {

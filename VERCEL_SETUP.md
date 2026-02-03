@@ -2,6 +2,18 @@
 
 ---
 
+## Check if Redis is connected (401 / “Invalid email or password”)
+
+Open this URL in your browser (replace with your app URL):
+
+**`https://your-app.vercel.app/api/store-status`**
+
+- **`backend: "upstash"`** – Redis is connected. Use Manager `manager@company.com` / `Manager@123`; if it still returns 401, redeploy (no cache) and try again.
+- **`backend: "file"`** – Redis is **not** connected. Each request uses its own storage, so login will keep failing. Add Upstash Redis (see below) and redeploy.
+- **Custom prefix:** If you connected Redis with a custom prefix (e.g. `MY_`), add env var **`REDIS_ENV_PREFIX=MY`** (no trailing underscore) so the app finds `MY_UPSTASH_REDIS_REST_URL` and `MY_UPSTASH_REDIS_REST_TOKEN`.
+
+---
+
 ## “This project is already connected to the target store”
 
 **You don’t need to fix anything.** That message means the project is **already linked** to that Redis store. Do **not** click Connect again.

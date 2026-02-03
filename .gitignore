@@ -63,3 +63,5 @@ gulpfile.tmp.*
 
 # Local runtime data (board, manager credentials)
 /data
+
+.vercel
