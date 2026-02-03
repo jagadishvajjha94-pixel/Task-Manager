@@ -2840,7 +2840,7 @@
               alert(data.error || (res.status === 401 ? 'Invalid email or password' : 'Login failed'));
             }
           })
-          .catch(() => alert('Login failed. Open the app from the server (e.g. http://localhost:3000).'));
+          .catch(() => alert('Login failed. Check your connection and that the API is available.'));
       });
     }
 
@@ -2882,16 +2882,12 @@
               const msg =
                 data.error ||
                 (res.status === 404
-                  ? 'API not found. Run the app with "npm start" and open http://localhost:3000'
+                  ? 'Create-employee API not found. If deployed on Vercel, ensure api/auth/manager/create-employee-login.js is deployed.'
                   : 'Failed to create employee login.');
               alert(msg);
             }
           })
-          .catch(() =>
-            alert(
-              'Failed to create employee login. Make sure the server is running (npm start) and you are using http://localhost:3000'
-            )
-          );
+          .catch(() => alert('Failed to create employee login. Check your connection and that the API is deployed.'));
       });
     }
 

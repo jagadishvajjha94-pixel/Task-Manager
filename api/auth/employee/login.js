@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const os = require('os');
 
 const DATA_DIR = path.join(os.tmpdir(), 'taskmanager-data');
-const MANAGER_FILE = path.join(DATA_DIR, 'manager.json');
+const EMPLOYEES_FILE = path.join(DATA_DIR, 'employees.json');
 const SALT = 'taskmanager-salt-v1';
 
 function ensureDataDir() {
@@ -17,34 +17,17 @@ function hashPassword(password) {
   return crypto.pbkdf2Sync(password, SALT, 100000, 64, 'sha512').toString('hex');
 }
 
-function readManager() {
+function readEmployees() {
   ensureDataDir();
-  if (fs.existsSync(MANAGER_FILE)) {
+  if (fs.existsSync(EMPLOYEES_FILE)) {
     try {
-      return JSON.parse(fs.readFileSync(MANAGER_FILE, 'utf8'));
+      const data = JSON.parse(fs.readFileSync(EMPLOYEES_FILE, 'utf8'));
+      return Array.isArray(data) ? data : [];
     } catch (e) {
-      return null;
+      return [];
     }
   }
-  return null;
-}
-
-function writeManager(data) {
-  ensureDataDir();
-  fs.writeFileSync(MANAGER_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
-
-function seedManagerIfNeeded() {
-  let m = readManager();
-  if (!m || !m.email) {
-    m = {
-      email: 'manager@company.com',
-      name: 'Manager',
-      passwordHash: hashPassword('Manager@123')
-    };
-    writeManager(m);
-  }
-  return m;
+  return [];
 }
 
 module.exports = async (req, res) => {
@@ -81,24 +64,25 @@ module.exports = async (req, res) => {
 
   const email = typeof body.email === 'string' ? body.email.trim() : '';
   const password = body.password != null ? String(body.password) : '';
+
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' });
   }
 
-  let m = readManager();
-  if (!m || !m.email) {
-    seedManagerIfNeeded();
-    m = readManager();
-  }
-  if (!m) {
-    return res.status(500).json({ error: 'Manager not configured' });
-  }
-  const hash = hashPassword(password);
-  if (m.email.toLowerCase() !== email.toLowerCase() || m.passwordHash !== hash) {
+  const employees = readEmployees();
+  const emp = employees.find(e => (e.email || '').toLowerCase() === email.toLowerCase());
+  if (!emp || emp.passwordHash !== hashPassword(password)) {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
+
   res.status(200).json({
     ok: true,
-    user: { id: 'm1', name: m.name || 'Manager', email: m.email, role: 'manager', canCreateAndAssign: true }
+    user: {
+      id: emp.id,
+      name: emp.name || emp.email.split('@')[0],
+      email: emp.email,
+      role: 'employee',
+      canCreateAndAssign: !!emp.canCreateAndAssign
+    }
   });
 };
