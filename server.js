@@ -174,6 +174,22 @@ app.post('/api/auth/manager/create-employee-login', (req, res) => {
   });
 });
 
+// Manager removes an employee login
+app.post('/api/auth/manager/remove-employee-login', (req, res) => {
+  const id = typeof (req.body && req.body.id) === 'string' ? req.body.id.trim() : '';
+  if (!id) {
+    return res.status(400).json({ error: 'Employee id required' });
+  }
+  const employees = readEmployees();
+  const filtered = employees.filter(e => e.id !== id);
+  if (filtered.length === employees.length) {
+    return res.status(404).json({ error: 'Employee login not found' });
+  }
+  writeEmployees(filtered);
+  broadcastSync('employees-updated');
+  res.json({ ok: true });
+});
+
 // List employee logins (manager only – no auth check for simplicity; use session in production)
 app.get('/api/auth/employees', (req, res) => {
   const employees = readEmployees();

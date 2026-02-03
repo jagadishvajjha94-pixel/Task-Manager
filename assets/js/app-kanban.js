@@ -398,9 +398,24 @@
         tbody.innerHTML = cachedEmployeeLogins
           .map(
             e =>
-              `<tr><td>${escapeHtml(e.email || '')}</td><td>${escapeHtml(e.name || '')}</td><td>${e.canCreateAndAssign ? '<span class="badge bg-success">Can create & assign</span>' : '<span class="badge bg-secondary">View & update only</span>'}</td></tr>`
+              `<tr><td>${escapeHtml(e.email || '')}</td><td>${escapeHtml(e.name || '')}</td><td>${e.canCreateAndAssign ? '<span class="badge bg-success">Can create & assign</span>' : '<span class="badge bg-secondary">View & update only</span>'}</td><td><button type="button" class="btn btn-sm btn-outline-danger remove-employee-login-btn" data-employee-id="${escapeHtml(e.id)}" title="Remove this login">Remove</button></td></tr>`
           )
           .join('');
+        tbody.querySelectorAll('.remove-employee-login-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-employee-id');
+            if (!id) return;
+            if (!confirm('Remove this employee login? They will no longer be able to sign in.')) return;
+            fetch(API_BASE + '/api/auth/manager/remove-employee-login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id })
+            })
+              .then(res => (res.ok ? Promise.resolve() : res.json().then(d => Promise.reject(d))))
+              .then(() => loadAndRenderEmployeeLogins())
+              .catch(err => alert(err && err.error ? err.error : 'Failed to remove employee login.'));
+          });
+        });
         renderEmployeeAccuracyTable();
       })
       .catch(() => {
