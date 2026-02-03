@@ -7,11 +7,10 @@ const https = require('https');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const os = require('os');
-const DATA_DIR = process.env.VERCEL
-  ? path.join(os.tmpdir(), 'taskmanager-data')
-  : path.join(__dirname, 'data');
+const DATA_DIR = process.env.VERCEL ? path.join(os.tmpdir(), 'taskmanager-data') : path.join(__dirname, 'data');
 const BOARD_FILE = path.join(DATA_DIR, 'board.json');
 const MANAGER_FILE = path.join(DATA_DIR, 'manager.json');
+const EMPLOYEES_FILE = path.join(DATA_DIR, 'employees.json');
 const SALT = 'taskmanager-salt-v1';
 
 function ensureDataDir() {
@@ -47,7 +46,7 @@ function seedManagerIfNeeded() {
     m = {
       email: 'manager@company.com',
       name: 'Manager',
-      passwordHash: hashPassword('Manager@123'),
+      passwordHash: hashPassword('Manager@123')
     };
     writeManager(m);
   }
@@ -55,6 +54,24 @@ function seedManagerIfNeeded() {
 }
 
 seedManagerIfNeeded();
+
+function readEmployees() {
+  ensureDataDir();
+  if (fs.existsSync(EMPLOYEES_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(EMPLOYEES_FILE, 'utf8'));
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  return [];
+}
+
+function writeEmployees(employees) {
+  ensureDataDir();
+  fs.writeFileSync(EMPLOYEES_FILE, JSON.stringify(employees, null, 2), 'utf8');
+}
 
 function readBoard() {
   ensureDataDir();
@@ -71,6 +88,19 @@ function readBoard() {
 function writeBoard(data) {
   ensureDataDir();
   fs.writeFileSync(BOARD_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+
+// Real-time sync: all connected clients receive updates (board or employees)
+const syncClients = new Set();
+function broadcastSync(event) {
+  const payload = `data: ${event}\n\n`;
+  syncClients.forEach(res => {
+    try {
+      res.write(payload);
+    } catch (err) {
+      syncClients.delete(res);
+    }
+  });
 }
 
 app.use(express.json({ limit: '1mb' }));
@@ -106,7 +136,80 @@ app.post('/api/auth/manager/login', (req, res) => {
   }
   res.json({
     ok: true,
-    user: { id: 'm1', name: m.name || 'Manager', email: m.email, role: 'manager' },
+    user: { id: 'm1', name: m.name || 'Manager', email: m.email, role: 'manager', canCreateAndAssign: true }
+  });
+});
+
+// Manager creates employee login (email + password + permission)
+app.post('/api/auth/manager/create-employee-login', (req, res) => {
+  const { email, password, name, canCreateAndAssign } = req.body || {};
+  const emailStr = typeof email === 'string' ? email.trim() : '';
+  const passwordStr = password != null ? String(password) : '';
+  const nameStr = typeof name === 'string' ? name.trim() : '';
+  if (!emailStr) {
+    return res.status(400).json({ error: 'Employee email required' });
+  }
+  if (!passwordStr || passwordStr.length < 6) {
+    return res.status(400).json({ error: 'Password required (min 6 characters)' });
+  }
+  const employees = readEmployees();
+  const existing = employees.find(e => (e.email || '').toLowerCase() === emailStr.toLowerCase());
+  if (existing) {
+    return res.status(400).json({ error: 'An employee with this email already has a login' });
+  }
+  const id = 'emp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+  employees.push({
+    id,
+    email: emailStr.toLowerCase(),
+    name: nameStr || emailStr.split('@')[0] || 'Employee',
+    passwordHash: hashPassword(passwordStr),
+    canCreateAndAssign: !!canCreateAndAssign,
+    createdAt: new Date().toISOString()
+  });
+  writeEmployees(employees);
+  broadcastSync('employees-updated');
+  res.json({
+    ok: true,
+    employee: { id, email: emailStr, name: nameStr || emailStr.split('@')[0], canCreateAndAssign: !!canCreateAndAssign }
+  });
+});
+
+// List employee logins (manager only – no auth check for simplicity; use session in production)
+app.get('/api/auth/employees', (req, res) => {
+  const employees = readEmployees();
+  res.json(
+    employees.map(e => ({
+      id: e.id,
+      email: e.email,
+      name: e.name,
+      canCreateAndAssign: !!e.canCreateAndAssign,
+      createdAt: e.createdAt
+    }))
+  );
+});
+
+// Employee login with email + password
+app.post('/api/auth/employee/login', (req, res) => {
+  const body = req.body || {};
+  const email = typeof body.email === 'string' ? body.email.trim() : '';
+  const password = body.password != null ? String(body.password) : '';
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password required' });
+  }
+  const employees = readEmployees();
+  const emp = employees.find(e => (e.email || '').toLowerCase() === email.toLowerCase());
+  if (!emp || emp.passwordHash !== hashPassword(password)) {
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+  res.json({
+    ok: true,
+    user: {
+      id: emp.id,
+      name: emp.name || emp.email.split('@')[0],
+      email: emp.email,
+      role: 'employee',
+      canCreateAndAssign: !!emp.canCreateAndAssign
+    }
   });
 });
 
@@ -129,25 +232,30 @@ app.post('/api/auth/manager/change-password', (req, res) => {
   m.passwordHash = hashPassword(newPassword);
   if (req.body.name) m.name = req.body.name;
   writeManager(m);
+  broadcastSync('employees-updated');
   res.json({ ok: true });
 });
 
 function verifyGoogleToken(idToken) {
   return new Promise((resolve, reject) => {
     const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`;
-    https.get(url, (resp) => {
-      let data = '';
-      resp.on('data', (chunk) => { data += chunk; });
-      resp.on('end', () => {
-        try {
-          const payload = JSON.parse(data);
-          if (payload.error) return reject(new Error(payload.error));
-          resolve(payload);
-        } catch (e) {
-          reject(e);
-        }
-      });
-    }).on('error', reject);
+    https
+      .get(url, resp => {
+        let data = '';
+        resp.on('data', chunk => {
+          data += chunk;
+        });
+        resp.on('end', () => {
+          try {
+            const payload = JSON.parse(data);
+            if (payload.error) return reject(new Error(payload.error));
+            resolve(payload);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      })
+      .on('error', reject);
   });
 }
 
@@ -157,7 +265,7 @@ app.post('/api/auth/google', (req, res) => {
     return res.status(400).json({ error: 'Google credential required' });
   }
   verifyGoogleToken(credential)
-    .then((payload) => {
+    .then(payload => {
       const name = payload.name || payload.email?.split('@')[0] || 'Employee';
       const email = payload.email || '';
       res.json({
@@ -166,11 +274,11 @@ app.post('/api/auth/google', (req, res) => {
           id: 'g_' + (payload.sub || email).replace(/\W/g, '_'),
           name,
           email,
-          role: 'employee',
-        },
+          role: 'employee'
+        }
       });
     })
-    .catch((err) => {
+    .catch(err => {
       console.error('Google token verify error:', err);
       res.status(401).json({ error: 'Invalid Google sign-in' });
     });
@@ -185,24 +293,57 @@ app.get('/api/board', (req, res) => {
   res.json(data);
 });
 
+// Server-Sent Events: clients subscribe here and get instant updates when board or employees change
+const SYNC_HEARTBEAT_MS = 25000;
+app.get('/api/sync/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+  syncClients.add(res);
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': heartbeat\n\n');
+    } catch (err) {
+      clearInterval(heartbeat);
+      syncClients.delete(res);
+    }
+  }, SYNC_HEARTBEAT_MS);
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    syncClients.delete(res);
+  });
+});
+
 app.put('/api/board', (req, res) => {
   const board = req.body;
   if (board && typeof board === 'object') {
+    if (!Array.isArray(board.columns)) board.columns = [];
+    if (!Array.isArray(board.departments)) board.departments = [];
+    if (!Array.isArray(board.notifications)) board.notifications = [];
+    if (!Array.isArray(board.upcomingTasks)) board.upcomingTasks = [];
+    if (!Array.isArray(board.users)) board.users = [];
+    if (!Array.isArray(board.recurringTasks)) board.recurringTasks = [];
+    if (typeof board.employeeProfiles !== 'object') board.employeeProfiles = {};
     writeBoard(board);
+    broadcastSync('board-updated');
     res.json({ ok: true });
   } else {
     res.status(400).json({ error: 'Invalid board data' });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Kanban server running at http://localhost:${PORT}`);
-  console.log('Open this URL in your browser.');
-}).on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use. Try closing other apps or set PORT=3001 npm start`);
-  } else {
-    console.error('Server error:', err.message);
-  }
-  process.exit(1);
-});
+app
+  .listen(PORT, () => {
+    console.log(`Kanban server running at http://localhost:${PORT}`);
+    console.log('Open this URL in your browser.');
+  })
+  .on('error', err => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use. Try closing other apps or set PORT=3001 npm start`);
+    } else {
+      console.error('Server error:', err.message);
+    }
+    process.exit(1);
+  });

@@ -1,7 +1,10 @@
 'use strict';
 
 (function () {
-  const API_BASE = (typeof window !== 'undefined' && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) ? window.location.origin : '';
+  const API_BASE =
+    typeof window !== 'undefined' && (window.location.protocol === 'http:' || window.location.protocol === 'https:')
+      ? window.location.origin
+      : '';
 
   const defaultUsers = [
     { id: 'm1', name: 'Sarah', role: 'manager' },
@@ -20,44 +23,152 @@
     nextWeek.setDate(nextWeek.getDate() + 7);
     const lastWeek = new Date(now);
     lastWeek.setDate(lastWeek.getDate() - 7);
-    const fmt = (d) => d.toISOString().slice(0, 16);
+    const fmt = d => d.toISOString().slice(0, 16);
     return {
       columns: [
         {
           id: 'todo',
           title: 'To Do',
           cards: [
-            { id: 'mc1', title: 'Onboard new interns', description: 'Prepare materials and schedule orientation', urgency: 'high', assignees: ['Alice'], department: 'H.R. dept.', deadline: fmt(tomorrow), assignedByName: 'Manager', assignedAt: now.toISOString() },
-            { id: 'mc2', title: 'Update training slides', description: 'Q4 product updates for Training dept.', urgency: 'medium', assignees: ['Bob'], department: 'Training dept.', deadline: fmt(nextWeek), assignedByName: 'Manager', assignedAt: now.toISOString() },
-            { id: 'mc3', title: 'Placement drive coordination', description: 'Coordinate with colleges for campus drive', urgency: 'high', assignees: ['Alice', 'Charlie'], department: 'Placement dept.', deadline: fmt(tomorrow), assignedByName: 'Manager', assignedAt: now.toISOString() },
-            { id: 'mc4', title: 'Policy document review', description: 'Review and sign off HR policy changes', urgency: 'low', assignees: ['Alice'], department: 'H.R. dept.', deadline: fmt(nextWeek), assignedByName: 'Manager', assignedAt: now.toISOString() }
+            {
+              id: 'mc1',
+              title: 'Onboard new interns',
+              description: 'Prepare materials and schedule orientation',
+              urgency: 'high',
+              assignees: ['Alice'],
+              department: 'H.R. dept.',
+              deadline: fmt(tomorrow),
+              assignedByName: 'Manager',
+              assignedAt: now.toISOString()
+            },
+            {
+              id: 'mc2',
+              title: 'Update training slides',
+              description: 'Q4 product updates for Training dept.',
+              urgency: 'medium',
+              assignees: ['Bob'],
+              department: 'Training dept.',
+              deadline: fmt(nextWeek),
+              assignedByName: 'Manager',
+              assignedAt: now.toISOString()
+            },
+            {
+              id: 'mc3',
+              title: 'Placement drive coordination',
+              description: 'Coordinate with colleges for campus drive',
+              urgency: 'high',
+              assignees: ['Alice', 'Charlie'],
+              department: 'Placement dept.',
+              deadline: fmt(tomorrow),
+              assignedByName: 'Manager',
+              assignedAt: now.toISOString()
+            },
+            {
+              id: 'mc4',
+              title: 'Policy document review',
+              description: 'Review and sign off HR policy changes',
+              urgency: 'low',
+              assignees: ['Alice'],
+              department: 'H.R. dept.',
+              deadline: fmt(nextWeek),
+              assignedByName: 'Manager',
+              assignedAt: now.toISOString()
+            }
           ]
         },
         {
           id: 'progress',
           title: 'In Progress',
           cards: [
-            { id: 'mc5', title: 'Conduct skill assessment', description: 'Run assessments for Training batch', urgency: 'high', assignees: ['Bob'], department: 'Training dept.', deadline: fmt(tomorrow), assignedByName: 'Manager', assignedAt: now.toISOString() },
-            { id: 'mc6', title: 'Interview scheduling', description: 'Schedule rounds for shortlisted candidates', urgency: 'medium', assignees: ['Charlie'], department: 'Placement dept.', deadline: fmt(nextWeek), assignedByName: 'Manager', assignedAt: now.toISOString() }
+            {
+              id: 'mc5',
+              title: 'Conduct skill assessment',
+              description: 'Run assessments for Training batch',
+              urgency: 'high',
+              assignees: ['Bob'],
+              department: 'Training dept.',
+              deadline: fmt(tomorrow),
+              assignedByName: 'Manager',
+              assignedAt: now.toISOString()
+            },
+            {
+              id: 'mc6',
+              title: 'Interview scheduling',
+              description: 'Schedule rounds for shortlisted candidates',
+              urgency: 'medium',
+              assignees: ['Charlie'],
+              department: 'Placement dept.',
+              deadline: fmt(nextWeek),
+              assignedByName: 'Manager',
+              assignedAt: now.toISOString()
+            }
           ]
         },
         {
           id: 'done',
           title: 'Done',
           cards: [
-            { id: 'mc7', title: 'Quarterly report submitted', description: 'Q3 metrics and placement report', urgency: 'low', assignees: ['Alice'], department: 'Placement dept.', deadline: fmt(lastWeek), completedAt: lastWeek.toISOString(), assignedByName: 'Manager', assignedAt: now.toISOString() },
-            { id: 'mc8', title: 'Training session completed', description: 'New joiner induction completed', urgency: 'medium', assignees: ['Bob'], department: 'Training dept.', deadline: fmt(lastWeek), completedAt: lastWeek.toISOString(), assignedByName: 'Manager', assignedAt: now.toISOString() }
+            {
+              id: 'mc7',
+              title: 'Quarterly report submitted',
+              description: 'Q3 metrics and placement report',
+              urgency: 'low',
+              assignees: ['Alice'],
+              department: 'Placement dept.',
+              deadline: fmt(lastWeek),
+              completedAt: lastWeek.toISOString(),
+              assignedByName: 'Manager',
+              assignedAt: now.toISOString()
+            },
+            {
+              id: 'mc8',
+              title: 'Training session completed',
+              description: 'New joiner induction completed',
+              urgency: 'medium',
+              assignees: ['Bob'],
+              department: 'Training dept.',
+              deadline: fmt(lastWeek),
+              completedAt: lastWeek.toISOString(),
+              assignedByName: 'Manager',
+              assignedAt: now.toISOString()
+            }
           ]
         }
       ],
       departments: defaultDepartments.slice(),
       upcomingTasks: [
-        { id: 'ut1', title: 'Annual appraisal forms', description: 'Send and collect appraisal forms', urgency: 'high', department: 'H.R. dept.' },
-        { id: 'ut2', title: 'Campus recruitment calendar', description: 'Finalize calendar with colleges', urgency: 'medium', department: 'Placement dept.' }
+        {
+          id: 'ut1',
+          title: 'Annual appraisal forms',
+          description: 'Send and collect appraisal forms',
+          urgency: 'high',
+          department: 'H.R. dept.'
+        },
+        {
+          id: 'ut2',
+          title: 'Campus recruitment calendar',
+          description: 'Finalize calendar with colleges',
+          urgency: 'medium',
+          department: 'Placement dept.'
+        }
       ],
       notifications: [
-        { id: 'n1', message: 'Manager assigned "Onboard new interns" to Alice', taskTitle: 'Onboard new interns', assigneeName: 'Alice', assignedByName: 'Manager', at: now.toISOString() },
-        { id: 'n2', message: 'Manager assigned "Conduct skill assessment" to Bob', taskTitle: 'Conduct skill assessment', assigneeName: 'Bob', assignedByName: 'Manager', at: now.toISOString() }
+        {
+          id: 'n1',
+          message: 'Manager assigned "Onboard new interns" to Alice',
+          taskTitle: 'Onboard new interns',
+          assigneeName: 'Alice',
+          assignedByName: 'Manager',
+          at: now.toISOString()
+        },
+        {
+          id: 'n2',
+          message: 'Manager assigned "Conduct skill assessment" to Bob',
+          taskTitle: 'Conduct skill assessment',
+          assigneeName: 'Bob',
+          assignedByName: 'Manager',
+          at: now.toISOString()
+        }
       ],
       users: []
     };
@@ -65,10 +176,19 @@
 
   const defaultBoard = getMockBoard();
 
-  let board = { columns: [], departments: [], upcomingTasks: [], notifications: [], users: [], recurringTasks: [], employeeProfiles: {} };
+  let board = {
+    columns: [],
+    departments: [],
+    upcomingTasks: [],
+    notifications: [],
+    users: [],
+    recurringTasks: [],
+    employeeProfiles: {}
+  };
   let searchQuery = '';
   let tasksTabSearchQuery = '';
   let lastRecurringCheckDate = '';
+  let cachedEmployeeLogins = [];
 
   function getEmployeeProfile(name) {
     if (!board.employeeProfiles) board.employeeProfiles = {};
@@ -76,7 +196,7 @@
     const profiles = board.employeeProfiles;
     const exact = profiles[key];
     if (exact) return exact;
-    const found = Object.keys(profiles).find((k) => k.toLowerCase() === key);
+    const found = Object.keys(profiles).find(k => k.toLowerCase() === key);
     return found ? profiles[found] : null;
   }
 
@@ -108,8 +228,15 @@
     return u && u.role === 'manager';
   }
 
+  function canCreateAndAssign() {
+    const u = getCurrentUser();
+    if (!u) return false;
+    if (u.role === 'manager') return true;
+    return u.role === 'employee' && u.canCreateAndAssign === true;
+  }
+
   function getEmployees() {
-    return (board.users || []).filter((u) => u.role === 'employee');
+    return (board.users || []).filter(u => u.role === 'employee');
   }
 
   function uid() {
@@ -143,6 +270,7 @@
   async function loadBoard() {
     try {
       const res = await fetch(API_BASE + '/api/board');
+      if (!res.ok) throw new Error('Server returned ' + res.status);
       const data = await res.json();
       serverReachable = true;
       hideConnectionBanner();
@@ -155,8 +283,8 @@
         if (!Array.isArray(board.users)) board.users = [];
         if (!Array.isArray(board.recurringTasks)) board.recurringTasks = [];
         if (typeof board.employeeProfiles !== 'object') board.employeeProfiles = {};
-        board.columns.forEach((col) => {
-          (col.cards || []).forEach((card) => {
+        board.columns.forEach(col => {
+          (col.cards || []).forEach(card => {
             if (!card.urgency) card.urgency = 'medium';
           });
         });
@@ -169,14 +297,15 @@
       if (stored) {
         try {
           board = JSON.parse(stored);
+          if (!Array.isArray(board.columns)) board.columns = [];
           if (!Array.isArray(board.departments)) board.departments = defaultDepartments.slice();
           if (!Array.isArray(board.upcomingTasks)) board.upcomingTasks = [];
           if (!Array.isArray(board.notifications)) board.notifications = [];
           if (!Array.isArray(board.users)) board.users = [];
           if (!Array.isArray(board.recurringTasks)) board.recurringTasks = [];
-        if (typeof board.employeeProfiles !== 'object') board.employeeProfiles = {};
-          board.columns.forEach((col) => {
-            (col.cards || []).forEach((card) => {
+          if (typeof board.employeeProfiles !== 'object') board.employeeProfiles = {};
+          (board.columns || []).forEach(col => {
+            (col.cards || []).forEach(card => {
               if (!card.urgency) card.urgency = 'medium';
             });
           });
@@ -200,26 +329,28 @@
   }
 
   function getDepartments() {
-    return Array.isArray(board.departments) && board.departments.length ? board.departments : defaultDepartments.slice();
+    return Array.isArray(board.departments) && board.departments.length
+      ? board.departments
+      : defaultDepartments.slice();
   }
 
-  function renderManagerTab() {
-    const deptsList = document.getElementById('manager-depts-list');
+  function renderEmployeeAccuracyTable() {
     const accuracyTbody = document.getElementById('manager-accuracy-tbody');
-    const recurringList = document.getElementById('recurring-tasks-list');
-    if (!deptsList) return;
-    const depts = getDepartments();
-    deptsList.innerHTML = depts.map((d) => `<li class="list-group-item">${escapeHtml(d)}</li>`).join('');
+    if (!accuracyTbody) return;
     const stats = computeEmployeeStats();
-    const names = Object.keys(stats).sort();
-    if (accuracyTbody) {
-      if (names.length === 0) {
-        accuracyTbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No assignees yet. Assign tasks to see accuracy.</td></tr>';
-      } else {
-        accuracyTbody.innerHTML = names.map((name) => {
-          const s = stats[name];
-          const pct = s.assigned > 0 ? Math.round((s.completed / s.assigned) * 100) : 0;
-          return `<tr>
+    const namesFromBoard = Object.keys(stats);
+    const namesFromLogins = (cachedEmployeeLogins || []).map(e => (e.name || e.email || '').trim()).filter(Boolean);
+    const allNames = [...new Set([...namesFromBoard, ...namesFromLogins])].sort();
+    if (allNames.length === 0) {
+      accuracyTbody.innerHTML =
+        '<tr><td colspan="5" class="text-muted text-center">No employees yet. Create employee logins above or assign tasks.</td></tr>';
+      return;
+    }
+    accuracyTbody.innerHTML = allNames
+      .map(name => {
+        const s = stats[name] || { assigned: 0, completed: 0, onTime: 0 };
+        const pct = s.assigned > 0 ? Math.round((s.completed / s.assigned) * 100) : 0;
+        return `<tr>
             <td class="employee-name-link" data-employee="${escapeHtml(name)}" style="cursor:pointer;color:var(--bs-primary);" title="Click to view performance">${escapeHtml(name)}</td>
             <td>${s.assigned}</td>
             <td>${s.completed}</td>
@@ -236,28 +367,75 @@
               </span>
             </td>
           </tr>`;
-        }).join('');
-        accuracyTbody.querySelectorAll('.employee-name-link, .accuracy-click-wrap').forEach((el) => {
-          el.addEventListener('click', () => {
-            const empName = el.dataset.employee;
-            if (empName) openEmployeeModal(empName);
-          });
-        });
-      }
-    }
+      })
+      .join('');
+    accuracyTbody.querySelectorAll('.employee-name-link, .accuracy-click-wrap').forEach(el => {
+      el.addEventListener('click', () => {
+        const empName = el.dataset.employee;
+        if (empName) openEmployeeModal(empName);
+      });
+    });
+  }
+
+  function loadAndRenderEmployeeLogins() {
+    const tbody = document.getElementById('employee-logins-tbody');
+    const emptyEl = document.getElementById('employee-logins-empty');
+    if (!tbody) return;
+    fetch(API_BASE + '/api/auth/employees')
+      .then(res => (res.ok ? res.json() : []))
+      .then(employees => {
+        cachedEmployeeLogins = Array.isArray(employees) ? employees : [];
+        if (cachedEmployeeLogins.length === 0) {
+          tbody.innerHTML = '';
+          if (emptyEl) {
+            emptyEl.style.display = 'block';
+            emptyEl.textContent = 'No employee logins yet. Create one above.';
+          }
+          renderEmployeeAccuracyTable();
+          return;
+        }
+        if (emptyEl) emptyEl.style.display = 'none';
+        tbody.innerHTML = cachedEmployeeLogins
+          .map(
+            e =>
+              `<tr><td>${escapeHtml(e.email || '')}</td><td>${escapeHtml(e.name || '')}</td><td>${e.canCreateAndAssign ? '<span class="badge bg-success">Can create & assign</span>' : '<span class="badge bg-secondary">View & update only</span>'}</td></tr>`
+          )
+          .join('');
+        renderEmployeeAccuracyTable();
+      })
+      .catch(() => {
+        tbody.innerHTML = '';
+        if (emptyEl) {
+          emptyEl.style.display = 'block';
+          emptyEl.textContent = 'Could not load employee logins.';
+        }
+      });
+  }
+
+  function renderManagerTab() {
+    const deptsList = document.getElementById('manager-depts-list');
+    const recurringList = document.getElementById('recurring-tasks-list');
+    if (!deptsList) return;
+    const depts = getDepartments();
+    deptsList.innerHTML = depts.map(d => `<li class="list-group-item">${escapeHtml(d)}</li>`).join('');
+    renderEmployeeAccuracyTable();
+    if (isManager()) loadAndRenderEmployeeLogins();
     if (recurringList) {
       const recurring = board.recurringTasks || [];
       if (recurring.length === 0) {
-        recurringList.innerHTML = '<p class="text-muted mb-0">No recurring tasks yet. Create one by enabling "Recurring Task" when adding a task and choose Daily, Weekly, or Monthly.</p>';
+        recurringList.innerHTML =
+          '<p class="text-muted mb-0">No recurring tasks yet. Create one by enabling "Recurring Task" when adding a task and choose Daily, Weekly, or Monthly.</p>';
       } else {
-        recurringList.innerHTML = recurring.map((rt) => {
-          const assigneeNames = (rt.assignees || []).join(', ');
-          const activeClass = rt.active ? 'bg-success' : 'bg-secondary';
-          const statusText = rt.active ? 'Active' : 'Paused';
-          const freq = (rt.frequency || 'daily').toLowerCase();
-          const freqLabel = freq === 'weekly' ? 'Weekly' : freq === 'monthly' ? 'Monthly' : 'Daily';
-          const freqBadgeClass = freq === 'weekly' ? 'bg-label-warning' : freq === 'monthly' ? 'bg-label-info' : 'bg-label-primary';
-          return `
+        recurringList.innerHTML = recurring
+          .map(rt => {
+            const assigneeNames = (rt.assignees || []).join(', ');
+            const activeClass = rt.active ? 'bg-success' : 'bg-secondary';
+            const statusText = rt.active ? 'Active' : 'Paused';
+            const freq = (rt.frequency || 'daily').toLowerCase();
+            const freqLabel = freq === 'weekly' ? 'Weekly' : freq === 'monthly' ? 'Monthly' : 'Daily';
+            const freqBadgeClass =
+              freq === 'weekly' ? 'bg-label-warning' : freq === 'monthly' ? 'bg-label-info' : 'bg-label-primary';
+            return `
             <div class="d-flex align-items-center justify-content-between border rounded p-3 mb-2 recurring-task-item" data-recurring-id="${escapeHtml(rt.id)}">
               <div class="flex-grow-1">
                 <div class="d-flex align-items-center gap-2 mb-1">
@@ -281,11 +459,12 @@
               </div>
             </div>
           `;
-        }).join('');
-        recurringList.querySelectorAll('.recurring-toggle').forEach((toggle) => {
-          toggle.addEventListener('change', (e) => {
+          })
+          .join('');
+        recurringList.querySelectorAll('.recurring-toggle').forEach(toggle => {
+          toggle.addEventListener('change', e => {
             const id = e.target.dataset.recurringId;
-            const rt = (board.recurringTasks || []).find((r) => r.id === id);
+            const rt = (board.recurringTasks || []).find(r => r.id === id);
             if (rt) {
               rt.active = e.target.checked;
               saveBoard();
@@ -293,11 +472,11 @@
             }
           });
         });
-        recurringList.querySelectorAll('.delete-recurring-btn').forEach((btn) => {
-          btn.addEventListener('click', (e) => {
+        recurringList.querySelectorAll('.delete-recurring-btn').forEach(btn => {
+          btn.addEventListener('click', e => {
             const id = btn.dataset.recurringId;
             if (confirm('Delete this recurring task? This will not delete already generated tasks.')) {
-              board.recurringTasks = (board.recurringTasks || []).filter((r) => r.id !== id);
+              board.recurringTasks = (board.recurringTasks || []).filter(r => r.id !== id);
               saveBoard();
               renderManagerTab();
             }
@@ -314,7 +493,8 @@
     el.id = 'connection-banner';
     el.className = 'alert alert-warning alert-dismissible fade show mb-0 rounded-0';
     el.setAttribute('role', 'alert');
-    el.innerHTML = '<strong>Server not running.</strong> Data is saved in this browser only. <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+    el.innerHTML =
+      '<strong>Server not running.</strong> Data is saved in this browser only. <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
     document.body.insertBefore(el, document.body.firstChild);
   }
 
@@ -342,11 +522,12 @@
 
   async function saveBoard() {
     try {
-      await fetch(API_BASE + '/api/board', {
+      const res = await fetch(API_BASE + '/api/board', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(board)
       });
+      if (!res.ok) throw new Error('Server returned ' + res.status);
       serverReachable = true;
       hideConnectionBanner();
     } catch (e) {
@@ -357,7 +538,7 @@
 
   function getAssigneesList(card) {
     if (card.assignees && Array.isArray(card.assignees) && card.assignees.length > 0) {
-      return card.assignees.map((a) => (typeof a === 'string' ? a : (a && a.name) || '')).filter(Boolean);
+      return card.assignees.map(a => (typeof a === 'string' ? a : (a && a.name) || '')).filter(Boolean);
     }
     if (card.assigneeName) return [card.assigneeName];
     return [];
@@ -365,13 +546,17 @@
 
   function getAllEmployeeNames() {
     const namesSet = new Set();
-    (board.upcomingTasks || []).forEach((task) => {
-      getAssigneesList(task).forEach((name) => namesSet.add(name));
+    (board.upcomingTasks || []).forEach(task => {
+      getAssigneesList(task).forEach(name => namesSet.add(name));
     });
-    (board.columns || []).forEach((col) => {
-      (col.cards || []).forEach((card) => {
-        getAssigneesList(card).forEach((name) => namesSet.add(name));
+    (board.columns || []).forEach(col => {
+      (col.cards || []).forEach(card => {
+        getAssigneesList(card).forEach(name => namesSet.add(name));
       });
+    });
+    (cachedEmployeeLogins || []).forEach(e => {
+      const n = (e.name || e.email || '').trim();
+      if (n) namesSet.add(n);
     });
     return Array.from(namesSet).sort();
   }
@@ -384,12 +569,14 @@
 
   function assigneesInitialsOnly(names) {
     if (!names || names.length === 0) return '';
-    return `<span class="assignee-initials-wrap">${names.map((n) => {
-      const empName = (n || '').trim();
-      if (!empName) return '';
-      const initial = empName.charAt(0).toUpperCase();
-      return `<span class="assignee-clickable assignee-with-name" data-employee-name="${escapeHtml(empName)}" title="Click to view ${escapeHtml(empName)}'s performance"><span class="assignee-initial">${escapeHtml(initial)}</span><span class="assignee-name">${escapeHtml(empName)}</span></span>`;
-    }).join('')}</span>`;
+    return `<span class="assignee-initials-wrap">${names
+      .map(n => {
+        const empName = (n || '').trim();
+        if (!empName) return '';
+        const initial = empName.charAt(0).toUpperCase();
+        return `<span class="assignee-clickable assignee-with-name" data-employee-name="${escapeHtml(empName)}" title="Click to view ${escapeHtml(empName)}'s performance"><span class="assignee-initial">${escapeHtml(initial)}</span><span class="assignee-name">${escapeHtml(empName)}</span></span>`;
+      })
+      .join('')}</span>`;
   }
 
   function formatDeadlineTimer(deadlineIso, completedAt, isDoneColumn) {
@@ -418,7 +605,9 @@
 
   function getTodayDateKey() {
     const n = new Date();
-    return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0');
+    return (
+      n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0')
+    );
   }
 
   function shouldRunRecurringToday(template) {
@@ -426,11 +615,21 @@
     const now = new Date();
     if (freq === 'daily') return true;
     if (freq === 'weekly') {
-      const dayOfWeek = template.dayOfWeek !== undefined ? template.dayOfWeek : (template.createdAt ? new Date(template.createdAt).getDay() : 0);
+      const dayOfWeek =
+        template.dayOfWeek !== undefined
+          ? template.dayOfWeek
+          : template.createdAt
+            ? new Date(template.createdAt).getDay()
+            : 0;
       return now.getDay() === dayOfWeek;
     }
     if (freq === 'monthly') {
-      const dayOfMonth = template.dayOfMonth !== undefined ? template.dayOfMonth : (template.createdAt ? new Date(template.createdAt).getDate() : 1);
+      const dayOfMonth =
+        template.dayOfMonth !== undefined
+          ? template.dayOfMonth
+          : template.createdAt
+            ? new Date(template.createdAt).getDate()
+            : 1;
       const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       const runDay = Math.min(dayOfMonth, lastDay);
       return now.getDate() === runDay;
@@ -445,20 +644,19 @@
 
     if (!board.recurringTasks || board.recurringTasks.length === 0) return false;
 
-    const todoCol = (board.columns || []).find((c) => (c.id || '').toString().toLowerCase() === 'todo') || (board.columns || [])[0];
+    const todoCol =
+      (board.columns || []).find(c => (c.id || '').toString().toLowerCase() === 'todo') || (board.columns || [])[0];
     if (!todoCol) return false;
 
     let tasksAdded = false;
-    board.recurringTasks.forEach((template) => {
+    board.recurringTasks.forEach(template => {
       if (!template.active) return;
       if (!shouldRunRecurringToday(template)) return;
       const assignees = template.assignees || [];
       if (assignees.length === 0) return;
 
-      const existingToday = (todoCol.cards || []).find((card) => 
-        card.recurringTemplateId === template.id && 
-        card.assignedAt && 
-        card.assignedAt.slice(0, 10) === todayKey
+      const existingToday = (todoCol.cards || []).find(
+        card => card.recurringTemplateId === template.id && card.assignedAt && card.assignedAt.slice(0, 10) === todayKey
       );
       if (existingToday) return;
 
@@ -489,7 +687,9 @@
   function addDaysToDateKey(dateKey, days) {
     const d = new Date(dateKey + 'T12:00:00');
     d.setDate(d.getDate() + days);
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return (
+      d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+    );
   }
 
   function formatDateForLabel(dateKey) {
@@ -518,8 +718,8 @@
 
   function getTasksByDate() {
     const allCards = [];
-    (board.columns || []).forEach((col) => {
-      (col.cards || []).forEach((card) => {
+    (board.columns || []).forEach(col => {
+      (col.cards || []).forEach(card => {
         const c = { ...card, _columnId: col.id };
         allCards.push(c);
       });
@@ -530,7 +730,7 @@
 
     const byDate = {};
 
-    allCards.forEach((card) => {
+    allCards.forEach(card => {
       const assignedAt = card.assignedAt || card.createdAt || '';
       const assignedDateKey = assignedAt ? assignedAt.slice(0, 10) : fallbackDate;
       const done = isCardDone(card);
@@ -558,20 +758,22 @@
       byDate[displayDateKey].push({
         ...card,
         _isRollover: isRollover,
-        _originalDateKey: originalDateKey,
+        _originalDateKey: originalDateKey
       });
     });
 
-    return Object.keys(byDate).sort().map((dateKey) => {
-      const cards = byDate[dateKey];
-      cards.sort((a, b) => {
-        if (a._isRollover && !b._isRollover) return -1;
-        if (!a._isRollover && b._isRollover) return 1;
-        if (a._isRollover && b._isRollover) return (a._originalDateKey || '').localeCompare(b._originalDateKey || '');
-        return 0;
+    return Object.keys(byDate)
+      .sort()
+      .map(dateKey => {
+        const cards = byDate[dateKey];
+        cards.sort((a, b) => {
+          if (a._isRollover && !b._isRollover) return -1;
+          if (!a._isRollover && b._isRollover) return 1;
+          if (a._isRollover && b._isRollover) return (a._originalDateKey || '').localeCompare(b._originalDateKey || '');
+          return 0;
+        });
+        return { dateKey, cards };
       });
-      return { dateKey, cards };
-    });
   }
 
   function formatDateLabel(dateKey) {
@@ -620,10 +822,10 @@
 
   function computeEmployeeStats() {
     const stats = {};
-    (board.columns || []).forEach((col) => {
-      (col.cards || []).forEach((card) => {
+    (board.columns || []).forEach(col => {
+      (col.cards || []).forEach(card => {
         const names = getAssigneesList(card);
-        names.forEach((name) => {
+        names.forEach(name => {
           const n = (name || '').trim();
           if (!n) return;
           if (!stats[n]) stats[n] = { assigned: 0, completed: 0, onTime: 0 };
@@ -644,10 +846,10 @@
     const tasks = [];
     const nameKey = (employeeName || '').trim().toLowerCase();
     if (!nameKey) return tasks;
-    (board.columns || []).forEach((col) => {
-      (col.cards || []).forEach((card) => {
+    (board.columns || []).forEach(col => {
+      (col.cards || []).forEach(card => {
         const names = getAssigneesList(card);
-        const has = names.some((n) => (n || '').trim().toLowerCase() === nameKey);
+        const has = names.some(n => (n || '').trim().toLowerCase() === nameKey);
         if (has) {
           tasks.push({
             ...card,
@@ -663,11 +865,11 @@
     const nameKey = (employeeName || '').trim().toLowerCase();
     if (!nameKey) return { dates: [], dateKeys: [], completions: [], byDate: {} };
     const byDate = {};
-    (board.columns || []).forEach((col) => {
-      (col.cards || []).forEach((card) => {
+    (board.columns || []).forEach(col => {
+      (col.cards || []).forEach(card => {
         if (!card.completedAt) return;
         const names = getAssigneesList(card);
-        const has = names.some((n) => (n || '').trim().toLowerCase() === nameKey);
+        const has = names.some(n => (n || '').trim().toLowerCase() === nameKey);
         if (!has) return;
         const dateKey = card.completedAt.slice(0, 10);
         if (!byDate[dateKey]) byDate[dateKey] = { count: 0, tasks: [] };
@@ -693,7 +895,8 @@
     const dateKeys = [];
     const completions = [];
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      const dk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const dk =
+        d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       dateKeys.push(dk);
       dates.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }));
       completions.push(byDate[dk] ? byDate[dk].count : 0);
@@ -721,7 +924,10 @@
     const name = (employeeName || '').trim();
     const profile = getEmployeeProfile(name);
     const currentUser = getCurrentUser();
-    const isOwnProfile = currentUser && currentUser.role === 'employee' && (currentUser.name || '').trim().toLowerCase() === name.toLowerCase();
+    const isOwnProfile =
+      currentUser &&
+      currentUser.role === 'employee' &&
+      (currentUser.name || '').trim().toLowerCase() === name.toLowerCase();
 
     nameEl.textContent = name || 'Employee';
     if (avatarEl) avatarEl.textContent = name ? name.charAt(0).toUpperCase() : '?';
@@ -743,7 +949,7 @@
     if (editProfileBtn) editProfileBtn.classList.toggle('d-none', !isOwnProfile);
 
     const stats = computeEmployeeStats();
-    const statsKey = Object.keys(stats || {}).find((k) => (k || '').trim().toLowerCase() === name.toLowerCase());
+    const statsKey = Object.keys(stats || {}).find(k => (k || '').trim().toLowerCase() === name.toLowerCase());
     const s = statsKey ? stats[statsKey] : { assigned: 0, completed: 0, onTime: 0 };
     const accuracy = s.assigned > 0 ? Math.round((s.completed / s.assigned) * 100) : 0;
     const completionRate = s.assigned > 0 ? Math.round((s.completed / s.assigned) * 100) : 0;
@@ -756,13 +962,17 @@
       if (tasks.length === 0) {
         tasksTbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-4">No tasks assigned</td></tr>';
       } else {
-        tasksTbody.innerHTML = tasks.map((t) => {
-          const done = isCardDone(t);
-          const status = done ? '<span class="badge bg-success">Completed</span>' : '<span class="badge bg-warning">Pending</span>';
-          const urgency = (t.urgency || 'medium').charAt(0).toUpperCase() + (t.urgency || 'medium').slice(1);
-          const deadline = t.deadline ? new Date(t.deadline).toLocaleString() : '—';
-          return `<tr><td>${escapeHtml(t.title || '')}</td><td>${status}</td><td>${escapeHtml(urgency)}</td><td>${escapeHtml(deadline)}</td></tr>`;
-        }).join('');
+        tasksTbody.innerHTML = tasks
+          .map(t => {
+            const done = isCardDone(t);
+            const status = done
+              ? '<span class="badge bg-success">Completed</span>'
+              : '<span class="badge bg-warning">Pending</span>';
+            const urgency = (t.urgency || 'medium').charAt(0).toUpperCase() + (t.urgency || 'medium').slice(1);
+            const deadline = t.deadline ? new Date(t.deadline).toLocaleString() : '—';
+            return `<tr><td>${escapeHtml(t.title || '')}</td><td>${status}</td><td>${escapeHtml(urgency)}</td><td>${escapeHtml(deadline)}</td></tr>`;
+          })
+          .join('');
       }
     }
 
@@ -786,7 +996,7 @@
             dataLabels: {
               show: true,
               name: { show: true, fontSize: '13px', fontWeight: 600, offsetY: -2 },
-              value: { show: true, fontSize: '16px', fontWeight: 700, offsetY: 2, formatter: (v) => v + '%' },
+              value: { show: true, fontSize: '16px', fontWeight: 700, offsetY: 2, formatter: v => v + '%' },
               total: { show: true, label: 'Overall', fontSize: '12px', formatter: () => accuracy + '%' }
             }
           }
@@ -812,8 +1022,8 @@
       employeeStatsChartInstance.render();
     }
     if (chartEl && typeof ApexCharts !== 'undefined') {
-      const completedTasks = (tasks || []).filter((t) => isCardDone(t));
-      const completedNames = completedTasks.map((t) => t.title || 'Task').slice(0, 8);
+      const completedTasks = (tasks || []).filter(t => isCardDone(t));
+      const completedNames = completedTasks.map(t => t.title || 'Task').slice(0, 8);
       const chartConfig = {
         chart: { type: 'radialBar', height: 180 },
         series: [accuracy],
@@ -836,14 +1046,16 @@
                 fontSize: '24px',
                 fontWeight: 700,
                 offsetY: 2,
-                formatter: (v) => v + '% achieved'
+                formatter: v => v + '% achieved'
               },
               total: {
                 show: true,
                 label: 'Tasks',
                 fontSize: '11px',
                 fontWeight: 500,
-                formatter: function () { return s.completed + ' / ' + s.assigned; }
+                formatter: function () {
+                  return s.completed + ' / ' + s.assigned;
+                }
               }
             }
           }
@@ -851,11 +1063,19 @@
         labels: ['Tasks'],
         tooltip: {
           custom: function (opts) {
-            const taskList = completedNames.length > 0
-              ? completedNames.map((t) => '• ' + escapeHtml(t)).join('<br>') + (completedTasks.length > 8 ? '<br><span style="color:#697a8d;font-size:10px">+' + (completedTasks.length - 8) + ' more</span>' : '')
-              : 'No tasks completed yet';
-            return '<div class="apexcharts-tooltip-title" style="margin-bottom:6px;font-weight:600">Completed tasks</div>' +
-              '<div style="font-size:11px;color:#697a8d;max-width:180px;line-height:1.5">' + taskList + '</div>';
+            const taskList =
+              completedNames.length > 0
+                ? completedNames.map(t => '• ' + escapeHtml(t)).join('<br>') +
+                  (completedTasks.length > 8
+                    ? '<br><span style="color:#697a8d;font-size:10px">+' + (completedTasks.length - 8) + ' more</span>'
+                    : '')
+                : 'No tasks completed yet';
+            return (
+              '<div class="apexcharts-tooltip-title" style="margin-bottom:6px;font-weight:600">Completed tasks</div>' +
+              '<div style="font-size:11px;color:#697a8d;max-width:180px;line-height:1.5">' +
+              taskList +
+              '</div>'
+            );
           }
         }
       };
@@ -899,7 +1119,10 @@
     fillDepartmentSelect(deptSelect);
     if (deptSelect) deptSelect.value = profile?.department || '';
     if (profile?.profilePic) {
-      if (preview) { preview.src = profile.profilePic; preview.classList.remove('d-none'); }
+      if (preview) {
+        preview.src = profile.profilePic;
+        preview.classList.remove('d-none');
+      }
       if (placeholder) placeholder.classList.add('d-none');
     } else {
       if (preview) preview.classList.add('d-none');
@@ -936,7 +1159,9 @@
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tasksByEmployee = {};
-    names.forEach((n) => { tasksByEmployee[n] = getEmployeeTasks(n); });
+    names.forEach(n => {
+      tasksByEmployee[n] = getEmployeeTasks(n);
+    });
 
     function filterByPeriod(tasks, periodType) {
       if (!tasks || tasks.length === 0) return [];
@@ -944,7 +1169,7 @@
       if (periodType === 'day') {
         const dayStart = new Date(now);
         dayStart.setHours(0, 0, 0, 0);
-        return tasks.filter((t) => {
+        return tasks.filter(t => {
           const d = t.assignedAt ? new Date(t.assignedAt) : null;
           if (!d) return false;
           return d >= dayStart;
@@ -954,7 +1179,7 @@
         const weekStart = new Date(now);
         weekStart.setDate(weekStart.getDate() - weekStart.getDay());
         weekStart.setHours(0, 0, 0, 0);
-        return tasks.filter((t) => {
+        return tasks.filter(t => {
           const d = t.assignedAt ? new Date(t.assignedAt) : null;
           if (!d) return false;
           return d >= weekStart;
@@ -962,7 +1187,7 @@
       }
       if (periodType === 'month') {
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        return tasks.filter((t) => {
+        return tasks.filter(t => {
           const d = t.assignedAt ? new Date(t.assignedAt) : null;
           if (!d) return false;
           return d >= monthStart;
@@ -972,18 +1197,19 @@
     }
 
     const rows = [];
-    const periodLabel = { day: 'Day-wise', week: 'Week-wise', month: 'Month-wise', overall: 'Overall' }[period] || period;
+    const periodLabel =
+      { day: 'Day-wise', week: 'Week-wise', month: 'Month-wise', overall: 'Overall' }[period] || period;
     rows.push(['Employee Performance Report - ' + periodLabel]);
     rows.push(['Generated: ' + new Date().toLocaleString()]);
     rows.push([]);
     rows.push(['Employee', 'Department', 'Assigned', 'Completed', 'On Time', 'Accuracy %', 'Period']);
 
-    names.forEach((empName) => {
+    names.forEach(empName => {
       let empTasks = tasksByEmployee[empName] || [];
       if (period !== 'overall') empTasks = filterByPeriod(empTasks, period);
       const assigned = empTasks.length;
-      const completed = empTasks.filter((t) => isCardDone(t)).length;
-      const onTime = empTasks.filter((t) => {
+      const completed = empTasks.filter(t => isCardDone(t)).length;
+      const onTime = empTasks.filter(t => {
         if (!isCardDone(t)) return false;
         const d = t.completedAt ? new Date(t.completedAt) : null;
         const dead = t.deadline ? new Date(t.deadline) : null;
@@ -1007,9 +1233,22 @@
   function exportStoredDataToExcel() {
     const cols = board.columns || [];
     const allCards = [];
-    cols.forEach((col) => (col.cards || []).forEach((card) => allCards.push(card)));
+    cols.forEach(col => (col.cards || []).forEach(card => allCards.push(card)));
 
-    const headers = ['S.No', 'ID', 'Date', 'Title', 'Description', 'Status', 'Urgency', 'Department', 'Deadline', 'Assigned to', 'Assigned by', 'Completed at'];
+    const headers = [
+      'S.No',
+      'ID',
+      'Date',
+      'Title',
+      'Description',
+      'Status',
+      'Urgency',
+      'Department',
+      'Deadline',
+      'Assigned to',
+      'Assigned by',
+      'Completed at'
+    ];
     const rows = [];
     rows.push(['TASK DATA EXPORT']);
     rows.push(['Generated: ' + new Date().toLocaleString()]);
@@ -1038,7 +1277,7 @@
       ]);
     });
 
-    const csv = rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n');
+    const csv = rows.map(row => row.map(escapeCsvCell).join(',')).join('\r\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -1049,7 +1288,7 @@
 
   function exportToExcel(period) {
     const rows = getEmployeePerformanceByPeriod(period);
-    const csv = rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n');
+    const csv = rows.map(row => row.map(escapeCsvCell).join(',')).join('\r\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -1063,8 +1302,8 @@
 
   function getTasksByDateKey() {
     const byDate = {};
-    (board.columns || []).forEach((col) => {
-      (col.cards || []).forEach((card) => {
+    (board.columns || []).forEach(col => {
+      (col.cards || []).forEach(card => {
         const assignedAt = card.assignedAt || card.createdAt || '';
         const dateKey = assignedAt ? assignedAt.slice(0, 10) : '';
         if (!dateKey) return;
@@ -1091,7 +1330,7 @@
     const startPad = (firstDay.getDay() + 6) % 7;
     const daysInMonth = lastDay.getDate();
     const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    let html = dayNames.map((d) => `<div class="cal-day-name">${d}</div>`).join('');
+    let html = dayNames.map(d => `<div class="cal-day-name">${d}</div>`).join('');
     for (let i = 0; i < startPad; i++) html += '<div class="cal-day"></div>';
     for (let d = 1; d <= daysInMonth; d++) {
       const dateKey = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
@@ -1100,21 +1339,37 @@
       html += `<div class="cal-day${count ? ' has-tasks' : ''}" data-date="${dateKey}" title="${count} task(s)"><span class="cal-num">${d}</span>${count ? '<span class="cal-count">' + count + '</span>' : ''}</div>`;
     }
     grid.innerHTML = html;
-    grid.querySelectorAll('.cal-day[data-date]').forEach((el) => {
+    grid.querySelectorAll('.cal-day[data-date]').forEach(el => {
       el.addEventListener('click', () => {
-        grid.querySelectorAll('.cal-day').forEach((c) => c.classList.remove('selected'));
+        grid.querySelectorAll('.cal-day').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected');
         const dateKey = el.dataset.date;
         // Get fresh data to reflect any task status changes
         const freshByDate = getTasksByDateKey();
         const tasks = freshByDate[dateKey] || [];
         const d = new Date(dateKey + 'T12:00:00');
-        detailTitle.textContent = 'Tasks for ' + d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+        detailTitle.textContent =
+          'Tasks for ' +
+          d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         if (tasks.length === 0) {
           detailBody.innerHTML = '<p class="text-muted mb-0">No tasks assigned this day.</p>';
         } else {
-          detailBody.innerHTML = '<table class="table table-sm mb-0"><thead><tr><th>Task</th><th>Assigned to</th><th>Status</th></tr></thead><tbody>' +
-            tasks.map((t) => '<tr><td>' + escapeHtml(t.title || '') + '</td><td>' + escapeHtml(getAssigneesList(t).join(', ') || '—') + '</td><td><span class="badge ' + (t.status === 'Completed' ? 'bg-success' : 'bg-warning') + '">' + escapeHtml(t.status) + '</span></td></tr>').join('') +
+          detailBody.innerHTML =
+            '<table class="table table-sm mb-0"><thead><tr><th>Task</th><th>Assigned to</th><th>Status</th></tr></thead><tbody>' +
+            tasks
+              .map(
+                t =>
+                  '<tr><td>' +
+                  escapeHtml(t.title || '') +
+                  '</td><td>' +
+                  escapeHtml(getAssigneesList(t).join(', ') || '—') +
+                  '</td><td><span class="badge ' +
+                  (t.status === 'Completed' ? 'bg-success' : 'bg-warning') +
+                  '">' +
+                  escapeHtml(t.status) +
+                  '</span></td></tr>'
+              )
+              .join('') +
             '</tbody></table>';
         }
         detailWrap.classList.remove('d-none');
@@ -1125,12 +1380,13 @@
   function render() {
     const container = document.getElementById('kanban-board');
     if (!container) return;
-    const manager = isManager();
+    const manager = canCreateAndAssign();
     const dateGroups = getTasksByDate();
 
     if (dateGroups.length === 0) {
-      container.innerHTML = '<p class="text-muted py-5">No tasks yet. Add tasks from the Tasks tab or use "Load demo data".</p>';
-      const todoCol = (board.columns || []).find((c) => (c.id || '').toString().toLowerCase() === 'todo');
+      container.innerHTML =
+        '<p class="text-muted py-5">No tasks yet. Add tasks from the Tasks tab or use "Load demo data".</p>';
+      const todoCol = (board.columns || []).find(c => (c.id || '').toString().toLowerCase() === 'todo');
       if (manager && todoCol) {
         const addBtn = document.createElement('button');
         addBtn.type = 'button';
@@ -1145,20 +1401,20 @@
 
     const todayKey = getTodayDateKey();
     const groupsToRender = [];
-    dateGroups.forEach((group) => {
+    dateGroups.forEach(group => {
       let filteredCards = group.cards;
       if (searchQuery) {
         const lowerQuery = searchQuery.toLowerCase();
-        filteredCards = filteredCards.filter((card) => {
+        filteredCards = filteredCards.filter(card => {
           const titleMatch = (card.title || '').toLowerCase().includes(lowerQuery);
           const descMatch = (card.description || '').toLowerCase().includes(lowerQuery);
-          const assigneeMatch = getAssigneesList(card).some((name) => name.toLowerCase().includes(lowerQuery));
+          const assigneeMatch = getAssigneesList(card).some(name => name.toLowerCase().includes(lowerQuery));
           return titleMatch || descMatch || assigneeMatch;
         });
       }
       if (group.dateKey === todayKey) {
-        const rolloverPending = filteredCards.filter((c) => !isCardDone(c) && c._isRollover === true);
-        const todayRest = filteredCards.filter((c) => !c._isRollover || isCardDone(c));
+        const rolloverPending = filteredCards.filter(c => !isCardDone(c) && c._isRollover === true);
+        const todayRest = filteredCards.filter(c => !c._isRollover || isCardDone(c));
         groupsToRender.push({
           dateKey: group.dateKey,
           label: 'Pending – Rollover to today',
@@ -1181,7 +1437,7 @@
     });
 
     function renderColumn(group) {
-      const partClass = group.isRolloverPart ? ' kanban-part-rollover' : (group.isTodayPart ? ' kanban-part-today' : '');
+      const partClass = group.isRolloverPart ? ' kanban-part-rollover' : group.isTodayPart ? ' kanban-part-today' : '';
       return `
       <div class="kanban-column kanban-date-column${partClass}" data-date-key="${group.dateKey}">
         <div class="kanban-column-header">
@@ -1190,33 +1446,56 @@
         </div>
         <div class="kanban-column-cards" data-date-key="${group.dateKey}">
           ${group.cards
-            .map(
-              (card) => {
-                const isDone = isCardDone(card);
-                const isRollover = card._isRollover === true;
-                const urgency = card.urgency || 'medium';
-                const urgencyClass = isDone ? '' : (urgency === 'high' ? 'kanban-urgency-high' : urgency === 'low' ? 'kanban-urgency-low' : 'kanban-urgency-medium');
-                const doneClass = isDone ? 'kanban-card-done' : '';
-                const rolloverClass = isRollover ? 'kanban-card-rollover' : '';
-                const rolloverBadge = isRollover ? `<span class="rollover-badge"><i class="bx bx-error-circle text-warning"></i> ${escapeHtml(getRolloverLabel(card._originalDateKey || ''))}</span>` : '';
-                const assignedDateKey = card._originalDateKey || card.assignedAt?.slice(0, 10) || '';
-                const taskDateHtml = assignedDateKey ? `<span class="task-assigned-date small text-muted"><i class="bx bx-calendar me-1"></i>${escapeHtml(formatTaskDate(assignedDateKey))}</span>` : '';
-                const assigneeNames = getAssigneesList(card);
-                const assigneeHtml = assigneeNames.length > 0 ? assigneesInitialsOnly(assigneeNames) : '';
-                const deptHtml = card.department ? `<span class="badge bg-label-info me-1 small">${escapeHtml(card.department)}</span>` : '';
-                const deadlineHtml = card.deadline ? `<span class="card-deadline d-block mt-1 small ${!isDone && new Date(card.deadline) < new Date() ? 'overdue' : ''}">${escapeHtml(formatDeadlineTimer(card.deadline, card.completedAt, isDone))}</span>` : '';
-                const assignedByHtml = card.assignedByName ? `<span class="card-assigned-by d-block mt-1 small text-muted"><i class="bx bx-user-plus me-1"></i>Assigned by ${escapeHtml(card.assignedByName)}</span>` : '';
-                const recFreq = (card.recurringFrequency || 'daily').toLowerCase();
-                const recLabel = recFreq === 'weekly' ? 'Weekly' : recFreq === 'monthly' ? 'Monthly' : 'Daily';
-                const recurringBadge = card.isRecurringTask ? '<span class="badge bg-label-secondary me-1 small"><i class="bx bx-refresh me-1"></i>' + recLabel + '</span>' : '';
-                const completedBadge = isDone ? '<span class="task-completed-badge"><i class="bx bx-like"></i> Completed</span>' : '';
-                const todoCol = (board.columns || []).find((c) => (c.id || '').toString().toLowerCase() === 'todo') || (board.columns || [])[0];
-                const colId = card._columnId || (todoCol ? todoCol.id : 'todo');
-                const toggleBtnClass = isDone ? 'kanban-done-toggle-btn done' : 'kanban-done-toggle-btn';
-                const toggleIcon = isDone ? 'bx-like' : 'bx-circle';
-                const toggleTitle = isDone ? 'Mark as not done' : 'Mark as done';
-                const clickTitle = manager ? 'Click to edit' : 'Click to view';
-                return `
+            .map(card => {
+              const isDone = isCardDone(card);
+              const isRollover = card._isRollover === true;
+              const urgency = card.urgency || 'medium';
+              const urgencyClass = isDone
+                ? ''
+                : urgency === 'high'
+                  ? 'kanban-urgency-high'
+                  : urgency === 'low'
+                    ? 'kanban-urgency-low'
+                    : 'kanban-urgency-medium';
+              const doneClass = isDone ? 'kanban-card-done' : '';
+              const rolloverClass = isRollover ? 'kanban-card-rollover' : '';
+              const rolloverBadge = isRollover
+                ? `<span class="rollover-badge"><i class="bx bx-error-circle text-warning"></i> ${escapeHtml(getRolloverLabel(card._originalDateKey || ''))}</span>`
+                : '';
+              const assignedDateKey = card._originalDateKey || card.assignedAt?.slice(0, 10) || '';
+              const taskDateHtml = assignedDateKey
+                ? `<span class="task-assigned-date small text-muted"><i class="bx bx-calendar me-1"></i>${escapeHtml(formatTaskDate(assignedDateKey))}</span>`
+                : '';
+              const assigneeNames = getAssigneesList(card);
+              const assigneeHtml = assigneeNames.length > 0 ? assigneesInitialsOnly(assigneeNames) : '';
+              const deptHtml = card.department
+                ? `<span class="badge bg-label-info me-1 small">${escapeHtml(card.department)}</span>`
+                : '';
+              const deadlineHtml = card.deadline
+                ? `<span class="card-deadline d-block mt-1 small ${!isDone && new Date(card.deadline) < new Date() ? 'overdue' : ''}">${escapeHtml(formatDeadlineTimer(card.deadline, card.completedAt, isDone))}</span>`
+                : '';
+              const assignedByHtml = card.assignedByName
+                ? `<span class="card-assigned-by d-block mt-1 small text-muted"><i class="bx bx-user-plus me-1"></i>Assigned by ${escapeHtml(card.assignedByName)}</span>`
+                : '';
+              const recFreq = (card.recurringFrequency || 'daily').toLowerCase();
+              const recLabel = recFreq === 'weekly' ? 'Weekly' : recFreq === 'monthly' ? 'Monthly' : 'Daily';
+              const recurringBadge = card.isRecurringTask
+                ? '<span class="badge bg-label-secondary me-1 small"><i class="bx bx-refresh me-1"></i>' +
+                  recLabel +
+                  '</span>'
+                : '';
+              const completedBadge = isDone
+                ? '<span class="task-completed-badge"><i class="bx bx-like"></i> Completed</span>'
+                : '';
+              const todoCol =
+                (board.columns || []).find(c => (c.id || '').toString().toLowerCase() === 'todo') ||
+                (board.columns || [])[0];
+              const colId = card._columnId || (todoCol ? todoCol.id : 'todo');
+              const toggleBtnClass = isDone ? 'kanban-done-toggle-btn done' : 'kanban-done-toggle-btn';
+              const toggleIcon = isDone ? 'bx-like' : 'bx-circle';
+              const toggleTitle = isDone ? 'Mark as not done' : 'Mark as done';
+              const clickTitle = manager ? 'Click to edit' : 'Click to view';
+              return `
             <div class="card kanban-card kanban-card-clickable ${urgencyClass} ${doneClass} ${rolloverClass}" data-card-id="${card.id}" data-column-id="${colId}" title="${clickTitle}">
               <div class="card-body py-3 d-flex gap-2 align-items-start">
                 <button type="button" class="${toggleBtnClass}" data-card-id="${escapeHtml(card.id)}" title="${toggleTitle}" aria-label="${toggleTitle}">
@@ -1243,62 +1522,92 @@
               </div>
             </div>
           `;
-              }
-            )
+            })
             .join('')}
         </div>
-        ${manager ? `<button type="button" class="btn btn-sm btn-outline-primary w-100 mt-2 add-card" data-column-id="${((board.columns || [])[0] && (board.columns[0].id)) || 'todo'}">+ Add card</button>` : ''}
+        ${manager ? `<button type="button" class="btn btn-sm btn-outline-primary w-100 mt-2 add-card" data-column-id="${((board.columns || [])[0] && board.columns[0].id) || 'todo'}">+ Add card</button>` : ''}
       </div>
     `;
     }
 
     let boardHtml = '';
-    const nonEmptyGroups = groupsToRender.filter((g) => g.cards.length > 0);
+    const pendingGroup = groupsToRender.find(g => g.isRolloverPart);
+    const todayGroup = groupsToRender.find(g => g.isTodayPart);
+    const otherGroups = groupsToRender.filter(g => !g.isRolloverPart && !g.isTodayPart);
+    const hasTodayView = pendingGroup !== undefined || todayGroup !== undefined;
+    const nonEmptyGroups = groupsToRender.filter(g => g.cards.length > 0);
+
     if (nonEmptyGroups.length === 0) {
-      container.innerHTML = searchQuery 
-        ? '<p class="text-muted py-5">No tasks found matching your search.</p>' 
+      container.innerHTML = searchQuery
+        ? '<p class="text-muted py-5">No tasks found matching your search.</p>'
         : '<p class="text-muted py-5">No tasks yet. Add tasks from the Tasks tab or use "Load demo data".</p>';
       return;
     }
-    if (nonEmptyGroups.length >= 2 && nonEmptyGroups[0].isRolloverPart && nonEmptyGroups[1].isTodayPart) {
+
+    if (hasTodayView) {
+      // Pending always on top (row 1), Today always below (row 2) – two separate rows
       boardHtml += '<div class="kanban-board-rows">';
-      boardHtml += '<div class="kanban-board-row">' + renderColumn(nonEmptyGroups[0]) + '</div>';
-      boardHtml += '<div class="kanban-board-row">' + renderColumn(nonEmptyGroups[1]) + '</div>';
-      if (nonEmptyGroups.length > 2) {
+      boardHtml +=
+        '<div class="kanban-board-row kanban-row-pending">' +
+        renderColumn(
+          pendingGroup || {
+            dateKey: getTodayDateKey(),
+            label: 'Pending – Rollover to today',
+            cards: [],
+            isRolloverPart: true
+          }
+        ) +
+        '</div>';
+      boardHtml +=
+        '<div class="kanban-board-row kanban-row-today">' +
+        renderColumn(
+          todayGroup || {
+            dateKey: getTodayDateKey(),
+            label: 'Today (' + formatDateForLabel(getTodayDateKey()) + ')',
+            cards: [],
+            isTodayPart: true
+          }
+        ) +
+        '</div>';
+      if (otherGroups.length > 0) {
         boardHtml += '<div class="kanban-board-row">';
-        for (let i = 2; i < nonEmptyGroups.length; i++) boardHtml += renderColumn(nonEmptyGroups[i]);
+        otherGroups.forEach(g => {
+          boardHtml += renderColumn(g);
+        });
         boardHtml += '</div>';
       }
       boardHtml += '</div>';
     } else {
       boardHtml += '<div class="kanban-board-rows"><div class="kanban-board-row">';
-      nonEmptyGroups.forEach((g) => { boardHtml += renderColumn(g); });
+      groupsToRender.forEach(g => {
+        boardHtml += renderColumn(g);
+      });
       boardHtml += '</div></div>';
     }
     container.innerHTML = boardHtml;
 
-    container.querySelectorAll('.kanban-done-toggle-btn').forEach((btn) => {
+    container.querySelectorAll('.kanban-done-toggle-btn').forEach(btn => {
       btn.addEventListener('click', onToggleDone);
     });
     if (manager) {
-      container.querySelectorAll('.add-card').forEach((btn) => btn.addEventListener('click', onAddCard));
+      container.querySelectorAll('.add-card').forEach(btn => btn.addEventListener('click', onAddCard));
     }
-    container.querySelectorAll('.kanban-card-clickable').forEach((el) => {
-      el.addEventListener('click', (e) => {
+    container.querySelectorAll('.kanban-card-clickable').forEach(el => {
+      el.addEventListener('click', e => {
         if (e.target.closest('.kanban-done-toggle-btn')) return;
         if (e.target.closest('.assignee-clickable')) return;
         const cardId = el.dataset.cardId;
         if (!cardId) return;
-        const col = board.columns.find((c) => (c.cards || []).some((card) => card.id === cardId));
+        const col = board.columns.find(c => (c.cards || []).some(card => card.id === cardId));
         if (!col) return;
-        const card = col.cards.find((c) => c.id === cardId);
+        const card = col.cards.find(c => c.id === cardId);
         if (!card) return;
         if (manager) openCardModal(card, col.id);
         else openTaskDetailsModal(card);
       });
     });
-    container.querySelectorAll('.assignee-clickable').forEach((el) => {
-      el.addEventListener('click', (e) => {
+    container.querySelectorAll('.assignee-clickable').forEach(el => {
+      el.addEventListener('click', e => {
         e.preventDefault();
         e.stopPropagation();
         const name = el.dataset.employeeName;
@@ -1313,9 +1622,9 @@
     const btn = e.currentTarget;
     const cardId = btn.dataset.cardId;
     if (!cardId) return;
-    const col = (board.columns || []).find((c) => (c.cards || []).some((card) => card.id === cardId));
+    const col = (board.columns || []).find(c => (c.cards || []).some(card => card.id === cardId));
     if (!col) return;
-    const card = (col.cards || []).find((c) => c.id === cardId);
+    const card = (col.cards || []).find(c => c.id === cardId);
     if (!card) return;
     const currentlyDone = isCardDone(card);
     if (currentlyDone) {
@@ -1333,26 +1642,30 @@
   }
 
   function onAddCard(e) {
-    if (!isManager()) return;
+    if (!canCreateAndAssign()) return;
     const columnId = e.currentTarget.dataset.columnId;
     openCardModal(null, columnId);
   }
 
   function onEditCard(e) {
     e.preventDefault();
-    if (!isManager()) return;
+    if (!canCreateAndAssign()) return;
     const cardId = e.target.closest('[data-card-id]').dataset.cardId;
-    const col = board.columns.find((c) => (c.cards || []).some((card) => card.id === cardId));
-    if (col) openCardModal(col.cards.find((c) => c.id === cardId), col.id);
+    const col = board.columns.find(c => (c.cards || []).some(card => card.id === cardId));
+    if (col)
+      openCardModal(
+        col.cards.find(c => c.id === cardId),
+        col.id
+      );
   }
 
   function onDeleteCard(e) {
     e.preventDefault();
-    if (!isManager()) return;
+    if (!canCreateAndAssign()) return;
     const cardId = e.target.closest('[data-card-id]').dataset.cardId;
-    const col = board.columns.find((c) => (c.cards || []).some((card) => card.id === cardId));
+    const col = board.columns.find(c => (c.cards || []).some(card => card.id === cardId));
     if (col && confirm('Delete this card?')) {
-      col.cards = col.cards.filter((c) => c.id !== cardId);
+      col.cards = col.cards.filter(c => c.id !== cardId);
       saveBoard();
       render();
     }
@@ -1362,9 +1675,9 @@
     e.preventDefault();
     const cardId = e.target.closest('[data-card-id]').dataset.cardId || e.target.dataset.cardId;
     if (!cardId) return;
-    const col = board.columns.find((c) => (c.cards || []).some((card) => card.id === cardId));
+    const col = board.columns.find(c => (c.cards || []).some(card => card.id === cardId));
     if (!col) return;
-    const card = col.cards.find((c) => c.id === cardId);
+    const card = col.cards.find(c => c.id === cardId);
     if (!card) return;
     openTaskDetailsModal(card);
   }
@@ -1382,7 +1695,7 @@
     if (titleEl) titleEl.textContent = card.title || '—';
     if (descEl) descEl.textContent = card.description || '—';
     if (urgencyEl) {
-      const u = (card.urgency || 'medium');
+      const u = card.urgency || 'medium';
       urgencyEl.textContent = u.charAt(0).toUpperCase() + u.slice(1);
     }
     if (deptEl) deptEl.textContent = card.department || '—';
@@ -1394,7 +1707,7 @@
     }
     const names = getAssigneesList(card);
     if (assigneeEl) {
-      assigneeEl.innerHTML = names.length > 0 ? names.map((n) => assigneeBlock(n)).join(' ') : '— Unassigned —';
+      assigneeEl.innerHTML = names.length > 0 ? names.map(n => assigneeBlock(n)).join(' ') : '— Unassigned —';
     }
     if (assignedByEl) assignedByEl.textContent = card.assignedByName || '—';
     const bsModal = new bootstrap.Modal(modal);
@@ -1405,26 +1718,34 @@
     if (!selectEl) return;
     const current = selectEl.value;
     const depts = getDepartments();
-    selectEl.innerHTML = '<option value="">— Select department —</option>' + depts.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+    selectEl.innerHTML =
+      '<option value="">— Select department —</option>' +
+      depts.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
     if (current && depts.indexOf(current) !== -1) selectEl.value = current;
   }
 
   function renderAssigneesChips(container, names, onRemove) {
     if (!container) return;
-    container.innerHTML = (names || []).map((name) => {
-      const n = (name || '').trim();
-      if (!n) return '';
-      return `<span class="assignee-chip" data-name="${escapeHtml(n)}">${escapeHtml(n)} <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-danger" data-remove-name="${escapeHtml(n)}" aria-label="Remove">&times;</button></span>`;
-    }).join('');
-    container.querySelectorAll('[data-remove-name]').forEach((btn) => {
-      btn.addEventListener('click', () => { onRemove(btn.dataset.removeName); });
+    container.innerHTML = (names || [])
+      .map(name => {
+        const n = (name || '').trim();
+        if (!n) return '';
+        return `<span class="assignee-chip" data-name="${escapeHtml(n)}">${escapeHtml(n)} <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-danger" data-remove-name="${escapeHtml(n)}" aria-label="Remove">&times;</button></span>`;
+      })
+      .join('');
+    container.querySelectorAll('[data-remove-name]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        onRemove(btn.dataset.removeName);
+      });
     });
   }
 
   function getAssigneesFromChips() {
     const container = document.getElementById('card-assignees-chips');
     if (!container) return [];
-    return [].map.call(container.querySelectorAll('.assignee-chip[data-name]'), (el) => el.dataset.name || '').filter(Boolean);
+    return [].map
+      .call(container.querySelectorAll('.assignee-chip[data-name]'), el => el.dataset.name || '')
+      .filter(Boolean);
   }
 
   function openCardModal(card, columnId) {
@@ -1447,24 +1768,24 @@
     const newDeptWrap = document.getElementById('card-new-dept-wrap');
     if (!modal || !form) return;
 
-    const manager = isManager();
-    if (departmentGroup) departmentGroup.style.display = manager ? 'block' : 'none';
-    if (assigneeNameGroup) assigneeNameGroup.style.display = manager ? 'block' : 'none';
-    if (deadlineGroup) deadlineGroup.style.display = manager ? 'block' : 'none';
+    const canEdit = canCreateAndAssign();
+    if (departmentGroup) departmentGroup.style.display = canEdit ? 'block' : 'none';
+    if (assigneeNameGroup) assigneeNameGroup.style.display = canEdit ? 'block' : 'none';
+    if (deadlineGroup) deadlineGroup.style.display = canEdit ? 'block' : 'none';
     if (assignedByInfo) assignedByInfo.style.display = 'none';
     if (newDeptWrap) newDeptWrap.classList.add('d-none');
-    if (recurringGroup) recurringGroup.style.display = (manager && !card) ? 'block' : 'none';
+    if (recurringGroup) recurringGroup.style.display = canEdit && !card ? 'block' : 'none';
     if (recurringCheckbox) recurringCheckbox.checked = false;
     const freqWrap = document.getElementById('recurring-frequency-wrap');
     if (freqWrap) freqWrap.classList.add('d-none');
     const deleteBtn = document.getElementById('card-modal-delete-btn');
-    if (deleteBtn) deleteBtn.classList.toggle('d-none', !(manager && card));
+    if (deleteBtn) deleteBtn.classList.toggle('d-none', !(canEdit && card));
 
     fillDepartmentSelect(departmentSelect);
 
     const assigneeNames = card ? getAssigneesList(card) : [];
     function removeAssignee(name) {
-      const list = getAssigneesFromChips().filter((n) => n !== name);
+      const list = getAssigneesFromChips().filter(n => n !== name);
       renderAssigneesChips(assigneesChips, list, removeAssignee);
     }
     renderAssigneesChips(assigneesChips, assigneeNames, removeAssignee);
@@ -1525,7 +1846,11 @@
     const currentUser = getCurrentUser();
     const assigneesFromChips = getAssigneesFromChips();
     const newName = assigneeInput ? assigneeInput.value.trim() : '';
-    const assigneeNames = newName ? (assigneesFromChips.indexOf(newName) === -1 ? assigneesFromChips.concat(newName) : assigneesFromChips) : assigneesFromChips;
+    const assigneeNames = newName
+      ? assigneesFromChips.indexOf(newName) === -1
+        ? assigneesFromChips.concat(newName)
+        : assigneesFromChips
+      : assigneesFromChips;
     const isRecurring = recurringCheckbox ? recurringCheckbox.checked : false;
 
     if (isRecurring && assigneeNames.length > 0) {
@@ -1571,11 +1896,11 @@
     }
 
     const columnId = form.dataset.columnId;
-    const col = board.columns.find((c) => c.id === columnId);
+    const col = board.columns.find(c => c.id === columnId);
     if (!col) return;
 
     if (form.dataset.cardId) {
-      const card = col.cards.find((c) => c.id === form.dataset.cardId);
+      const card = col.cards.find(c => c.id === form.dataset.cardId);
       if (card) {
         card.title = title;
         card.description = descInput.value.trim();
@@ -1594,7 +1919,14 @@
         }
       }
     } else {
-      const card = { id: uid(), title, description: descInput.value.trim(), urgency, department: department || undefined, deadline };
+      const card = {
+        id: uid(),
+        title,
+        description: descInput.value.trim(),
+        urgency,
+        department: department || undefined,
+        deadline
+      };
       card.assignees = assigneeNames.length > 0 ? assigneeNames.slice() : undefined;
       card.assigneeName = assigneeNames[0] || undefined;
       card.assignedAt = new Date().toISOString();
@@ -1618,14 +1950,14 @@
     const addBtn = document.getElementById('add-upcoming-task');
     const addDeptBtn = document.getElementById('add-dept-tasks-btn');
     if (!container) return;
-    const manager = isManager();
-    if (addBtn) addBtn.style.display = manager ? 'inline-flex' : 'none';
-    if (addDeptBtn) addDeptBtn.classList.toggle('d-none', !manager);
+    const canEdit = canCreateAndAssign();
+    if (addBtn) addBtn.style.display = canEdit ? 'inline-flex' : 'none';
+    if (addDeptBtn) addDeptBtn.classList.toggle('d-none', !canEdit);
 
     let tasks = board.upcomingTasks || [];
     if (tasksTabSearchQuery) {
       const q = tasksTabSearchQuery.toLowerCase();
-      tasks = tasks.filter((task) => {
+      tasks = tasks.filter(task => {
         const title = (task.title || '').toLowerCase();
         const desc = (task.description || '').toLowerCase();
         const dept = (task.department || '').toLowerCase();
@@ -1634,14 +1966,14 @@
       });
     }
     const byDept = {};
-    tasks.forEach((task) => {
+    tasks.forEach(task => {
       const dept = (task.department || '').trim() || 'Other';
       if (!byDept[dept]) byDept[dept] = [];
       byDept[dept].push(task);
     });
 
     const deptOrder = getDepartments().slice();
-    Object.keys(byDept).forEach((d) => {
+    Object.keys(byDept).forEach(d => {
       if (d !== 'Other' && deptOrder.indexOf(d) === -1) deptOrder.push(d);
     });
     if (byDept['Other']) deptOrder.push('Other');
@@ -1649,30 +1981,41 @@
       container.innerHTML = '<p class="text-muted text-center py-4 mb-0 px-3">No tasks match your search.</p>';
       return;
     }
-    if (deptOrder.length === 0 && manager) {
-      container.innerHTML = '<p class="text-muted text-center py-4 mb-0 px-3">No departments yet. Click <strong>Create dept</strong> above to add one, then add tasks.</p>';
+    if (deptOrder.length === 0 && canEdit) {
+      container.innerHTML =
+        '<p class="text-muted text-center py-4 mb-0 px-3">No departments yet. Click <strong>Create dept</strong> above to add one, then add tasks.</p>';
       return;
     }
     if (deptOrder.length === 0) {
-      container.innerHTML = '<p class="text-muted text-center py-4 mb-0 px-3">No tasks yet. Only the manager can add and assign tasks.</p>';
+      container.innerHTML =
+        '<p class="text-muted text-center py-4 mb-0 px-3">No tasks yet. Only users with create rights can add and assign tasks.</p>';
       return;
     }
 
     let html = '';
-    deptOrder.forEach((dept) => {
+    deptOrder.forEach(dept => {
       const deptTasks = byDept[dept] || [];
       html += '<div class="tasks-dept-section border-bottom">';
       html += '<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">';
-      html += '<h6 class="mb-0 d-flex align-items-center"><i class="bx bx-building-house me-2"></i>' + escapeHtml(dept) + '</h6>';
-      if (manager) {
-        html += '<button type="button" class="btn btn-sm btn-primary add-task-for-dept" data-dept="' + escapeHtml(dept) + '" title="Add task for ' + escapeHtml(dept) + '"><i class="bx bx-plus me-1"></i> Add task</button>';
+      html +=
+        '<h6 class="mb-0 d-flex align-items-center"><i class="bx bx-building-house me-2"></i>' +
+        escapeHtml(dept) +
+        '</h6>';
+      if (canEdit) {
+        html +=
+          '<button type="button" class="btn btn-sm btn-primary add-task-for-dept" data-dept="' +
+          escapeHtml(dept) +
+          '" title="Add task for ' +
+          escapeHtml(dept) +
+          '"><i class="bx bx-plus me-1"></i> Add task</button>';
       }
       html += '</div>';
-      html += '<div class="table-responsive rounded border"><table class="table table-hover table-align-middle mb-0 tasks-dept-table"><thead><tr><th class="tasks-sno">S.No</th><th>Task</th><th>Description</th><th class="tasks-urgency">Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th class="tasks-assign-col">Assign to</th></tr></thead><tbody>';
+      html +=
+        '<div class="table-responsive rounded border"><table class="table table-hover table-align-middle mb-0 tasks-dept-table"><thead><tr><th class="tasks-sno">S.No</th><th>Task</th><th>Description</th><th class="tasks-urgency">Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th class="tasks-assign-col">Assign to</th></tr></thead><tbody>';
       deptTasks.forEach((task, idx) => {
         const assigneesStr = getAssigneesList(task).join(', ') || '—';
         const deadlineStr = task.deadline ? new Date(task.deadline).toLocaleString() : '—';
-        const assignInput = manager
+        const assignInput = canEdit
           ? `<div class="input-group input-group-sm"><input type="text" class="form-control assign-upcoming-input" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}" placeholder="Employee name" /><button type="button" class="btn btn-primary btn-sm assign-upcoming-btn" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}">Assign</button></div>`
           : '<span class="text-muted">—</span>';
         html += `<tr data-task-id="${task.id}">
@@ -1687,21 +2030,22 @@
       </tr>`;
       });
       if (deptTasks.length === 0) {
-        html += '<tr><td colspan="8" class="text-muted text-center py-4">No tasks in this department. Click <strong>Add task</strong> above to add one.</td></tr>';
+        html +=
+          '<tr><td colspan="8" class="text-muted text-center py-4">No tasks in this department. Click <strong>Add task</strong> above to add one.</td></tr>';
       }
       html += '</tbody></table></div></div>';
     });
     container.innerHTML = html;
 
-    if (manager) {
-      container.querySelectorAll('.assign-upcoming-btn').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
+    if (canEdit) {
+      container.querySelectorAll('.assign-upcoming-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
           const input = e.target.closest('tr').querySelector('.assign-upcoming-input');
           if (input) onAssignUpcoming(input);
         });
       });
-      container.querySelectorAll('.add-task-for-dept').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
+      container.querySelectorAll('.add-task-for-dept').forEach(btn => {
+        btn.addEventListener('click', e => {
           const dept = e.currentTarget.dataset.dept;
           openUpcomingTaskModal(dept);
         });
@@ -1716,7 +2060,7 @@
     const assigneeName = (inputEl.value || '').trim();
     if (!assigneeName) return;
 
-    const task = (board.upcomingTasks || []).find((t) => t.id === taskId);
+    const task = (board.upcomingTasks || []).find(t => t.id === taskId);
     if (!task) return;
     const currentUser = getCurrentUser();
     task.assigneeName = assigneeName;
@@ -1725,8 +2069,8 @@
     task.assignedByName = currentUser ? currentUser.name : 'Manager';
     task.assignedAt = task.assignedAt || new Date().toISOString();
 
-    const alreadyOnBoard = (board.columns || []).some((col) => (col.cards || []).some((c) => c.id === task.id));
-    const todoCol = (board.columns || []).find((c) => (c.id || '').toString().toLowerCase() === 'todo');
+    const alreadyOnBoard = (board.columns || []).some(col => (col.cards || []).some(c => c.id === task.id));
+    const todoCol = (board.columns || []).find(c => (c.id || '').toString().toLowerCase() === 'todo');
     if (!alreadyOnBoard && todoCol) {
       todoCol.cards = todoCol.cards || [];
       todoCol.cards.push(task);
@@ -1748,13 +2092,13 @@
 
     const notifs = (board.notifications || []).slice(0, 20);
     const items = list.querySelectorAll('li:not(.dropdown-header):not(.dropdown-divider)');
-    items.forEach((el) => {
+    items.forEach(el => {
       if (el.id !== 'notifications-placeholder') el.remove();
     });
 
     if (placeholder) placeholder.style.display = notifs.length ? 'none' : '';
 
-    notifs.forEach((n) => {
+    notifs.forEach(n => {
       const li = document.createElement('li');
       li.className = 'notification-item';
       const span = document.createElement('span');
@@ -1788,7 +2132,7 @@
     }
     const stats = computeEmployeeStats();
     const myName = (u.name || '').trim();
-    const myKey = Object.keys(stats || {}).find((k) => (k || '').trim().toLowerCase() === myName.toLowerCase());
+    const myKey = Object.keys(stats || {}).find(k => (k || '').trim().toLowerCase() === myName.toLowerCase());
     const my = myKey ? stats[myKey] : null;
     if (!stats || Object.keys(stats).length === 0) {
       if (circleFill) circleFill.setAttribute('stroke-dasharray', '0 100');
@@ -1809,9 +2153,16 @@
   function updateRoleUI() {
     const label = document.getElementById('current-role-label');
     const u = getCurrentUser();
-    if (label) label.textContent = u ? (u.name + ' (' + (u.role === 'manager' ? 'Manager' : 'Employee') + ')') : '';
+    let roleText = '';
+    if (u) {
+      if (u.role === 'manager') roleText = 'Manager';
+      else if (u.canCreateAndAssign) roleText = 'Employee (can create & assign)';
+      else roleText = 'Employee (view & update only)';
+      roleText = u.name + ' (' + roleText + ')';
+    }
+    if (label) label.textContent = roleText;
     const addBtn = document.getElementById('add-upcoming-task');
-    if (addBtn) addBtn.style.display = isManager() ? 'inline-flex' : 'none';
+    if (addBtn) addBtn.style.display = canCreateAndAssign() ? 'inline-flex' : 'none';
     const storedDataMenuItem = document.getElementById('menu-item-stored-data');
     if (storedDataMenuItem) storedDataMenuItem.classList.toggle('d-none', !isManager());
     const managerMenuItem = document.getElementById('menu-item-manager');
@@ -1825,8 +2176,8 @@
     if ((tabId === 'stored-data' || tabId === 'manager') && !isManager()) {
       tabId = 'kanban';
     }
-    document.querySelectorAll('.tab-pane').forEach((p) => p.classList.remove('active'));
-    document.querySelectorAll('.menu-item').forEach((m) => m.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
     const pane = document.getElementById(tabId + '-view');
     const menuItem = document.querySelector('.menu-item[data-tab="' + tabId + '"]');
     if (pane) pane.classList.add('active');
@@ -1851,26 +2202,42 @@
     }
     const cols = board.columns || [];
     const allCards = [];
-    cols.forEach((col) => (col.cards || []).forEach((card) => allCards.push(card)));
+    cols.forEach(col => (col.cards || []).forEach(card => allCards.push(card)));
     const upcoming = board.upcomingTasks || [];
     const notifs = board.notifications || [];
 
     let html = '';
 
     html += '<h6 class="mb-2">Tasks on board</h6>';
-    html += '<div class="mb-2"><input type="text" class="form-control form-control-sm stored-search" id="stored-search-tasks" placeholder="Search task, name, status..." style="max-width: 280px;" /></div>';
-    html += '<div class="table-responsive mb-4"><table class="table table-bordered table-sm stored-table" id="stored-tasks-table"><thead><tr><th>S.No</th><th>Date</th><th>Title</th><th>Description</th><th>Status</th><th>Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th>Assigned by</th></tr></thead><tbody>';
+    html +=
+      '<div class="mb-2"><input type="text" class="form-control form-control-sm stored-search" id="stored-search-tasks" placeholder="Search task, name, status..." style="max-width: 280px;" /></div>';
+    html +=
+      '<div class="table-responsive mb-4"><table class="table table-bordered table-sm stored-table" id="stored-tasks-table"><thead><tr><th>S.No</th><th>Date</th><th>Title</th><th>Description</th><th>Status</th><th>Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th>Assigned by</th></tr></thead><tbody>';
     allCards.forEach((card, idx) => {
       const dateStr = card.assignedAt ? new Date(card.assignedAt).toLocaleString() : '—';
       const deadlineStr = card.deadline ? new Date(card.deadline).toLocaleString() : '—';
       const assigneesStr = getAssigneesList(card).join(', ') || '—';
       const status = isCardDone(card) ? 'Completed' : 'Pending';
-      html += '<tr data-search="' + escapeHtml((card.title || '') + ' ' + (card.description || '') + ' ' + assigneesStr + ' ' + status).toLowerCase() + '">';
+      html +=
+        '<tr data-search="' +
+        escapeHtml(
+          (card.title || '') + ' ' + (card.description || '') + ' ' + assigneesStr + ' ' + status
+        ).toLowerCase() +
+        '">';
       html += '<td>' + (idx + 1) + '</td>';
       html += '<td>' + dateStr + '</td>';
       html += '<td>' + escapeHtml(card.title) + '</td>';
-      html += '<td>' + escapeHtml((card.description || '').slice(0, 80)) + (card.description && card.description.length > 80 ? '…' : '') + '</td>';
-      html += '<td><span class="badge ' + (status === 'Completed' ? 'bg-success' : 'bg-warning') + '">' + escapeHtml(status) + '</span></td>';
+      html +=
+        '<td>' +
+        escapeHtml((card.description || '').slice(0, 80)) +
+        (card.description && card.description.length > 80 ? '…' : '') +
+        '</td>';
+      html +=
+        '<td><span class="badge ' +
+        (status === 'Completed' ? 'bg-success' : 'bg-warning') +
+        '">' +
+        escapeHtml(status) +
+        '</span></td>';
       html += '<td>' + escapeHtml(card.urgency || 'medium') + '</td>';
       html += '<td>' + escapeHtml(card.department || '—') + '</td>';
       html += '<td>' + deadlineStr + '</td>';
@@ -1882,22 +2249,47 @@
     html += '</tbody></table></div>';
 
     html += '<h6 class="mb-2">Upcoming tasks (not yet assigned)</h6>';
-    html += '<div class="mb-2"><input type="text" class="form-control form-control-sm stored-search" id="stored-search-upcoming" placeholder="Search task..." style="max-width: 280px;" /></div>';
-    html += '<div class="table-responsive mb-4"><table class="table table-bordered table-sm stored-table" id="stored-upcoming-table"><thead><tr><th>S.No</th><th>Title</th><th>Description</th><th>Urgency</th></tr></thead><tbody>';
+    html +=
+      '<div class="mb-2"><input type="text" class="form-control form-control-sm stored-search" id="stored-search-upcoming" placeholder="Search task..." style="max-width: 280px;" /></div>';
+    html +=
+      '<div class="table-responsive mb-4"><table class="table table-bordered table-sm stored-table" id="stored-upcoming-table"><thead><tr><th>S.No</th><th>Title</th><th>Description</th><th>Urgency</th></tr></thead><tbody>';
     upcoming.forEach((t, idx) => {
-      html += '<tr data-search="' + escapeHtml((t.title || '') + ' ' + (t.description || '')).toLowerCase() + '"><td>' + (idx + 1) + '</td><td>' + escapeHtml(t.title) + '</td><td>' + escapeHtml((t.description || '').slice(0, 60)) + '</td><td>' + escapeHtml(t.urgency || 'medium') + '</td></tr>';
+      html +=
+        '<tr data-search="' +
+        escapeHtml((t.title || '') + ' ' + (t.description || '')).toLowerCase() +
+        '"><td>' +
+        (idx + 1) +
+        '</td><td>' +
+        escapeHtml(t.title) +
+        '</td><td>' +
+        escapeHtml((t.description || '').slice(0, 60)) +
+        '</td><td>' +
+        escapeHtml(t.urgency || 'medium') +
+        '</td></tr>';
     });
     if (upcoming.length === 0) html += '<tr><td colspan="4" class="text-muted text-center">No upcoming tasks</td></tr>';
     html += '</tbody></table></div>';
 
     html += '<h6 class="mb-2">Assignment history (who assigned what to whom)</h6>';
-    html += '<div class="mb-2"><input type="text" class="form-control form-control-sm stored-search" id="stored-search-notifs" placeholder="Search message, name..." style="max-width: 280px;" /></div>';
-    html += '<div class="table-responsive"><table class="table table-bordered table-sm stored-table" id="stored-notifs-table"><thead><tr><th>S.No</th><th>Message</th><th>Date</th></tr></thead><tbody>';
+    html +=
+      '<div class="mb-2"><input type="text" class="form-control form-control-sm stored-search" id="stored-search-notifs" placeholder="Search message, name..." style="max-width: 280px;" /></div>';
+    html +=
+      '<div class="table-responsive"><table class="table table-bordered table-sm stored-table" id="stored-notifs-table"><thead><tr><th>S.No</th><th>Message</th><th>Date</th></tr></thead><tbody>';
     notifs.forEach((n, idx) => {
       const at = n.at ? new Date(n.at).toLocaleString() : '—';
-      html += '<tr data-search="' + escapeHtml((n.message || '') + ' ' + (n.assigneeName || '') + (n.assignedByName || '')).toLowerCase() + '"><td>' + (idx + 1) + '</td><td>' + escapeHtml(n.message || '') + '</td><td>' + at + '</td></tr>';
+      html +=
+        '<tr data-search="' +
+        escapeHtml((n.message || '') + ' ' + (n.assigneeName || '') + (n.assignedByName || '')).toLowerCase() +
+        '"><td>' +
+        (idx + 1) +
+        '</td><td>' +
+        escapeHtml(n.message || '') +
+        '</td><td>' +
+        at +
+        '</td></tr>';
     });
-    if (notifs.length === 0) html += '<tr><td colspan="3" class="text-muted text-center">No notifications yet</td></tr>';
+    if (notifs.length === 0)
+      html += '<tr><td colspan="3" class="text-muted text-center">No notifications yet</td></tr>';
     html += '</tbody></table></div>';
 
     container.innerHTML = html;
@@ -1908,7 +2300,7 @@
       if (!input || !table) return;
       input.addEventListener('input', () => {
         const q = (input.value || '').trim().toLowerCase();
-        table.querySelectorAll('tbody tr').forEach((tr) => {
+        table.querySelectorAll('tbody tr').forEach(tr => {
           const search = tr.dataset.search;
           if (search === undefined) return;
           tr.style.display = !q || search.indexOf(q) !== -1 ? '' : 'none';
@@ -1937,7 +2329,7 @@
     const recurringGroup = document.getElementById('recurring-task-group');
     const form = document.getElementById('cardForm');
     if (!form) return;
-    const manager = isManager();
+    const canEdit = canCreateAndAssign();
     titleInput.value = '';
     descInput.value = '';
     if (urgencySelect) urgencySelect.value = 'medium';
@@ -1952,18 +2344,18 @@
       }
     }
     if (assigneeGroup) assigneeGroup.style.display = 'block';
-    if (assigneeNameGroup) assigneeNameGroup.style.display = manager ? 'block' : 'none';
+    if (assigneeNameGroup) assigneeNameGroup.style.display = canEdit ? 'block' : 'none';
     if (deadlineGroup) deadlineGroup.style.display = 'block';
     if (deadlineInput) deadlineInput.value = '';
     if (assigneesChips) renderAssigneesChips(assigneesChips, [], () => {});
     if (assignedByInfo) assignedByInfo.style.display = 'none';
-    if (recurringGroup) recurringGroup.style.display = manager ? 'block' : 'none';
+    if (recurringGroup) recurringGroup.style.display = canEdit ? 'block' : 'none';
     if (recurringCheckbox) recurringCheckbox.checked = false;
     const freqWrap = document.getElementById('recurring-frequency-wrap');
     if (freqWrap) freqWrap.classList.add('d-none');
     delete form.dataset.cardId;
     form.dataset.columnId = 'todo';
-    form.dataset.isUpcoming = '0';
+    form.dataset.isUpcoming = '1';
     if (predefinedDept) form.dataset.predefinedDept = predefinedDept;
     else delete form.dataset.predefinedDept;
     const bsModal = new bootstrap.Modal(modal);
@@ -1974,15 +2366,83 @@
     const loginEl = document.getElementById('login-page');
     const appEl = document.getElementById('app-page');
     if (loginEl) loginEl.style.display = 'flex';
-    if (appEl) { appEl.style.display = 'none'; appEl.classList.remove('logged-in'); }
+    if (appEl) {
+      appEl.style.display = 'none';
+      appEl.classList.remove('logged-in');
+    }
+    stopSync();
   }
 
   function showAppPage() {
     const loginEl = document.getElementById('login-page');
     const appEl = document.getElementById('app-page');
     if (loginEl) loginEl.style.display = 'none';
-    if (appEl) { appEl.style.display = 'block'; appEl.classList.add('logged-in'); }
+    if (appEl) {
+      appEl.style.display = 'block';
+      appEl.classList.add('logged-in');
+    }
+    startSync();
     startAutoRefresh();
+  }
+
+  let syncEventSource = null;
+  let syncReconnectTimeout = null;
+  const SYNC_RECONNECT_DELAY_MS = 3000;
+  const SYNC_RECONNECT_MAX_DELAY_MS = 30000;
+
+  function startSync() {
+    const base = API_BASE || window.location.origin || '';
+    if (!base || base === 'file://') return;
+    if (syncEventSource) return;
+    try {
+      const url = base + '/api/sync/events';
+      syncEventSource = new EventSource(url);
+      syncEventSource.onopen = () => {
+        if (syncReconnectTimeout) {
+          clearTimeout(syncReconnectTimeout);
+          syncReconnectTimeout = null;
+        }
+      };
+      syncEventSource.onmessage = event => {
+        const data = event && event.data ? String(event.data).trim() : '';
+        if (data === 'board-updated') {
+          loadBoard();
+        } else if (data === 'employees-updated') {
+          if (typeof loadAndRenderEmployeeLogins === 'function') loadAndRenderEmployeeLogins();
+        }
+      };
+      syncEventSource.onerror = () => {
+        if (syncEventSource) {
+          syncEventSource.close();
+          syncEventSource = null;
+        }
+        if (!getCurrentUser()) return;
+        if (syncReconnectTimeout) return;
+        syncReconnectTimeout = setTimeout(() => {
+          syncReconnectTimeout = null;
+          startSync();
+        }, SYNC_RECONNECT_DELAY_MS);
+      };
+    } catch (e) {
+      syncEventSource = null;
+      if (getCurrentUser() && !syncReconnectTimeout) {
+        syncReconnectTimeout = setTimeout(() => {
+          syncReconnectTimeout = null;
+          startSync();
+        }, SYNC_RECONNECT_DELAY_MS);
+      }
+    }
+  }
+
+  function stopSync() {
+    if (syncReconnectTimeout) {
+      clearTimeout(syncReconnectTimeout);
+      syncReconnectTimeout = null;
+    }
+    if (syncEventSource) {
+      syncEventSource.close();
+      syncEventSource = null;
+    }
   }
 
   let autoRefreshInterval = null;
@@ -2022,15 +2482,19 @@
 
   function init() {
     const form = document.getElementById('cardForm');
-    if (form) form.addEventListener('submit', (e) => { e.preventDefault(); saveCardFromModal(); });
+    if (form)
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        saveCardFromModal();
+      });
 
     document.getElementById('card-modal-delete-btn')?.addEventListener('click', () => {
       const formEl = document.getElementById('cardForm');
       const cardId = formEl?.dataset?.cardId;
       if (!cardId || !confirm('Delete this task?')) return;
-      const col = board.columns.find((c) => (c.cards || []).some((card) => card.id === cardId));
+      const col = board.columns.find(c => (c.cards || []).some(card => card.id === cardId));
       if (col) {
-        col.cards = col.cards.filter((c) => c.id !== cardId);
+        col.cards = col.cards.filter(c => c.id !== cardId);
         saveBoard();
         render();
         renderManagerTab();
@@ -2040,7 +2504,7 @@
       }
     });
 
-    document.getElementById('cardRecurring')?.addEventListener('change', (e) => {
+    document.getElementById('cardRecurring')?.addEventListener('change', e => {
       const wrap = document.getElementById('recurring-frequency-wrap');
       if (wrap) wrap.classList.toggle('d-none', !e.target.checked);
     });
@@ -2048,8 +2512,8 @@
     const employeeModal = document.getElementById('employeeDetailsModal');
     if (employeeModal) employeeModal.addEventListener('hidden.bs.modal', onEmployeeModalHidden);
 
-    document.querySelectorAll('.tab-link').forEach((a) => {
-      a.addEventListener('click', (e) => {
+    document.querySelectorAll('.tab-link').forEach(a => {
+      a.addEventListener('click', e => {
         e.preventDefault();
         const tab = e.currentTarget.closest('.menu-item').dataset.tab;
         if (tab) switchTab(tab);
@@ -2057,7 +2521,10 @@
     });
 
     const addUpcoming = document.getElementById('add-upcoming-task');
-    if (addUpcoming) addUpcoming.addEventListener('click', () => { if (isManager()) openUpcomingTaskModal(); });
+    if (addUpcoming)
+      addUpcoming.addEventListener('click', () => {
+        if (canCreateAndAssign()) openUpcomingTaskModal();
+      });
     const addDeptTasksBtn = document.getElementById('add-dept-tasks-btn');
     const tasksCreateDeptWrap = document.getElementById('tasks-create-dept-wrap');
     const tasksNewDeptName = document.getElementById('tasks-new-dept-name');
@@ -2065,9 +2532,12 @@
     const tasksNewDeptCancel = document.getElementById('tasks-new-dept-cancel');
     if (addDeptTasksBtn) {
       addDeptTasksBtn.addEventListener('click', () => {
-        if (!isManager()) return;
+        if (!canCreateAndAssign()) return;
         if (tasksCreateDeptWrap) tasksCreateDeptWrap.classList.remove('d-none');
-        if (tasksNewDeptName) { tasksNewDeptName.value = ''; tasksNewDeptName.focus(); }
+        if (tasksNewDeptName) {
+          tasksNewDeptName.value = '';
+          tasksNewDeptName.focus();
+        }
       });
     }
     if (tasksNewDeptCancel) {
@@ -2092,7 +2562,10 @@
     }
 
     const refreshStored = document.getElementById('refresh-stored-data');
-    if (refreshStored) refreshStored.addEventListener('click', () => { loadBoard().then(() => renderStoredDataView()); });
+    if (refreshStored)
+      refreshStored.addEventListener('click', () => {
+        loadBoard().then(() => renderStoredDataView());
+      });
 
     document.getElementById('employee-edit-profile-btn')?.addEventListener('click', () => {
       const nameEl = document.getElementById('employee-modal-name');
@@ -2103,21 +2576,24 @@
 
     const profileForm = document.getElementById('employeeProfileForm');
     if (profileForm) {
-      profileForm.addEventListener('submit', (e) => {
+      profileForm.addEventListener('submit', e => {
         e.preventDefault();
         saveEmployeeProfile();
       });
     }
     const profilePicInput = document.getElementById('profile-pic-input');
     if (profilePicInput && profileForm) {
-      profilePicInput.addEventListener('change', (e) => {
+      profilePicInput.addEventListener('change', e => {
         const file = e.target.files?.[0];
         if (file && file.type.startsWith('image/')) {
           const reader = new FileReader();
-          reader.onload = (ev) => {
+          reader.onload = ev => {
             const preview = document.getElementById('profile-pic-preview');
             const placeholder = document.getElementById('profile-pic-placeholder');
-            if (preview) { preview.src = ev.target.result; preview.classList.remove('d-none'); }
+            if (preview) {
+              preview.src = ev.target.result;
+              preview.classList.remove('d-none');
+            }
             if (placeholder) placeholder.classList.add('d-none');
             profileForm.dataset.profilePicData = ev.target.result;
           };
@@ -2126,11 +2602,26 @@
       });
     }
 
-    document.getElementById('export-stored-data')?.addEventListener('click', (e) => { e.preventDefault(); exportStoredDataToExcel(); });
-    document.getElementById('export-day')?.addEventListener('click', (e) => { e.preventDefault(); exportToExcel('day'); });
-    document.getElementById('export-week')?.addEventListener('click', (e) => { e.preventDefault(); exportToExcel('week'); });
-    document.getElementById('export-month')?.addEventListener('click', (e) => { e.preventDefault(); exportToExcel('month'); });
-    document.getElementById('export-overall')?.addEventListener('click', (e) => { e.preventDefault(); exportToExcel('overall'); });
+    document.getElementById('export-stored-data')?.addEventListener('click', e => {
+      e.preventDefault();
+      exportStoredDataToExcel();
+    });
+    document.getElementById('export-day')?.addEventListener('click', e => {
+      e.preventDefault();
+      exportToExcel('day');
+    });
+    document.getElementById('export-week')?.addEventListener('click', e => {
+      e.preventDefault();
+      exportToExcel('week');
+    });
+    document.getElementById('export-month')?.addEventListener('click', e => {
+      e.preventDefault();
+      exportToExcel('month');
+    });
+    document.getElementById('export-overall')?.addEventListener('click', e => {
+      e.preventDefault();
+      exportToExcel('overall');
+    });
     const openCalBtn = document.getElementById('open-kanban-calendar-btn');
     if (openCalBtn) {
       openCalBtn.addEventListener('click', () => {
@@ -2143,7 +2634,7 @@
     const kanbanSearchInput = document.getElementById('kanban-search-input');
     const kanbanSearchClear = document.getElementById('kanban-search-clear');
     if (kanbanSearchInput) {
-      kanbanSearchInput.addEventListener('input', (e) => {
+      kanbanSearchInput.addEventListener('input', e => {
         searchQuery = e.target.value.trim();
         render();
       });
@@ -2158,7 +2649,7 @@
 
     const tasksTabSearch = document.getElementById('tasks-tab-search');
     if (tasksTabSearch) {
-      tasksTabSearch.addEventListener('input', (e) => {
+      tasksTabSearch.addEventListener('input', e => {
         tasksTabSearchQuery = e.target.value.trim();
         renderTasksTab();
       });
@@ -2167,7 +2658,7 @@
     const assigneeInput = document.getElementById('cardAssignee');
     const assigneeDropdown = document.getElementById('assignee-dropdown');
     if (assigneeInput && assigneeDropdown) {
-      assigneeInput.addEventListener('input', (e) => {
+      assigneeInput.addEventListener('input', e => {
         const query = e.target.value.trim().toLowerCase();
         if (query.length === 0) {
           assigneeDropdown.classList.remove('show');
@@ -2175,14 +2666,14 @@
           return;
         }
         const allEmployees = getAllEmployeeNames();
-        const matches = allEmployees.filter((name) => name.toLowerCase().includes(query));
+        const matches = allEmployees.filter(name => name.toLowerCase().includes(query));
         if (matches.length > 0) {
-          assigneeDropdown.innerHTML = matches.map((name) => 
-            `<a class="dropdown-item" href="#" data-name="${escapeHtml(name)}">${escapeHtml(name)}</a>`
-          ).join('');
+          assigneeDropdown.innerHTML = matches
+            .map(name => `<a class="dropdown-item" href="#" data-name="${escapeHtml(name)}">${escapeHtml(name)}</a>`)
+            .join('');
           assigneeDropdown.classList.add('show');
-          assigneeDropdown.querySelectorAll('a').forEach((link) => {
-            link.addEventListener('click', (ev) => {
+          assigneeDropdown.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', ev => {
               ev.preventDefault();
               const selectedName = link.dataset.name;
               assigneeInput.value = selectedName;
@@ -2217,7 +2708,10 @@
     const newColumnTitle = document.getElementById('new-column-title');
     document.getElementById('add-column-btn')?.addEventListener('click', () => {
       if (addColumnWrap) addColumnWrap.classList.remove('d-none');
-      if (newColumnTitle) { newColumnTitle.value = ''; newColumnTitle.focus(); }
+      if (newColumnTitle) {
+        newColumnTitle.value = '';
+        newColumnTitle.focus();
+      }
     });
     document.getElementById('add-column-cancel')?.addEventListener('click', () => {
       if (addColumnWrap) addColumnWrap.classList.add('d-none');
@@ -2240,7 +2734,10 @@
     const newDeptName = document.getElementById('new-dept-name');
     document.getElementById('add-dept-btn')?.addEventListener('click', () => {
       if (addDeptWrap) addDeptWrap.classList.remove('d-none');
-      if (newDeptName) { newDeptName.value = ''; newDeptName.focus(); }
+      if (newDeptName) {
+        newDeptName.value = '';
+        newDeptName.focus();
+      }
     });
     document.getElementById('add-dept-cancel')?.addEventListener('click', () => {
       if (addDeptWrap) addDeptWrap.classList.add('d-none');
@@ -2263,7 +2760,10 @@
       const wrap = document.getElementById('card-new-dept-wrap');
       const input = document.getElementById('card-new-dept-name');
       if (wrap) wrap.classList.remove('d-none');
-      if (input) { input.value = ''; input.focus(); }
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
     });
     document.getElementById('card-new-dept-add')?.addEventListener('click', () => {
       const input = document.getElementById('card-new-dept-name');
@@ -2288,7 +2788,7 @@
       const current = getAssigneesFromChips();
       if (current.indexOf(name) !== -1) return;
       function removeAssignee(n) {
-        const list = getAssigneesFromChips().filter((x) => x !== n);
+        const list = getAssigneesFromChips().filter(x => x !== n);
         renderAssigneesChips(container, list, removeAssignee);
       }
       renderAssigneesChips(container, current.concat(name), removeAssignee);
@@ -2296,34 +2796,36 @@
     });
 
     const btnLogout = document.getElementById('btn-logout');
-    if (btnLogout) btnLogout.addEventListener('click', () => {
-      stopAutoRefresh();
-      localStorage.removeItem('kanban-current-user');
-      showLoginPage();
-    });
+    if (btnLogout)
+      btnLogout.addEventListener('click', () => {
+        stopAutoRefresh();
+        localStorage.removeItem('kanban-current-user');
+        showLoginPage();
+      });
     document.getElementById('btn-load-demo-data')?.addEventListener('click', () => {
       loadDemoData();
     });
 
-    const managerLoginForm = document.getElementById('manager-login-form');
-    if (managerLoginForm) {
-      managerLoginForm.addEventListener('submit', (e) => {
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', e => {
         e.preventDefault();
-        const emailEl = document.getElementById('manager-email');
-        const passwordEl = document.getElementById('manager-password');
-        const email = emailEl?.value?.trim() || '';
-        const password = passwordEl?.value || '';
+        const email = (document.getElementById('login-email')?.value || '').trim();
+        const password = document.getElementById('login-password')?.value || '';
+        const roleEl = document.querySelector('input[name="login-role"]:checked');
+        const role = roleEl?.value || 'dean';
         if (!email || !password) {
           alert('Please enter email and password.');
           return;
         }
-        const url = (API_BASE || window.location.origin || '') + '/api/auth/manager/login';
+        const endpoint = role === 'employee' ? '/api/auth/employee/login' : '/api/auth/manager/login';
+        const url = (API_BASE || window.location.origin || '') + endpoint;
         fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email, password })
         })
-          .then(async (res) => {
+          .then(async res => {
             let data = {};
             try {
               const text = await res.text();
@@ -2342,31 +2844,61 @@
       });
     }
 
-    const employeeLoginForm = document.getElementById('employee-login-form');
-    if (employeeLoginForm) {
-      employeeLoginForm.addEventListener('submit', (e) => {
+    const createEmployeeLoginForm = document.getElementById('create-employee-login-form');
+    if (createEmployeeLoginForm) {
+      createEmployeeLoginForm.addEventListener('submit', e => {
         e.preventDefault();
-        const nameInput = document.getElementById('employee-name');
-        const name = nameInput?.value?.trim() || '';
-        if (!name) {
-          alert('Please enter your name.');
+        const email = (document.getElementById('emp-login-email')?.value || '').trim();
+        const password = document.getElementById('emp-login-password')?.value || '';
+        const name = (document.getElementById('emp-login-name')?.value || '').trim();
+        const canCreateAndAssign = !!document.getElementById('emp-login-can-create-assign')?.checked;
+        if (!email) {
+          alert('Employee email is required.');
           return;
         }
-        setCurrentUser({
-          id: 'e_' + Date.now(),
-          name: name,
-          role: 'employee',
-        });
-        showAppPage();
-        loadBoard();
-        updateRoleUI();
+        if (!password || password.length < 6) {
+          alert('Password must be at least 6 characters.');
+          return;
+        }
+        fetch(API_BASE + '/api/auth/manager/create-employee-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name, canCreateAndAssign })
+        })
+          .then(async res => {
+            let data = {};
+            try {
+              const text = await res.text();
+              if (text) data = JSON.parse(text);
+            } catch (_) {}
+            if (res.ok && data.ok) {
+              document.getElementById('emp-login-email').value = '';
+              document.getElementById('emp-login-password').value = '';
+              document.getElementById('emp-login-name').value = '';
+              document.getElementById('emp-login-can-create-assign').checked = false;
+              loadAndRenderEmployeeLogins();
+              alert('Employee login created. Share the email and password with the employee.');
+            } else {
+              const msg =
+                data.error ||
+                (res.status === 404
+                  ? 'API not found. Run the app with "npm start" and open http://localhost:3000'
+                  : 'Failed to create employee login.');
+              alert(msg);
+            }
+          })
+          .catch(() =>
+            alert(
+              'Failed to create employee login. Make sure the server is running (npm start) and you are using http://localhost:3000'
+            )
+          );
       });
     }
 
     const changePasswordForm = document.getElementById('change-password-form');
     const changePasswordModal = document.getElementById('changePasswordModal');
     if (changePasswordForm && changePasswordModal) {
-      changePasswordForm.addEventListener('submit', (e) => {
+      changePasswordForm.addEventListener('submit', e => {
         e.preventDefault();
         const u = getCurrentUser();
         if (!u || u.role !== 'manager' || !u.email) return;
@@ -2387,18 +2919,27 @@
           body: JSON.stringify({
             email: u.email,
             currentPassword,
-            newPassword,
-          }),
+            newPassword
+          })
         })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.ok) {
+          .then(async res => {
+            let data = {};
+            try {
+              const text = await res.text();
+              if (text) data = JSON.parse(text);
+            } catch (_) {}
+            if (res.ok && data.ok) {
               bootstrap.Modal.getInstance(changePasswordModal).hide();
               changePasswordForm.reset();
               document.getElementById('cp-email').value = u.email || '';
               alert('Password changed successfully.');
             } else {
-              alert(data.error || 'Failed to change password');
+              alert(
+                data.error ||
+                  (res.status === 401
+                    ? 'Current password is incorrect.'
+                    : 'Failed to change password. Is the server running?')
+              );
             }
           })
           .catch(() => alert('Failed to change password. Is the server running?'));

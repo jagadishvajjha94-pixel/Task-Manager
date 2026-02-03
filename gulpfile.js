@@ -59,15 +59,28 @@ const watchTask = function () {
 // Serve
 // -------------------------------------------------------------------------------
 const serveTasks = function () {
-  browserSync.init({
-    // ? You can change server path variable from build-config.js file
-    server: {
-      baseDir: serverPath,
-      index: 'index.html'
-    },
-    // Open dashboard by default (avoids blank root landing page)
-    startPath: '/html/index.html'
-  });
+  const apiPort = process.env.API_PORT || process.env.PORT_API;
+  const useProxy = apiPort && String(apiPort).trim() !== '';
+
+  if (useProxy) {
+    // Proxy to Express API server so /api/auth and /api/board work (login, board load/save)
+    const proxyTarget = 'http://localhost:' + String(apiPort).trim();
+    browserSync.init({
+      proxy: {
+        target: proxyTarget,
+        ws: true
+      },
+      startPath: '/'
+    });
+  } else {
+    browserSync.init({
+      server: {
+        baseDir: serverPath,
+        index: 'index.html'
+      },
+      startPath: '/html/index.html'
+    });
+  }
   watch([
     // ? You can change add/remove files/folders watch paths in below array
     'html/**/*.html',
@@ -84,8 +97,8 @@ const serveTask = parallel([serveTasks, watchTask]);
 // -------------------------------------------------------------------------------
 
 const buildTask = conf.cleanDist
-  ? series(cleanTask, env.current.name === 'production' ? [buildTasks.all, prodTasks.all] : buildTasks.all)
-  : series(env.current.name === 'production' ? [buildTasks.all, prodTasks.all] : buildTasks.all);
+  ? series(cleanTask, ...(env.current.name === 'production' ? [buildTasks.all, prodTasks.all] : [buildTasks.all]))
+  : series(...(env.current.name === 'production' ? [buildTasks.all, prodTasks.all] : [buildTasks.all]));
 
 // Exports
 // -------------------------------------------------------------------------------
