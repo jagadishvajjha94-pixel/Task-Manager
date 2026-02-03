@@ -2839,8 +2839,14 @@
             } else {
               alert(data.error || (res.status === 401 ? 'Invalid email or password' : 'Login failed'));
             }
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-password').value = '';
           })
-          .catch(() => alert('Login failed. Check your connection and that the API is available.'));
+          .catch(() => {
+            alert('Login failed. Check your connection and that the API is available.');
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-password').value = '';
+          });
       });
     }
 
