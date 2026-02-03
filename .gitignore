@@ -64,4 +64,9 @@ gulpfile.tmp.*
 # Local runtime data (board, manager credentials)
 /data
 
+# Local env (secrets – do not commit)
+.env
+.env.local
+.env.*.local
+
 .vercel
