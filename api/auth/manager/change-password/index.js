@@ -1,37 +1,10 @@
-const path = require('path');
-const fs = require('fs');
 const crypto = require('crypto');
-const os = require('os');
+const store = require('../../../_store');
 
-const DATA_DIR = path.join(os.tmpdir(), 'taskmanager-data');
-const MANAGER_FILE = path.join(DATA_DIR, 'manager.json');
 const SALT = 'taskmanager-salt-v1';
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
 
 function hashPassword(password) {
   return crypto.pbkdf2Sync(password, SALT, 100000, 64, 'sha512').toString('hex');
-}
-
-function readManager() {
-  ensureDataDir();
-  if (fs.existsSync(MANAGER_FILE)) {
-    try {
-      return JSON.parse(fs.readFileSync(MANAGER_FILE, 'utf8'));
-    } catch (e) {
-      return null;
-    }
-  }
-  return null;
-}
-
-function writeManager(data) {
-  ensureDataDir();
-  fs.writeFileSync(MANAGER_FILE, JSON.stringify(data, null, 2), 'utf8');
 }
 
 module.exports = async (req, res) => {
@@ -70,7 +43,7 @@ module.exports = async (req, res) => {
   if (!email || !currentPassword || !newPassword) {
     return res.status(400).json({ error: 'Email, current password, and new password required' });
   }
-  const m = readManager();
+  const m = await store.getManager();
   if (!m) {
     return res.status(500).json({ error: 'Manager not configured' });
   }
@@ -85,6 +58,6 @@ module.exports = async (req, res) => {
   }
   m.passwordHash = hashPassword(newPassword);
   if (body.name) m.name = body.name;
-  writeManager(m);
+  await store.setManager(m);
   res.status(200).json({ ok: true });
 };

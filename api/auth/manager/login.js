@@ -1,48 +1,21 @@
-const path = require('path');
-const fs = require('fs');
 const crypto = require('crypto');
-const os = require('os');
+const store = require('../../_store');
 
-const DATA_DIR = path.join(os.tmpdir(), 'taskmanager-data');
-const MANAGER_FILE = path.join(DATA_DIR, 'manager.json');
 const SALT = 'taskmanager-salt-v1';
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
 
 function hashPassword(password) {
   return crypto.pbkdf2Sync(password, SALT, 100000, 64, 'sha512').toString('hex');
 }
 
-function readManager() {
-  ensureDataDir();
-  if (fs.existsSync(MANAGER_FILE)) {
-    try {
-      return JSON.parse(fs.readFileSync(MANAGER_FILE, 'utf8'));
-    } catch (e) {
-      return null;
-    }
-  }
-  return null;
-}
-
-function writeManager(data) {
-  ensureDataDir();
-  fs.writeFileSync(MANAGER_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
-
-function seedManagerIfNeeded() {
-  let m = readManager();
+async function seedManagerIfNeeded() {
+  let m = await store.getManager();
   if (!m || !m.email) {
     m = {
       email: 'manager@company.com',
       name: 'Manager',
       passwordHash: hashPassword('Manager@123')
     };
-    writeManager(m);
+    await store.setManager(m);
   }
   return m;
 }
@@ -85,10 +58,10 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'Email and password required' });
   }
 
-  let m = readManager();
+  let m = await store.getManager();
   if (!m || !m.email) {
-    seedManagerIfNeeded();
-    m = readManager();
+    await seedManagerIfNeeded();
+    m = await store.getManager();
   }
   if (!m) {
     return res.status(500).json({ error: 'Manager not configured' });

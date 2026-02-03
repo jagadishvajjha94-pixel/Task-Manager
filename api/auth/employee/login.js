@@ -1,33 +1,10 @@
-const path = require('path');
-const fs = require('fs');
 const crypto = require('crypto');
-const os = require('os');
+const store = require('../../_store');
 
-const DATA_DIR = path.join(os.tmpdir(), 'taskmanager-data');
-const EMPLOYEES_FILE = path.join(DATA_DIR, 'employees.json');
 const SALT = 'taskmanager-salt-v1';
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
 
 function hashPassword(password) {
   return crypto.pbkdf2Sync(password, SALT, 100000, 64, 'sha512').toString('hex');
-}
-
-function readEmployees() {
-  ensureDataDir();
-  if (fs.existsSync(EMPLOYEES_FILE)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(EMPLOYEES_FILE, 'utf8'));
-      return Array.isArray(data) ? data : [];
-    } catch (e) {
-      return [];
-    }
-  }
-  return [];
 }
 
 module.exports = async (req, res) => {
@@ -69,7 +46,7 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'Email and password required' });
   }
 
-  const employees = readEmployees();
+  const employees = await store.getEmployees();
   const emp = employees.find(e => (e.email || '').toLowerCase() === email.toLowerCase());
   if (!emp || emp.passwordHash !== hashPassword(password)) {
     return res.status(401).json({ error: 'Invalid email or password' });

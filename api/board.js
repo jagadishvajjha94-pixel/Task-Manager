@@ -1,32 +1,4 @@
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
-
-const DATA_DIR = path.join(os.tmpdir(), 'taskmanager-data');
-const BOARD_FILE = path.join(DATA_DIR, 'board.json');
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
-
-function readBoard() {
-  ensureDataDir();
-  if (fs.existsSync(BOARD_FILE)) {
-    try {
-      return JSON.parse(fs.readFileSync(BOARD_FILE, 'utf8'));
-    } catch (e) {
-      return null;
-    }
-  }
-  return null;
-}
-
-function writeBoard(data) {
-  ensureDataDir();
-  fs.writeFileSync(BOARD_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
+const store = require('./_store');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -38,7 +10,7 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'GET') {
-    const board = readBoard();
+    const board = await store.getBoard();
     const data = board || { columns: [], notifications: [], users: [], upcomingTasks: [], departments: [] };
     if (!Array.isArray(data.notifications)) data.notifications = [];
     if (!Array.isArray(data.users)) data.users = [];
@@ -52,7 +24,9 @@ module.exports = async (req, res) => {
     if (!board && typeof req.on === 'function') {
       board = await new Promise((resolve, reject) => {
         let data = '';
-        req.on('data', (chunk) => { data += chunk; });
+        req.on('data', chunk => {
+          data += chunk;
+        });
         req.on('end', () => {
           try {
             resolve(data ? JSON.parse(data) : null);
@@ -64,7 +38,7 @@ module.exports = async (req, res) => {
       });
     }
     if (board && typeof board === 'object') {
-      writeBoard(board);
+      await store.setBoard(board);
       return res.status(200).json({ ok: true });
     }
     return res.status(400).json({ error: 'Invalid board data' });

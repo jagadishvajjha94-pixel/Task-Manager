@@ -1,38 +1,10 @@
-const path = require('path');
-const fs = require('fs');
 const crypto = require('crypto');
-const os = require('os');
+const store = require('../../../_store');
 
-const DATA_DIR = path.join(os.tmpdir(), 'taskmanager-data');
-const EMPLOYEES_FILE = path.join(DATA_DIR, 'employees.json');
 const SALT = 'taskmanager-salt-v1';
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
 
 function hashPassword(password) {
   return crypto.pbkdf2Sync(password, SALT, 100000, 64, 'sha512').toString('hex');
-}
-
-function readEmployees() {
-  ensureDataDir();
-  if (fs.existsSync(EMPLOYEES_FILE)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(EMPLOYEES_FILE, 'utf8'));
-      return Array.isArray(data) ? data : [];
-    } catch (e) {
-      return [];
-    }
-  }
-  return [];
-}
-
-function writeEmployees(employees) {
-  ensureDataDir();
-  fs.writeFileSync(EMPLOYEES_FILE, JSON.stringify(employees, null, 2), 'utf8');
 }
 
 module.exports = async (req, res) => {
@@ -79,7 +51,7 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'Password required (min 6 characters)' });
   }
 
-  const employees = readEmployees();
+  const employees = await store.getEmployees();
   const existing = employees.find(e => (e.email || '').toLowerCase() === emailStr.toLowerCase());
   if (existing) {
     return res.status(400).json({ error: 'An employee with this email already has a login' });
@@ -94,7 +66,7 @@ module.exports = async (req, res) => {
     canCreateAndAssign,
     createdAt: new Date().toISOString()
   });
-  writeEmployees(employees);
+  await store.setEmployees(employees);
 
   res.status(200).json({
     ok: true,
