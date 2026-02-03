@@ -42,12 +42,12 @@
       #kanban-view .input-group { border-radius: 10px; box-shadow: 0 2px 8px rgba(30,58,95,.06); border: 1px solid #e2e8f0; overflow: hidden; }
       #kanban-view .input-group .form-control { border: 0; }
       #kanban-view .input-group-text { background: linear-gradient(180deg,#fafbfc,#f8fafc); border: 0; color: #64748b; }
-      .kanban-column { flex: 0 0 340px; background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 0; box-shadow: 0 4px 20px rgba(30,58,95,.06); overflow: hidden; transition: transform .2s, box-shadow .2s; }
+      .kanban-column { flex: 0 0 340px; background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 0; box-shadow: 0 4px 20px rgba(30,58,95,.06); overflow: hidden; transition: transform .2s, box-shadow .2s; display: flex; flex-direction: column; }
       .kanban-column:hover { box-shadow: 0 8px 28px rgba(30,58,95,.1); transform: translateY(-1px); }
-      .kanban-column-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; margin-bottom: 0; background: linear-gradient(135deg,#fafbfc 0%,#f1f5f9 100%); border-bottom: 1px solid #e2e8f0; }
+      .kanban-column-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; margin-bottom: 0; background: linear-gradient(135deg,#fafbfc 0%,#f1f5f9 100%); border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
       .kanban-column-header h6 { font-size: 0.95rem; font-weight: 700; color: #1e3a5f; letter-spacing: 0.02em; }
       .kanban-column-header .badge { background: linear-gradient(135deg,#1e3a5f,#152a47) !important; font-size: 0.7rem; font-weight: 600; padding: 0.35rem 0.6rem; border-radius: 20px; }
-      .kanban-column-cards { min-height: 140px; padding: 1rem; transition: background 0.2s, border-color 0.2s; }
+      .kanban-column-cards { min-height: 140px; padding: 1rem; transition: background 0.2s, border-color 0.2s; flex: 1 1 auto; overflow-y: auto; }
       .kanban-column-cards.kanban-drag-over { background: rgba(30,58,95,.06); border-radius: 12px; border: 2px dashed #1e3a5f; }
       .kanban-card { margin-bottom: 0.85rem; border-left-width: 5px; user-select: none; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.04); transition: transform .15s, box-shadow .15s, border-color .15s; }
       .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(30,58,95,.1); border-color: #cbd5e1; }
@@ -96,7 +96,8 @@
       .kanban-board-rows { display: flex; flex-direction: column; gap: 1.75rem; width: 100%; }
       .kanban-board-row { display: flex; flex-direction: row; flex-wrap: wrap; gap: 1.25rem; width: 100%; }
       .kanban-board-row .kanban-date-column { flex: 1 1 320px; }
-      .kanban-board .add-card { border-radius: 10px; font-weight: 600; padding: 0.5rem 1rem; margin: 0 1rem 1rem; border-style: dashed; transition: all .2s; }
+      .kanban-add-card-wrap { padding: 0 1rem 1rem; flex-shrink: 0; }
+      .kanban-board .add-card { border-radius: 10px; font-weight: 600; padding: 0.5rem 1rem; margin: 0; border-style: dashed; transition: all .2s; width: 100%; box-sizing: border-box; }
       .kanban-board .add-card:hover { background: rgba(30,58,95,.06); border-color: #1e3a5f; color: #1e3a5f; }
       .kanban-done-toggle-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #cbd5e1; background: #fff; color: #64748b; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
       .kanban-done-toggle-btn:hover { border-color: #1e3a5f; color: #1e3a5f; transform: scale(1.08); box-shadow: 0 4px 12px rgba(30,58,95,.2); }
@@ -381,9 +382,53 @@
       .kanban-calendar .cal-day.selected { background: rgba(30,58,95,.2); border-color: #1e3a5f; }
       .kanban-calendar .cal-day .cal-num { font-size: .875rem; font-weight: 600; color: #000; }
       .kanban-calendar .cal-day .cal-count { font-size: .65rem; color: #000; }
+      .cal-icon { display: inline-flex; align-items: center; margin-left: 2px; font-size: .75rem; }
+      .cal-icon-meeting { color: #2563eb; }
+      .cal-icon-drive { color: #16a34a; }
+      .cal-icon-doc { color: #64748b; }
+      .cal-day-link { display: inline-flex; align-items: center; color: var(--bs-primary); text-decoration: none; font-weight: 500; }
+      .cal-day-link:hover { text-decoration: underline; color: var(--bs-primary); }
+      .kanban-calendar-hints { background: linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%); border: 1px solid #93c5fd; }
+      .cal-hints-title { font-size: .8rem; font-weight: 700; color: #1e40af; margin-bottom: .35rem; }
+      .cal-hint-item { font-size: .8rem; color: #1e293b; margin-bottom: .2rem; }
+      .cal-hint-badge { display: inline-block; padding: .1rem .4rem; border-radius: 6px; font-size: .7rem; font-weight: 600; margin-right: .25rem; }
+      .cal-hint-item .cal-hint-badge-meeting { background: #2563eb; color: #fff; }
+      .cal-hint-item .cal-hint-badge-drive { background: #16a34a; color: #fff; }
+      .cal-hint-item .cal-hint-badge:not(.cal-hint-badge-meeting):not(.cal-hint-badge-drive) { background: #64748b; color: #fff; }
+      .cal-hint-day { color: #64748b; font-size: .75rem; }
+      .deadline-picker-trigger { display: flex; align-items: center; justify-content: center; padding: .75rem 1rem; border: 2px dashed #cbd5e1; border-radius: 12px; background: linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%); cursor: pointer; transition: all .2s; font-weight: 600; color: #475569; }
+      .deadline-picker-trigger:hover { border-color: #1e3a5f; background: linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%); color: #1e3a5f; }
+      .deadline-picker-modal-dialog { max-width: 420px; }
+      .deadline-picker-modal-content { border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.15); }
+      .deadline-picker-header { background: linear-gradient(135deg,#1e3a5f 0%,#152a47 100%); color: #fff; border-bottom: 0; padding: 1rem 1.25rem; }
+      .deadline-picker-header .modal-title { font-weight: 700; }
+      .deadline-picker-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem; }
+      .deadline-section-title { font-size: .9rem; font-weight: 700; color: #1e3a5f; margin-bottom: .5rem; }
+      .deadline-calendar-wrap { background: #f8fafc; border-radius: 12px; padding: .75rem; border: 1px solid #e2e8f0; }
+      .deadline-calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; }
+      .deadline-cal-month { font-weight: 700; color: #1e293b; font-size: .95rem; }
+      .deadline-cal-daynames { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: .7rem; font-weight: 700; color: #64748b; margin-bottom: 4px; }
+      .deadline-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+      .deadline-cal-day { min-height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: .85rem; font-weight: 600; cursor: pointer; transition: all .15s; color: #334155; }
+      .deadline-cal-day:hover { background: #e2e8f0; }
+      .deadline-cal-day.other-month { color: #94a3b8; }
+      .deadline-cal-day.selected { background: linear-gradient(135deg,#1e3a5f,#152a47); color: #fff; }
+      .deadline-cal-day.today { border: 2px solid #1e3a5f; }
+      .deadline-time-digital-wrap { padding: .25rem 0; }
+      .deadline-time-input { font-size: 1.25rem; font-weight: 600; letter-spacing: .05em; text-align: center; max-width: 140px; margin: 0 auto; display: block; }
+      .deadline-picker-footer { border-top: 1px solid #e2e8f0; padding: 1rem 1.25rem; }
+      .card-task-modal-dialog { max-width: 520px; max-height: 90vh; margin: 1rem auto; display: flex; }
+      .card-task-modal-content { max-height: 90vh; display: flex; flex-direction: column; }
+      .card-task-modal-header { flex-shrink: 0; }
+      .card-task-modal-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; max-height: calc(90vh - 140px); padding: 0.75rem 1rem; }
+      .card-task-modal-body .form-label { margin-bottom: 0.2rem; font-size: 0.875rem; }
       #assignee-dropdown { border: 1px solid #d0d5dd; border-radius: 0.375rem; margin-top: 2px; }
+      #assignee-dropdown.assignee-dropdown-above { top: auto; bottom: 100%; margin-top: 0; margin-bottom: 2px; }
       #assignee-dropdown .dropdown-item { padding: 0.5rem 1rem; cursor: pointer; font-size: 0.875rem; color: #000; }
       #assignee-dropdown .dropdown-item:hover { background-color: #f1f5f9; color: #000; }
+      #upcoming-assignee-dropdown { border: 1px solid #d0d5dd; border-radius: 0.375rem; max-height: 200px; overflow-y: auto; z-index: 1050; }
+      #upcoming-assignee-dropdown .dropdown-item { padding: 0.5rem 1rem; cursor: pointer; font-size: 0.875rem; color: #000; }
+      #upcoming-assignee-dropdown .dropdown-item:hover { background-color: #f1f5f9; color: #000; }
       .dropdown-menu .dropdown-item { color: #000; }
       .dropdown-menu .dropdown-header { color: #000; font-weight: 700; }
       #kanban-search-input { border-right: 0; }
@@ -633,7 +678,7 @@
                           </div>
                           <div class="col-12 col-md-3">
                             <label class="form-label" for="emp-login-password">Password</label>
-                            <input type="password" class="form-control" id="emp-login-password" required minlength="6" placeholder="Min 6 characters" />
+                            <input type="text" class="form-control" id="emp-login-password" required minlength="6" placeholder="Min 6 characters (visible for manager)" autocomplete="off" />
                           </div>
                           <div class="col-12 col-md-3">
                             <label class="form-label" for="emp-login-name">Display name</label>
@@ -741,6 +786,7 @@
                       </div>
                     </div>
                     <div id="tasks-tab-content"><p class="text-muted text-center py-4 mb-0 px-3">Loading…</p></div>
+                    <div id="upcoming-assignee-dropdown" class="dropdown-menu shadow-sm" style="position: fixed; display: none;"></div>
                   </div>
                 </div>
               </div>
@@ -752,31 +798,31 @@
     </div>
 
     <div class="modal fade" id="cardModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable card-task-modal-dialog">
+        <div class="modal-content card-task-modal-content">
+          <div class="modal-header card-task-modal-header">
             <h5 class="modal-title">Card</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <form id="cardForm">
-            <div class="modal-body">
-              <div class="mb-3">
+            <div class="modal-body card-task-modal-body">
+              <div class="mb-2">
                 <label class="form-label" for="cardTitle">Title</label>
-                <input type="text" class="form-control" id="cardTitle" required placeholder="Card title" />
+                <input type="text" class="form-control form-control-sm" id="cardTitle" required placeholder="Card title" />
               </div>
-              <div class="mb-3">
+              <div class="mb-2">
                 <label class="form-label" for="cardDescription">Description</label>
-                <textarea class="form-control" id="cardDescription" rows="3" placeholder="Optional description"></textarea>
+                <textarea class="form-control form-control-sm" id="cardDescription" rows="2" placeholder="Optional description"></textarea>
               </div>
-              <div class="mb-3">
+              <div class="mb-2">
                 <label class="form-label" for="cardUrgency">Urgency</label>
-                <select class="form-select" id="cardUrgency">
+                <select class="form-select form-select-sm" id="cardUrgency">
                   <option value="high">High (Red)</option>
                   <option value="medium" selected>Medium (Yellow)</option>
                   <option value="low">Low (Green)</option>
                 </select>
               </div>
-              <div class="mb-3" id="department-group">
+              <div class="mb-2" id="department-group">
                 <label class="form-label" for="cardDepartment">Department (Manager only)</label>
                 <div class="d-flex gap-2 align-items-center flex-wrap">
                   <select class="form-select flex-grow-1" id="cardDepartment" style="max-width: 220px;">
@@ -791,7 +837,7 @@
                   </div>
                 </div>
               </div>
-              <div class="mb-3" id="assignee-name-group">
+              <div class="mb-2" id="assignee-name-group">
                 <label class="form-label">Assign to (multiple people)</label>
                 <div class="d-flex flex-wrap gap-2 align-items-center mb-2" id="card-assignees-chips"></div>
                 <div class="input-group input-group-sm position-relative">
@@ -800,11 +846,29 @@
                   <div class="dropdown-menu shadow-sm" id="assignee-dropdown" style="position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; z-index: 1000;"></div>
                 </div>
               </div>
-              <div class="mb-3" id="deadline-group">
-                <label class="form-label" for="cardDeadline">Deadline (date & time)</label>
-                <input type="datetime-local" class="form-control" id="cardDeadline" />
+              <div class="mb-2" id="deadline-group">
+                <label class="form-label">Deadline (date & time)</label>
+                <div class="deadline-picker-trigger" id="deadline-picker-trigger" role="button" tabindex="0">
+                  <i class="bx bx-calendar-alt me-2"></i>
+                  <span id="deadline-picker-display">Select date and time</span>
+                  <i class="bx bx-time-five ms-2"></i>
+                </div>
+                <input type="hidden" id="cardDeadline" />
               </div>
-              <div class="mb-3" id="recurring-task-group">
+              <div class="mb-2" id="link-group">
+                <label class="form-label" for="cardLinkType">Link type (meeting / drive / document)</label>
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                  <select class="form-select" id="cardLinkType" style="max-width: 160px;">
+                    <option value="">— None —</option>
+                    <option value="meeting">Meeting</option>
+                    <option value="drive">Drive</option>
+                    <option value="document">Document</option>
+                  </select>
+                  <input type="url" class="form-control flex-grow-1" id="cardLink" placeholder="https://meet.google.com/... or drive link or doc link" style="min-width: 200px;" />
+                </div>
+                <small class="text-muted">Add a meeting link, Google Drive link, or document link. It will show on the calendar with an icon.</small>
+              </div>
+              <div class="mb-2" id="recurring-task-group">
                 <div class="form-check form-switch mb-2">
                   <input class="form-check-input" type="checkbox" id="cardRecurring" />
                   <label class="form-check-label" for="cardRecurring">
@@ -823,7 +887,7 @@
               </div>
               <div class="mb-0 small text-muted" id="assigned-by-info" style="display: none;">Assigned by <span id="assigned-by-name"></span></div>
             </div>
-            <div class="modal-footer d-flex justify-content-between">
+            <div class="modal-footer d-flex justify-content-between card-task-modal-footer flex-shrink-0">
               <button type="button" class="btn btn-outline-danger d-none" id="card-modal-delete-btn">Delete</button>
               <div class="ms-auto d-flex gap-2">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -831,6 +895,44 @@
               </div>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="deadlinePickerModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered deadline-picker-modal-dialog">
+        <div class="modal-content deadline-picker-modal-content">
+          <div class="modal-header deadline-picker-header">
+            <h5 class="modal-title"><i class="bx bx-calendar-check me-2"></i>Select date and time</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body deadline-picker-body">
+            <div class="deadline-section">
+              <h6 class="deadline-section-title"><i class="bx bx-calendar me-1"></i>Date</h6>
+              <div class="deadline-calendar-wrap">
+                <div class="deadline-calendar-nav">
+                  <button type="button" class="btn btn-sm btn-outline-secondary deadline-cal-prev" id="deadline-cal-prev" aria-label="Previous month"><i class="bx bx-chevron-left"></i></button>
+                  <span class="deadline-cal-month" id="deadline-cal-month"></span>
+                  <button type="button" class="btn btn-sm btn-outline-secondary deadline-cal-next" id="deadline-cal-next" aria-label="Next month"><i class="bx bx-chevron-right"></i></button>
+                </div>
+                <div class="deadline-cal-daynames">
+                  <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                </div>
+                <div class="deadline-cal-grid" id="deadline-cal-grid"></div>
+              </div>
+            </div>
+            <div class="deadline-section deadline-time-section">
+              <h6 class="deadline-section-title"><i class="bx bx-time-five me-1"></i>Time (digital)</h6>
+              <div class="deadline-time-digital-wrap">
+                <input type="time" class="form-control form-control-lg deadline-time-input" id="deadline-time-input" value="09:00" step="60" title="Type or select time (HH:MM)" />
+                <small class="text-muted d-block mt-1">Type time (e.g. 14:30) or use the picker</small>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer deadline-picker-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="deadline-picker-ok"><i class="bx bx-check me-1"></i>OK</button>
+          </div>
         </div>
       </div>
     </div>
@@ -892,6 +994,7 @@
               <span id="kanban-calendar-month" class="fw-semibold" style="min-width: 160px; text-align: center;"></span>
               <button type="button" class="btn btn-sm btn-outline-secondary" id="kanban-calendar-next"><i class="bx bx-chevron-right"></i></button>
             </div>
+            <div id="kanban-calendar-hints" class="kanban-calendar-hints mb-2 p-2 rounded d-none"></div>
             <div id="kanban-calendar" class="kanban-calendar"></div>
             <div id="kanban-calendar-day-detail" class="mt-3 p-3 rounded bg-light d-none">
               <h6 class="mb-2" id="kanban-day-detail-title">Tasks for selected day</h6>

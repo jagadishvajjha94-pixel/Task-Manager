@@ -689,7 +689,9 @@
         assignedByName: 'Auto (Recurring)',
         recurringTemplateId: template.id,
         isRecurringTask: true,
-        recurringFrequency: template.frequency || 'daily'
+        recurringFrequency: template.frequency || 'daily',
+        link: template.link || undefined,
+        linkType: template.linkType || undefined
       };
       if (!todoCol.cards) todoCol.cards = [];
       todoCol.cards.push(newCard);
@@ -1329,14 +1331,33 @@
     return byDate;
   }
 
+  function getTaskLinkType(task) {
+    if (!task || !task.link) return '';
+    const t = (task.linkType || '').toLowerCase();
+    if (t === 'meeting' || t === 'drive' || t === 'document') return t;
+    const title = (task.title || '').toLowerCase();
+    if (title.includes('meeting')) return 'meeting';
+    if (title.includes('drive')) return 'drive';
+    if (title.includes('doc')) return 'document';
+    return 'document';
+  }
+
+  function isSafeLinkUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    const u = url.trim();
+    return u.startsWith('http://') || u.startsWith('https://');
+  }
+
   function renderKanbanCalendar() {
     const grid = document.getElementById('kanban-calendar');
     const monthEl = document.getElementById('kanban-calendar-month');
     const detailWrap = document.getElementById('kanban-calendar-day-detail');
     const detailTitle = document.getElementById('kanban-day-detail-title');
     const detailBody = document.getElementById('kanban-day-detail-body');
+    const hintsWrap = document.getElementById('kanban-calendar-hints');
     if (!grid) return;
     const byDate = getTasksByDateKey();
+    const todayKey = getTodayDateKey();
     const year = kanbanCalendarMonth.getFullYear();
     const month = kanbanCalendarMonth.getMonth();
     monthEl.textContent = kanbanCalendarMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
@@ -1345,13 +1366,85 @@
     const startPad = (firstDay.getDay() + 6) % 7;
     const daysInMonth = lastDay.getDate();
     const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    if (hintsWrap) {
+      const next7Keys = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(todayKey + 'T12:00:00');
+        d.setDate(d.getDate() + i);
+        next7Keys.push(
+          d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+        );
+      }
+      const upcoming = [];
+      next7Keys.forEach(dateKey => {
+        (byDate[dateKey] || []).forEach(t => {
+          if (!t.link) return;
+          const linkType = getTaskLinkType(t);
+          const label = linkType === 'meeting' ? 'Meeting' : linkType === 'drive' ? 'Drive' : 'Link';
+          const dayLabel =
+            dateKey === todayKey ? 'Today' : dateKey === next7Keys[1] ? 'Tomorrow' : formatTaskDate(dateKey);
+          upcoming.push({ title: t.title || 'Task', label, dateKey, dayLabel, link: t.link });
+        });
+      });
+      if (upcoming.length > 0) {
+        hintsWrap.innerHTML =
+          '<div class="cal-hints-title"><i class="bx bx-info-circle me-1"></i>Upcoming meetings &amp; drives</div>' +
+          upcoming
+            .slice(0, 8)
+            .map(u => {
+              const badgeClass =
+                u.label === 'Meeting'
+                  ? 'cal-hint-badge cal-hint-badge-meeting'
+                  : u.label === 'Drive'
+                    ? 'cal-hint-badge cal-hint-badge-drive'
+                    : 'cal-hint-badge';
+              return (
+                '<div class="cal-hint-item">' +
+                '<span class="' +
+                badgeClass +
+                '">' +
+                escapeHtml(u.label) +
+                '</span> ' +
+                escapeHtml(u.title) +
+                ' <span class="cal-hint-day">(' +
+                escapeHtml(u.dayLabel) +
+                ')</span></div>'
+              );
+            })
+            .join('');
+        hintsWrap.classList.remove('d-none');
+      } else {
+        hintsWrap.innerHTML = '';
+        hintsWrap.classList.add('d-none');
+      }
+    }
+
     let html = dayNames.map(d => `<div class="cal-day-name">${d}</div>`).join('');
     for (let i = 0; i < startPad; i++) html += '<div class="cal-day"></div>';
     for (let d = 1; d <= daysInMonth; d++) {
       const dateKey = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
       const tasks = byDate[dateKey] || [];
       const count = tasks.length;
-      html += `<div class="cal-day${count ? ' has-tasks' : ''}" data-date="${dateKey}" title="${count} task(s)"><span class="cal-num">${d}</span>${count ? '<span class="cal-count">' + count + '</span>' : ''}</div>`;
+      const hasMeeting = tasks.some(t => t.link && getTaskLinkType(t) === 'meeting');
+      const hasDrive = tasks.some(t => t.link && getTaskLinkType(t) === 'drive');
+      const hasLink = tasks.some(t => t.link);
+      let title = count + ' task(s)';
+      if (dateKey === todayKey && (hasMeeting || hasDrive))
+        title += ' — ' + (hasMeeting ? 'Meeting today. ' : '') + (hasDrive ? 'Drive today.' : '');
+      else if (hasMeeting) title += ' — Meeting';
+      else if (hasDrive) title += ' — Drive';
+      const icons =
+        (hasMeeting
+          ? '<span class="cal-icon cal-icon-meeting" title="Meeting with link"><i class="bx bx-video"></i></span>'
+          : '') +
+        (hasDrive
+          ? '<span class="cal-icon cal-icon-drive" title="Drive link"><i class="bx bx-folder"></i></span>'
+          : '') +
+        (hasLink && !hasMeeting && !hasDrive
+          ? '<span class="cal-icon cal-icon-doc" title="Link"><i class="bx bx-link"></i></span>'
+          : '');
+      html += `<div class="cal-day${count ? ' has-tasks' : ''}${hasMeeting ? ' has-meeting' : ''}${hasDrive ? ' has-drive' : ''}" data-date="${dateKey}" title="${escapeHtml(title)}"><span class="cal-num">${d}</span>${count ? '<span class="cal-count">' + count + '</span>' : ''}${icons}</div>`;
     }
     grid.innerHTML = html;
     grid.querySelectorAll('.cal-day[data-date]').forEach(el => {
@@ -1359,7 +1452,6 @@
         grid.querySelectorAll('.cal-day').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected');
         const dateKey = el.dataset.date;
-        // Get fresh data to reflect any task status changes
         const freshByDate = getTasksByDateKey();
         const tasks = freshByDate[dateKey] || [];
         const d = new Date(dateKey + 'T12:00:00');
@@ -1369,23 +1461,46 @@
         if (tasks.length === 0) {
           detailBody.innerHTML = '<p class="text-muted mb-0">No tasks assigned this day.</p>';
         } else {
-          detailBody.innerHTML =
-            '<table class="table table-sm mb-0"><thead><tr><th>Task</th><th>Assigned to</th><th>Status</th></tr></thead><tbody>' +
-            tasks
-              .map(
-                t =>
-                  '<tr><td>' +
-                  escapeHtml(t.title || '') +
-                  '</td><td>' +
-                  escapeHtml(getAssigneesList(t).join(', ') || '—') +
-                  '</td><td><span class="badge ' +
-                  (t.status === 'Completed' ? 'bg-success' : 'bg-warning') +
-                  '">' +
-                  escapeHtml(t.status) +
-                  '</span></td></tr>'
-              )
-              .join('') +
-            '</tbody></table>';
+          const hasLinkCol = tasks.some(t => t.link);
+          let tableHtml =
+            '<table class="table table-sm mb-0"><thead><tr><th>Task</th><th>Assigned to</th><th>Status</th>' +
+            (hasLinkCol ? '<th>Link</th>' : '') +
+            '</tr></thead><tbody>';
+          tasks.forEach(t => {
+            const linkType = getTaskLinkType(t);
+            const iconClass = linkType === 'meeting' ? 'bx-video' : linkType === 'drive' ? 'bx-folder' : 'bx-link';
+            const linkLabel =
+              linkType === 'meeting' ? 'Open meeting' : linkType === 'drive' ? 'Open drive' : 'Open link';
+            let linkCell = '';
+            if (hasLinkCol) {
+              if (t.link && isSafeLinkUrl(t.link)) {
+                linkCell =
+                  '<td><a href="' +
+                  escapeHtml(t.link) +
+                  '" target="_blank" rel="noopener noreferrer" class="cal-day-link"><i class="bx ' +
+                  iconClass +
+                  ' me-1"></i>' +
+                  escapeHtml(linkLabel) +
+                  '</a></td>';
+              } else {
+                linkCell = '<td class="text-muted">—</td>';
+              }
+            }
+            tableHtml +=
+              '<tr><td>' +
+              escapeHtml(t.title || '') +
+              '</td><td>' +
+              escapeHtml(getAssigneesList(t).join(', ') || '—') +
+              '</td><td><span class="badge ' +
+              (t.status === 'Completed' ? 'bg-success' : 'bg-warning') +
+              '">' +
+              escapeHtml(t.status) +
+              '</span></td>' +
+              linkCell +
+              '</tr>';
+          });
+          tableHtml += '</tbody></table>';
+          detailBody.innerHTML = tableHtml;
         }
         detailWrap.classList.remove('d-none');
       });
@@ -1540,7 +1655,7 @@
             })
             .join('')}
         </div>
-        ${manager ? `<button type="button" class="btn btn-sm btn-outline-primary w-100 mt-2 add-card" data-column-id="${((board.columns || [])[0] && board.columns[0].id) || 'todo'}">+ Add card</button>` : ''}
+        ${manager ? `<div class="kanban-add-card-wrap"><button type="button" class="btn btn-sm btn-outline-primary w-100 add-card" data-column-id="${((board.columns || [])[0] && board.columns[0].id) || 'todo'}">+ Add card</button></div>` : ''}
       </div>
     `;
     }
@@ -1739,20 +1854,45 @@
     if (current && depts.indexOf(current) !== -1) selectEl.value = current;
   }
 
-  function renderAssigneesChips(container, names, onRemove) {
+  function renderAssigneesChips(container, names, onRemove, canRemove) {
     if (!container) return;
+    const onlyManagerCanRemove = canRemove === true;
     container.innerHTML = (names || [])
       .map(name => {
         const n = (name || '').trim();
         if (!n) return '';
-        return `<span class="assignee-chip" data-name="${escapeHtml(n)}">${escapeHtml(n)} <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-danger" data-remove-name="${escapeHtml(n)}" aria-label="Remove">&times;</button></span>`;
+        const removeBtn = onlyManagerCanRemove
+          ? ` <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-danger" data-remove-name="${escapeHtml(n)}" aria-label="Remove">&times;</button>`
+          : '';
+        return `<span class="assignee-chip" data-name="${escapeHtml(n)}">${escapeHtml(n)}${removeBtn}</span>`;
       })
       .join('');
     container.querySelectorAll('[data-remove-name]').forEach(btn => {
       btn.addEventListener('click', () => {
-        onRemove(btn.dataset.removeName);
+        if (onRemove) onRemove(btn.dataset.removeName);
       });
     });
+  }
+
+  function updateDeadlineDisplay() {
+    const input = document.getElementById('cardDeadline');
+    const display = document.getElementById('deadline-picker-display');
+    if (!display) return;
+    const val = input ? input.value.trim() : '';
+    if (!val) {
+      display.textContent = 'Select date and time';
+      return;
+    }
+    try {
+      const d = new Date(val);
+      if (isNaN(d.getTime())) {
+        display.textContent = 'Select date and time';
+        return;
+      }
+      display.textContent = d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    } catch (_) {
+      display.textContent = 'Select date and time';
+    }
   }
 
   function getAssigneesFromChips() {
@@ -1798,13 +1938,24 @@
 
     fillDepartmentSelect(departmentSelect);
 
+    if (canEdit) loadAndRenderEmployeeLogins();
+
+    const cardAssigneeInput = document.getElementById('cardAssignee');
+    if (cardAssigneeInput) {
+      cardAssigneeInput.removeAttribute('readonly');
+      cardAssigneeInput.removeAttribute('disabled');
+    }
+
     const assigneeNames = card ? getAssigneesList(card) : [];
+    const onlyManagerCanRemove = isManager();
     function removeAssignee(name) {
       const list = getAssigneesFromChips().filter(n => n !== name);
-      renderAssigneesChips(assigneesChips, list, removeAssignee);
+      renderAssigneesChips(assigneesChips, list, removeAssignee, onlyManagerCanRemove);
     }
-    renderAssigneesChips(assigneesChips, assigneeNames, removeAssignee);
+    renderAssigneesChips(assigneesChips, assigneeNames, removeAssignee, onlyManagerCanRemove);
 
+    const linkTypeSelect = document.getElementById('cardLinkType');
+    const linkInput = document.getElementById('cardLink');
     if (card) {
       titleInput.value = card.title;
       descInput.value = card.description || '';
@@ -1819,6 +1970,9 @@
           deadlineInput.value = '';
         }
       } else if (deadlineInput) deadlineInput.value = '';
+      updateDeadlineDisplay();
+      if (linkTypeSelect) linkTypeSelect.value = card.linkType || '';
+      if (linkInput) linkInput.value = card.link || '';
       if (assignedByInfo && assignedByNameEl && card.assignedByName) {
         assignedByNameEl.textContent = card.assignedByName;
         assignedByInfo.style.display = 'block';
@@ -1831,6 +1985,9 @@
       if (departmentSelect) departmentSelect.value = '';
       if (assigneeInput) assigneeInput.value = '';
       if (deadlineInput) deadlineInput.value = '';
+      if (linkTypeSelect) linkTypeSelect.value = '';
+      if (linkInput) linkInput.value = '';
+      updateDeadlineDisplay();
       delete form.dataset.cardId;
     }
     form.dataset.columnId = columnId;
@@ -1839,7 +1996,7 @@
     bsModal.show();
   }
 
-  function saveCardFromModal() {
+  async function saveCardFromModal() {
     const form = document.getElementById('cardForm');
     const titleInput = document.getElementById('cardTitle');
     const descInput = document.getElementById('cardDescription');
@@ -1858,6 +2015,10 @@
     if (predefinedDept) department = predefinedDept;
     const deadlineVal = deadlineInput ? deadlineInput.value : '';
     const deadline = deadlineVal ? new Date(deadlineVal).toISOString() : undefined;
+    const linkTypeSelect = document.getElementById('cardLinkType');
+    const linkInput = document.getElementById('cardLink');
+    const linkType = linkTypeSelect && linkTypeSelect.value ? linkTypeSelect.value.trim() : '';
+    const linkUrl = linkInput && linkInput.value ? linkInput.value.trim() : '';
     const currentUser = getCurrentUser();
     const assigneesFromChips = getAssigneesFromChips();
     const newName = assigneeInput ? assigneeInput.value.trim() : '';
@@ -1885,13 +2046,15 @@
         dayOfWeek: now.getDay(),
         dayOfMonth: now.getDate(),
         createdAt: now.toISOString(),
-        createdBy: currentUser ? currentUser.name : 'Manager'
+        createdBy: currentUser ? currentUser.name : 'Manager',
+        link: linkUrl || undefined,
+        linkType: linkType || undefined
       };
       board.recurringTasks.push(recurringTemplate);
       lastRecurringCheckDate = '';
       const added = generateRecurringTasksForToday();
       bootstrap.Modal.getInstance(document.getElementById('cardModal')).hide();
-      saveBoard();
+      await saveBoard();
       render();
       renderManagerTab();
       renderTasksTab();
@@ -1905,7 +2068,7 @@
       if (!board.upcomingTasks) board.upcomingTasks = [];
       board.upcomingTasks.push(task);
       bootstrap.Modal.getInstance(document.getElementById('cardModal')).hide();
-      saveBoard();
+      await saveBoard();
       renderTasksTab();
       return;
     }
@@ -1915,13 +2078,16 @@
     if (!col) return;
 
     if (form.dataset.cardId) {
-      const card = col.cards.find(c => c.id === form.dataset.cardId);
+      const cardId = form.dataset.cardId;
+      const card = col.cards.find(c => c.id === cardId);
       if (card) {
         card.title = title;
         card.description = descInput.value.trim();
         card.urgency = urgency;
         card.department = department || undefined;
         card.deadline = deadline;
+        card.link = linkUrl || undefined;
+        card.linkType = linkType || undefined;
         card.assignees = assigneeNames.length > 0 ? assigneeNames.slice() : undefined;
         card.assigneeName = assigneeNames[0] || undefined;
         if (assigneeNames.length > 0 && currentUser) {
@@ -1932,6 +2098,21 @@
         } else {
           card.assignedById = card.assignedByName = card.assignedAt = undefined;
         }
+        const inUpcoming = (board.upcomingTasks || []).find(t => t.id === cardId);
+        if (inUpcoming) {
+          inUpcoming.assignees = card.assignees;
+          inUpcoming.assigneeName = card.assigneeName;
+          inUpcoming.assignedById = card.assignedById;
+          inUpcoming.assignedByName = card.assignedByName;
+          inUpcoming.assignedAt = card.assignedAt;
+          inUpcoming.title = card.title;
+          inUpcoming.description = card.description;
+          inUpcoming.urgency = card.urgency;
+          inUpcoming.department = card.department;
+          inUpcoming.deadline = card.deadline;
+          inUpcoming.link = card.link;
+          inUpcoming.linkType = card.linkType;
+        }
       }
     } else {
       const card = {
@@ -1940,7 +2121,9 @@
         description: descInput.value.trim(),
         urgency,
         department: department || undefined,
-        deadline
+        deadline,
+        link: linkUrl || undefined,
+        linkType: linkType || undefined
       };
       card.assignees = assigneeNames.length > 0 ? assigneeNames.slice() : undefined;
       card.assigneeName = assigneeNames[0] || undefined;
@@ -1953,9 +2136,10 @@
       col.cards.push(card);
     }
     bootstrap.Modal.getInstance(document.getElementById('cardModal')).hide();
-    saveBoard();
+    await saveBoard();
     render();
     renderManagerTab();
+    renderTasksTab();
     renderNotifications();
     updateAccuracyUI();
   }
@@ -2050,9 +2234,20 @@
       }
       html += '</tbody></table></div></div>';
     });
+
+    const activeAssignInput =
+      document.activeElement &&
+      document.activeElement.classList &&
+      document.activeElement.classList.contains('assign-upcoming-input')
+        ? document.activeElement
+        : null;
+    const savedTaskId = activeAssignInput ? (activeAssignInput.dataset && activeAssignInput.dataset.taskId) || '' : '';
+    const savedValue = activeAssignInput ? activeAssignInput.value || '' : '';
+
     container.innerHTML = html;
 
     if (canEdit) {
+      loadAndRenderEmployeeLogins();
       container.querySelectorAll('.assign-upcoming-btn').forEach(btn => {
         btn.addEventListener('click', e => {
           const input = e.target.closest('tr').querySelector('.assign-upcoming-input');
@@ -2065,6 +2260,90 @@
           openUpcomingTaskModal(dept);
         });
       });
+
+      const upcomingDropdown = document.getElementById('upcoming-assignee-dropdown');
+      if (upcomingDropdown) {
+        const UPCOMING_DROPDOWN_MAX_H = 200;
+        function showUpcomingSuggestions(inputEl, query) {
+          if (!inputEl) return;
+          const q = (query || '').trim().toLowerCase();
+          const allEmployees = getAllEmployeeNames();
+          const matches =
+            q.length === 0
+              ? allEmployees
+              : allEmployees.filter(name => name.toLowerCase().startsWith(q)).sort((a, b) => a.localeCompare(b));
+          if (matches.length > 0) {
+            const rect = inputEl.getBoundingClientRect();
+            const spaceBelow =
+              typeof window !== 'undefined' && window.innerHeight ? window.innerHeight - rect.bottom : 250;
+            const showAbove = spaceBelow < UPCOMING_DROPDOWN_MAX_H + 8;
+            upcomingDropdown.style.left = rect.left + 'px';
+            upcomingDropdown.style.width = Math.max(rect.width, 180) + 'px';
+            upcomingDropdown.style.minWidth = '180px';
+            if (showAbove) {
+              upcomingDropdown.style.top = rect.top - UPCOMING_DROPDOWN_MAX_H - 4 + 'px';
+              upcomingDropdown.style.maxHeight = Math.min(rect.top - 8, UPCOMING_DROPDOWN_MAX_H) + 'px';
+            } else {
+              upcomingDropdown.style.top = rect.bottom + 2 + 'px';
+              upcomingDropdown.style.maxHeight = UPCOMING_DROPDOWN_MAX_H + 'px';
+            }
+            upcomingDropdown.innerHTML = matches
+              .map(
+                name =>
+                  `<div class="dropdown-item upcoming-assignee-option" role="option" data-name="${escapeHtml(name)}" tabindex="-1">${escapeHtml(name)}</div>`
+              )
+              .join('');
+            upcomingDropdown.style.display = 'block';
+            upcomingDropdown.classList.add('show');
+            upcomingDropdown.querySelectorAll('.upcoming-assignee-option').forEach(opt => {
+              opt.addEventListener('mousedown', ev => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                const selectedName = opt.dataset.name;
+                if (selectedName && inputEl) {
+                  inputEl.value = selectedName;
+                  upcomingDropdown.style.display = 'none';
+                  upcomingDropdown.classList.remove('show');
+                  upcomingDropdown.innerHTML = '';
+                }
+              });
+            });
+            setTimeout(() => inputEl.focus(), 0);
+          } else {
+            upcomingDropdown.style.display = 'none';
+            upcomingDropdown.classList.remove('show');
+            upcomingDropdown.innerHTML = '';
+          }
+        }
+        container.querySelectorAll('.assign-upcoming-input').forEach(input => {
+          input.removeAttribute('readonly');
+          input.removeAttribute('disabled');
+          input.setAttribute('autocomplete', 'off');
+          input.addEventListener('focus', () => showUpcomingSuggestions(input, input.value || ''));
+          input.addEventListener('input', e => {
+            showUpcomingSuggestions(input, e.target.value || '');
+            setTimeout(() => input.focus(), 0);
+          });
+          input.addEventListener('blur', () => {
+            setTimeout(() => {
+              upcomingDropdown.style.display = 'none';
+              upcomingDropdown.classList.remove('show');
+              upcomingDropdown.innerHTML = '';
+            }, 220);
+          });
+        });
+
+        if (savedTaskId) {
+          const restored = [].find.call(
+            container.querySelectorAll('.assign-upcoming-input'),
+            el => (el.dataset && el.dataset.taskId) === savedTaskId
+          );
+          if (restored) {
+            restored.value = savedValue;
+            restored.focus();
+          }
+        }
+      }
     }
   }
 
@@ -2084,9 +2363,20 @@
     task.assignedByName = currentUser ? currentUser.name : 'Manager';
     task.assignedAt = task.assignedAt || new Date().toISOString();
 
-    const alreadyOnBoard = (board.columns || []).some(col => (col.cards || []).some(c => c.id === task.id));
+    let cardOnBoard = null;
+    for (const col of board.columns || []) {
+      cardOnBoard = (col.cards || []).find(c => c.id === task.id);
+      if (cardOnBoard) break;
+    }
+    if (cardOnBoard) {
+      cardOnBoard.assignees = task.assignees;
+      cardOnBoard.assigneeName = task.assigneeName;
+      cardOnBoard.assignedById = task.assignedById;
+      cardOnBoard.assignedByName = task.assignedByName;
+      cardOnBoard.assignedAt = task.assignedAt;
+    }
     const todoCol = (board.columns || []).find(c => (c.id || '').toString().toLowerCase() === 'todo');
-    if (!alreadyOnBoard && todoCol) {
+    if (!cardOnBoard && todoCol) {
       todoCol.cards = todoCol.cards || [];
       todoCol.cards.push(task);
     }
@@ -2362,7 +2652,11 @@
     if (assigneeNameGroup) assigneeNameGroup.style.display = canEdit ? 'block' : 'none';
     if (deadlineGroup) deadlineGroup.style.display = 'block';
     if (deadlineInput) deadlineInput.value = '';
-    if (assigneesChips) renderAssigneesChips(assigneesChips, [], () => {});
+    const linkTypeEl = document.getElementById('cardLinkType');
+    const linkUrlEl = document.getElementById('cardLink');
+    if (linkTypeEl) linkTypeEl.value = '';
+    if (linkUrlEl) linkUrlEl.value = '';
+    if (assigneesChips) renderAssigneesChips(assigneesChips, [], () => {}, isManager());
     if (assignedByInfo) assignedByInfo.style.display = 'none';
     if (recurringGroup) recurringGroup.style.display = canEdit ? 'block' : 'none';
     if (recurringCheckbox) recurringCheckbox.checked = false;
@@ -2421,7 +2715,12 @@
       syncEventSource.onmessage = event => {
         const data = event && event.data ? String(event.data).trim() : '';
         if (data === 'board-updated') {
-          loadBoard();
+          loadBoard().then(() => {
+            const cardModal = document.getElementById('cardModal');
+            if (cardModal && cardModal.classList.contains('show')) {
+              fillDepartmentSelect(document.getElementById('cardDepartment'));
+            }
+          });
         } else if (data === 'employees-updated') {
           if (typeof loadAndRenderEmployeeLogins === 'function') loadAndRenderEmployeeLogins();
         }
@@ -2510,9 +2809,12 @@
       const col = board.columns.find(c => (c.cards || []).some(card => card.id === cardId));
       if (col) {
         col.cards = col.cards.filter(c => c.id !== cardId);
+        if (board.upcomingTasks) board.upcomingTasks = board.upcomingTasks.filter(t => t.id !== cardId);
         saveBoard();
         render();
         renderManagerTab();
+        renderTasksTab();
+        renderNotifications();
         renderStoredDataView();
         updateAccuracyUI();
         bootstrap.Modal.getInstance(document.getElementById('cardModal')).hide();
@@ -2523,6 +2825,159 @@
       const wrap = document.getElementById('recurring-frequency-wrap');
       if (wrap) wrap.classList.toggle('d-none', !e.target.checked);
     });
+
+    (function initDeadlinePicker() {
+      const trigger = document.getElementById('deadline-picker-trigger');
+      const modalEl = document.getElementById('deadlinePickerModal');
+      const calGrid = document.getElementById('deadline-cal-grid');
+      const calMonthEl = document.getElementById('deadline-cal-month');
+      const calPrev = document.getElementById('deadline-cal-prev');
+      const calNext = document.getElementById('deadline-cal-next');
+      const timeInputEl = document.getElementById('deadline-time-input');
+      const okBtn = document.getElementById('deadline-picker-ok');
+      const deadlineInput = document.getElementById('cardDeadline');
+
+      let pickerDate = ''; // YYYY-MM-DD
+      let pickerCalMonth = new Date();
+      pickerCalMonth.setDate(1);
+      let pickerHour = 9;
+      let pickerMinute = 0;
+
+      function pad2(n) {
+        return String(n).padStart(2, '0');
+      }
+
+      function openPicker() {
+        const val = deadlineInput ? deadlineInput.value.trim() : '';
+        const today = new Date();
+        const todayKey = today.getFullYear() + '-' + pad2(today.getMonth() + 1) + '-' + pad2(today.getDate());
+        if (val) {
+          try {
+            const d = new Date(val);
+            if (!isNaN(d.getTime())) {
+              pickerDate = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+              pickerHour = d.getHours();
+              pickerMinute = d.getMinutes();
+              pickerCalMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+            } else {
+              pickerDate = todayKey;
+              pickerHour = 9;
+              pickerMinute = 0;
+              pickerCalMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            }
+          } catch (_) {
+            pickerDate = todayKey;
+            pickerHour = 9;
+            pickerMinute = 0;
+            pickerCalMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+          }
+        } else {
+          pickerDate = todayKey;
+          pickerHour = 9;
+          pickerMinute = 0;
+          pickerCalMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        }
+        if (timeInputEl) timeInputEl.value = pad2(pickerHour) + ':' + pad2(pickerMinute);
+        renderDeadlineCal();
+        if (modalEl) new bootstrap.Modal(modalEl).show();
+      }
+
+      function renderDeadlineCal() {
+        if (!calGrid || !calMonthEl) return;
+        const y = pickerCalMonth.getFullYear();
+        const m = pickerCalMonth.getMonth();
+        calMonthEl.textContent = new Date(y, m, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+        const first = new Date(y, m, 1);
+        const last = new Date(y, m + 1, 0);
+        const startPad = (first.getDay() + 7) % 7;
+        const daysInMonth = last.getDate();
+        const today = new Date();
+        const todayKey = today.getFullYear() + '-' + pad2(today.getMonth() + 1) + '-' + pad2(today.getDate());
+        let html = '';
+        for (let i = 0; i < startPad; i++) {
+          const d = new Date(y, m, 1 - (startPad - i));
+          const dateKey = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+          const isToday = dateKey === todayKey;
+          const selected = dateKey === pickerDate;
+          html +=
+            '<div class="deadline-cal-day other-month' +
+            (isToday ? ' today' : '') +
+            (selected ? ' selected' : '') +
+            '" data-date="' +
+            dateKey +
+            '">' +
+            d.getDate() +
+            '</div>';
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateKey = y + '-' + pad2(m + 1) + '-' + pad2(d);
+          const isToday = dateKey === todayKey;
+          const selected = dateKey === pickerDate;
+          html +=
+            '<div class="deadline-cal-day' +
+            (isToday ? ' today' : '') +
+            (selected ? ' selected' : '') +
+            '" data-date="' +
+            dateKey +
+            '">' +
+            d +
+            '</div>';
+        }
+        const totalCells = startPad + daysInMonth;
+        const totalRows = 6;
+        const totalSlots = totalRows * 7;
+        for (let i = totalCells; i < totalSlots; i++) {
+          const d = new Date(y, m, daysInMonth + (i - totalCells + 1));
+          const dateKey = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+          html += '<div class="deadline-cal-day other-month" data-date="' + dateKey + '">' + d.getDate() + '</div>';
+        }
+        calGrid.innerHTML = html;
+        calGrid.querySelectorAll('.deadline-cal-day').forEach(cell => {
+          cell.addEventListener('click', () => {
+            pickerDate = cell.dataset.date || pickerDate;
+            renderDeadlineCal();
+          });
+        });
+      }
+
+      if (trigger) {
+        trigger.addEventListener('click', openPicker);
+        trigger.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openPicker();
+          }
+        });
+      }
+      if (calPrev)
+        calPrev.addEventListener('click', () => {
+          pickerCalMonth.setMonth(pickerCalMonth.getMonth() - 1);
+          renderDeadlineCal();
+        });
+      if (calNext)
+        calNext.addEventListener('click', () => {
+          pickerCalMonth.setMonth(pickerCalMonth.getMonth() + 1);
+          renderDeadlineCal();
+        });
+      if (okBtn && deadlineInput) {
+        okBtn.addEventListener('click', () => {
+          let h = pickerHour;
+          let m = pickerMinute;
+          if (timeInputEl && timeInputEl.value) {
+            const parts = timeInputEl.value.trim().split(':');
+            if (parts.length >= 2) {
+              const parsedH = parseInt(parts[0], 10);
+              const parsedM = parseInt(parts[1], 10);
+              if (!isNaN(parsedH) && parsedH >= 0 && parsedH <= 23) h = parsedH;
+              if (!isNaN(parsedM) && parsedM >= 0 && parsedM <= 59) m = parsedM;
+            }
+          }
+          deadlineInput.value = pickerDate + 'T' + pad2(h) + ':' + pad2(m);
+          updateDeadlineDisplay();
+          if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
+        });
+      }
+    })();
 
     const employeeModal = document.getElementById('employeeDetailsModal');
     if (employeeModal) employeeModal.addEventListener('hidden.bs.modal', onEmployeeModalHidden);
@@ -2673,40 +3128,70 @@
     const assigneeInput = document.getElementById('cardAssignee');
     const assigneeDropdown = document.getElementById('assignee-dropdown');
     if (assigneeInput && assigneeDropdown) {
-      assigneeInput.addEventListener('input', e => {
-        const query = e.target.value.trim().toLowerCase();
-        if (query.length === 0) {
-          assigneeDropdown.classList.remove('show');
-          assigneeDropdown.innerHTML = '';
-          return;
-        }
+      assigneeInput.removeAttribute('readonly');
+      assigneeInput.removeAttribute('disabled');
+      assigneeInput.setAttribute('autocomplete', 'off');
+
+      const ASSIGNEE_DROPDOWN_MAX_H = 200;
+      function showAssigneeSuggestions(query) {
+        const q = (query || '').trim().toLowerCase();
         const allEmployees = getAllEmployeeNames();
-        const matches = allEmployees.filter(name => name.toLowerCase().includes(query));
+        const matches =
+          q.length === 0
+            ? allEmployees
+            : allEmployees.filter(name => name.toLowerCase().startsWith(q)).sort((a, b) => a.localeCompare(b));
         if (matches.length > 0) {
+          const rect = assigneeInput.getBoundingClientRect();
+          const spaceBelow =
+            typeof window !== 'undefined' && window.innerHeight ? window.innerHeight - rect.bottom : 250;
+          const showAbove = spaceBelow < ASSIGNEE_DROPDOWN_MAX_H + 8;
+          assigneeDropdown.classList.toggle('assignee-dropdown-above', showAbove);
           assigneeDropdown.innerHTML = matches
-            .map(name => `<a class="dropdown-item" href="#" data-name="${escapeHtml(name)}">${escapeHtml(name)}</a>`)
+            .map(
+              name =>
+                `<div class="dropdown-item assignee-option" role="option" data-name="${escapeHtml(name)}" tabindex="-1">${escapeHtml(name)}</div>`
+            )
             .join('');
           assigneeDropdown.classList.add('show');
-          assigneeDropdown.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', ev => {
+          assigneeDropdown.style.display = 'block';
+          assigneeDropdown.querySelectorAll('.assignee-option').forEach(opt => {
+            opt.addEventListener('mousedown', ev => {
               ev.preventDefault();
-              const selectedName = link.dataset.name;
-              assigneeInput.value = selectedName;
-              assigneeDropdown.classList.remove('show');
-              assigneeDropdown.innerHTML = '';
-              document.getElementById('card-add-assignee-btn')?.click();
+              ev.stopPropagation();
+              const selectedName = opt.dataset.name;
+              if (selectedName) {
+                assigneeInput.value = selectedName;
+                assigneeDropdown.classList.remove('show');
+                assigneeDropdown.innerHTML = '';
+                document.getElementById('card-add-assignee-btn')?.click();
+              }
             });
           });
+          setTimeout(() => assigneeInput.focus(), 0);
         } else {
           assigneeDropdown.classList.remove('show');
           assigneeDropdown.innerHTML = '';
         }
+      }
+
+      assigneeInput.addEventListener('focus', () => {
+        showAssigneeSuggestions(assigneeInput.value || '');
+      });
+      assigneeInput.addEventListener('input', e => {
+        const query = (e.target.value || '').trim();
+        if (query.length === 0) {
+          showAssigneeSuggestions('');
+          setTimeout(() => assigneeInput.focus(), 0);
+          return;
+        }
+        showAssigneeSuggestions(query);
+        setTimeout(() => assigneeInput.focus(), 0);
       });
       assigneeInput.addEventListener('blur', () => {
         setTimeout(() => {
           assigneeDropdown.classList.remove('show');
           assigneeDropdown.innerHTML = '';
-        }, 200);
+        }, 220);
       });
     }
 
@@ -2802,11 +3287,12 @@
       const container = document.getElementById('card-assignees-chips');
       const current = getAssigneesFromChips();
       if (current.indexOf(name) !== -1) return;
+      const onlyManagerCanRemove = isManager();
       function removeAssignee(n) {
         const list = getAssigneesFromChips().filter(x => x !== n);
-        renderAssigneesChips(container, list, removeAssignee);
+        renderAssigneesChips(container, list, removeAssignee, onlyManagerCanRemove);
       }
-      renderAssigneesChips(container, current.concat(name), removeAssignee);
+      renderAssigneesChips(container, current.concat(name), removeAssignee, onlyManagerCanRemove);
       if (input) input.value = '';
     });
 
