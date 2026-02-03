@@ -131,11 +131,194 @@
       .tasks-dept-section .table .tasks-deadline { min-width: 140px; font-size: 0.85rem; color: #64748b; }
       .tasks-dept-section h6 { font-weight: 700; font-size: 1rem; color: #5b21b6; letter-spacing: 0.02em; }
       .table-align-middle td { vertical-align: middle; }
-      #login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(145deg, #e8eef4 0%, #dce4ec 30%, #f0f4f8 70%, #e6ecf2 100%) !important; padding: 2rem; position: relative; overflow: hidden; }
-      #login-page .login-page-content { position: relative; z-index: 1; width: 100%; }
-      #login-page .card { border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 24px rgba(30,58,95,.08); overflow: hidden; }
-      #login-page .card:hover { box-shadow: 0 8px 32px rgba(30,58,95,.1); }
-      #login-page h2 { color: #1e3a5f; font-weight: 700; }
+      /* Login page — best-in-class, eye-pleasing design */
+      #login-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+        background: linear-gradient(165deg, #0c1222 0%, #1a2744 25%, #1e3a5f 50%, #243b55 75%, #1e293b 100%);
+        position: relative;
+        overflow: hidden;
+      }
+      #login-page::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(ellipse 100% 80% at 50% -30%, rgba(59, 130, 246, 0.18), transparent 50%),
+          radial-gradient(ellipse 70% 50% at 90% 20%, rgba(30, 64, 175, 0.12), transparent 45%),
+          radial-gradient(ellipse 60% 50% at 10% 90%, rgba(30, 58, 95, 0.15), transparent 45%);
+        pointer-events: none;
+      }
+      #login-page::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        pointer-events: none;
+        opacity: 0.5;
+      }
+      #login-page .login-page-content {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 420px;
+        animation: loginFadeIn 0.6s ease-out;
+      }
+      @keyframes loginFadeIn {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      #login-page .login-brand {
+        text-align: center;
+        margin-bottom: 2.25rem;
+      }
+      #login-page .login-brand .login-title {
+        font-size: 2.25rem;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.15;
+        color: #fff;
+        margin: 0 0 0.75rem 0;
+        text-shadow: 0 2px 24px rgba(0,0,0,.35);
+      }
+      #login-page .login-brand .login-college {
+        font-size: 1.05rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        color: rgba(255,255,255,0.95);
+        margin: 0 0 0.35rem 0;
+        line-height: 1.4;
+      }
+      #login-page .login-brand .login-dept {
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.6);
+        margin: 0;
+        position: relative;
+        display: inline-block;
+        padding-top: 0.75rem;
+      }
+      #login-page .login-brand .login-dept::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 32px;
+        height: 3px;
+        border-radius: 2px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+      }
+      #login-page .card {
+        border: none;
+        border-radius: 24px;
+        box-shadow:
+          0 0 0 1px rgba(255,255,255,0.08),
+          0 32px 64px -12px rgba(0,0,0,.45),
+          0 20px 40px -16px rgba(0,0,0,.35);
+        overflow: hidden;
+        background: rgba(255,255,255,.99);
+        backdrop-filter: blur(20px);
+        animation: cardFadeIn 0.5s ease-out 0.15s both;
+      }
+      @keyframes cardFadeIn {
+        from { opacity: 0; transform: translateY(12px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      #login-page .card-body {
+        padding: 2.25rem 2rem 2rem;
+      }
+      #login-page .card-body .login-icon-wrap {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 1.25rem;
+        border-radius: 20px;
+        background: linear-gradient(145deg, #1e3a5f 0%, #152a47 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 24px -8px rgba(30,58,95,.4);
+      }
+      #login-page .card-body .login-icon-wrap .bx {
+        font-size: 2rem;
+        color: #fff;
+      }
+      #login-page .card-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+        margin-bottom: 1.5rem;
+      }
+      #login-page .btn-group {
+        border-radius: 14px;
+        padding: 4px;
+        background: #f1f5f9;
+      }
+      #login-page .btn-group .btn {
+        border-radius: 10px;
+        font-weight: 600;
+        border: 2px solid #e2e8f0;
+        color: #64748b;
+        background: #fff;
+        transition: all 0.25s ease;
+      }
+      #login-page .btn-group .btn:hover {
+        border-color: #cbd5e1;
+        color: #475569;
+        background: #f8fafc;
+      }
+      #login-page .btn-group .btn-check:checked + .btn-outline-primary {
+        background: linear-gradient(145deg, #1e3a5f 0%, #152a47 100%) !important;
+        color: #fff !important;
+        border-color: #1e3a5f !important;
+        box-shadow: 0 4px 12px rgba(30,58,95,.35);
+      }
+      #login-page .form-label {
+        font-weight: 600;
+        color: #334155;
+        font-size: 0.9rem;
+      }
+      #login-page .form-control {
+        border-radius: 14px;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid #e2e8f0;
+        font-size: 1rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      #login-page .form-control:hover { border-color: #cbd5e1; }
+      #login-page .form-control:focus {
+        border-color: #1e3a5f;
+        box-shadow: 0 0 0 4px rgba(30,58,95,.12);
+        outline: none;
+      }
+      #login-page .form-control::placeholder { color: #94a3b8; }
+      #login-page .btn-primary {
+        border-radius: 14px;
+        padding: 0.85rem 1.25rem;
+        font-weight: 600;
+        font-size: 1rem;
+        background: linear-gradient(145deg, #1e3a5f 0%, #152a47 100%);
+        border: none;
+        box-shadow: 0 4px 14px -4px rgba(30,58,95,.4);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      }
+      #login-page .btn-primary:hover {
+        background: linear-gradient(145deg, #152a47 0%, #0f2038 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px -8px rgba(30,58,95,.45);
+      }
+      #login-page .btn-primary:active { transform: translateY(0); }
+      #login-page .small.text-muted {
+        font-size: 0.8rem;
+        color: #94a3b8 !important;
+        line-height: 1.5;
+      }
       #login-page .text-muted { color: #64748b !important; }
       #app-page { display: none; }
       #app-page.logged-in { display: block; }
@@ -266,40 +449,37 @@
     <script src="/assets/js/config.js"></script>
   </head>
   <body>
-    <div id="login-page" class="p-4">
+    <div id="login-page">
       <div class="login-page-content">
-        <div class="container py-5">
-          <h2 class="text-center mb-2">Task Manager</h2>
-          <p class="text-center text-muted mb-4">Training &amp; Placements — Ramachandra College of Engineering, Eluru</p>
-          <div class="row justify-content-center">
-            <div class="col-12 col-md-5 col-lg-4">
-              <div class="card shadow-sm">
-                <div class="card-body p-4">
-                  <div class="text-center mb-3"><i class="bx bx-log-in-circle text-primary" style="font-size: 2.5rem;"></i></div>
-                  <h5 class="card-title text-center mb-3">Login</h5>
-                  <div class="d-flex justify-content-center mb-4">
-                    <div class="btn-group w-100" role="group">
-                      <input type="radio" class="btn-check" name="login-role" id="login-role-dean" value="dean" checked autocomplete="off" />
-                      <label class="btn btn-outline-primary" for="login-role-dean"><i class="bx bx-user-circle me-1"></i> Dean / Manager</label>
-                      <input type="radio" class="btn-check" name="login-role" id="login-role-employee" value="employee" autocomplete="off" />
-                      <label class="btn btn-outline-primary" for="login-role-employee"><i class="bx bx-id-card me-1"></i> Employee</label>
-                    </div>
-                  </div>
-                  <form id="login-form" autocomplete="off">
-                    <div class="mb-3">
-                      <label class="form-label" for="login-email">Email</label>
-                      <input type="email" class="form-control" id="login-email" required placeholder="Enter your email" autocomplete="off" />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label" for="login-password">Password</label>
-                      <input type="password" class="form-control" id="login-password" required placeholder="Enter your password" autocomplete="off" />
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100"><i class="bx bx-log-in me-1"></i> Sign in</button>
-                  </form>
-                  <p class="small text-muted mt-3 mb-0 text-center">Default Dean: manager@company.com / Manager@123</p>
-                </div>
+        <div class="login-brand">
+          <h1 class="login-title">Task Manager</h1>
+          <p class="login-college">Ramachandra College of Engineering, Eluru</p>
+          <p class="login-dept">Training &amp; Placement Dept.</p>
+        </div>
+        <div class="card">
+          <div class="card-body p-4">
+            <div class="login-icon-wrap"><i class="bx bx-log-in-circle"></i></div>
+            <h5 class="card-title text-center">Login</h5>
+            <div class="d-flex justify-content-center mb-4">
+              <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="login-role" id="login-role-dean" value="dean" checked autocomplete="off" />
+                <label class="btn btn-outline-primary" for="login-role-dean"><i class="bx bx-user-circle me-1"></i> Dean / Manager</label>
+                <input type="radio" class="btn-check" name="login-role" id="login-role-employee" value="employee" autocomplete="off" />
+                <label class="btn btn-outline-primary" for="login-role-employee"><i class="bx bx-id-card me-1"></i> Employee</label>
               </div>
             </div>
+            <form id="login-form" autocomplete="off">
+              <div class="mb-3">
+                <label class="form-label" for="login-email">Email</label>
+                <input type="email" class="form-control" id="login-email" required placeholder="Enter your email" autocomplete="off" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="login-password">Password</label>
+                <input type="password" class="form-control" id="login-password" required placeholder="Enter your password" autocomplete="off" />
+              </div>
+              <button type="submit" class="btn btn-primary w-100"><i class="bx bx-log-in me-1"></i> Sign in</button>
+            </form>
+            <p class="small text-muted mt-3 mb-0 text-center">Default Dean: manager@company.com / Manager@123</p>
           </div>
         </div>
       </div>
