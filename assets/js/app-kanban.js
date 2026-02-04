@@ -411,9 +411,24 @@
         tbody.innerHTML = cachedEmployeeLogins
           .map(
             e =>
-              `<tr><td>${escapeHtml(e.email || '')}</td><td>${escapeHtml(e.name || '')}</td><td>${e.canCreateAndAssign ? '<span class="badge bg-success">Can create & assign</span>' : '<span class="badge bg-secondary">View & update only</span>'}</td><td><button type="button" class="btn btn-sm btn-outline-primary edit-employee-login-btn me-1" data-employee-id="${escapeHtml(e.id)}" title="Edit this login"><i class="bx bx-edit"></i> Edit</button><button type="button" class="btn btn-sm btn-outline-danger remove-employee-login-btn" data-employee-id="${escapeHtml(e.id)}" title="Remove this login">Remove</button></td></tr>`
+              `<tr data-employee-id="${escapeHtml(e.id)}"><td>${escapeHtml(e.email || '')}</td><td>${escapeHtml(e.name || '')}</td><td><div class="form-check form-switch mb-0 d-inline-block"><input class="form-check-input emp-can-create-assign-toggle" type="checkbox" data-employee-id="${escapeHtml(e.id)}" title="Can create & assign tasks (applies to this employee only)" ${e.canCreateAndAssign ? ' checked' : ''} /><label class="form-check-label small ms-1" for="">${e.canCreateAndAssign ? 'Can create & assign' : 'View & update only'}</label></div></td><td><button type="button" class="btn btn-sm btn-outline-primary edit-employee-login-btn me-1" data-employee-id="${escapeHtml(e.id)}" title="Edit this login"><i class="bx bx-edit"></i> Edit</button><button type="button" class="btn btn-sm btn-outline-danger remove-employee-login-btn" data-employee-id="${escapeHtml(e.id)}" title="Remove this login">Remove</button></td></tr>`
           )
           .join('');
+        tbody.querySelectorAll('.emp-can-create-assign-toggle').forEach(toggle => {
+          toggle.addEventListener('change', () => {
+            const id = toggle.getAttribute('data-employee-id');
+            if (!id) return;
+            const canCreateAndAssign = !!toggle.checked;
+            fetch(API_BASE + '/api/auth/manager/update-employee-login', {
+              method: 'PUT',
+              headers: apiHeaders(),
+              body: JSON.stringify({ id, canCreateAndAssign })
+            })
+              .then(res => (res.ok ? res.json() : res.json().then(d => Promise.reject(d))))
+              .then(() => loadAndRenderEmployeeLogins())
+              .catch(err => alert(err && err.error ? err.error : 'Failed to update.'));
+          });
+        });
         tbody.querySelectorAll('.edit-employee-login-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const id = btn.getAttribute('data-employee-id');
@@ -1454,10 +1469,37 @@
     return needsQuote ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
 
-  function exportStoredDataToExcel() {
+  /** Get all task cards from board (same source as Stored data tab). */
+  function getAllTaskCards() {
     const cols = board.columns || [];
     const allCards = [];
     cols.forEach(col => (col.cards || []).forEach(card => allCards.push(card)));
+    return allCards;
+  }
+
+  /** Get YYYY-MM-DD from a card's assignedAt/createdAt. Handles ISO string, timestamp number, or missing. */
+  function getCardDateKey(card) {
+    const raw = card.assignedAt || card.createdAt;
+    if (raw == null) return null;
+    if (typeof raw === 'number') {
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return null;
+      return (
+        d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+      );
+    }
+    const s = String(raw).trim();
+    if (!s) return null;
+    if (s.length >= 10 && s[4] === '-' && s[7] === '-') return s.slice(0, 10);
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    return (
+      d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+    );
+  }
+
+  function exportStoredDataToExcel() {
+    const allCards = getAllTaskCards();
 
     const headers = [
       'S.No',
@@ -1471,7 +1513,10 @@
       'Deadline',
       'Assigned to',
       'Assigned by',
-      'Completed at'
+      'Completed at',
+      'Link',
+      'Link type',
+      'Recurring'
     ];
     const rows = [];
     rows.push(['TASK DATA EXPORT']);
@@ -1480,24 +1525,36 @@
     rows.push(headers);
 
     allCards.forEach((card, idx) => {
-      const dateStr = card.assignedAt ? new Date(card.assignedAt).toLocaleString() : '';
-      const deadlineStr = card.deadline ? new Date(card.deadline).toLocaleString() : '';
-      const completedStr = card.completedAt ? new Date(card.completedAt).toLocaleString() : '';
+      const dateRaw = card.assignedAt || card.createdAt;
+      const dateStr = dateRaw ? (isNaN(new Date(dateRaw).getTime()) ? '—' : new Date(dateRaw).toLocaleString()) : '—';
+      const deadlineStr = card.deadline
+        ? isNaN(new Date(card.deadline).getTime())
+          ? '—'
+          : new Date(card.deadline).toLocaleString()
+        : '—';
+      const completedStr = card.completedAt
+        ? isNaN(new Date(card.completedAt).getTime())
+          ? '—'
+          : new Date(card.completedAt).toLocaleString()
+        : '—';
       const status = isCardDone(card) ? 'Completed' : 'Pending';
-      const assigneesStr = getAssigneesList(card).join(', ') || '';
+      const assigneesStr = getAssigneesList(card).join(', ') || '—';
       rows.push([
         idx + 1,
-        card.id || '',
+        card.id || '—',
         dateStr,
-        card.title || '',
-        card.description || '',
+        card.title || '—',
+        card.description ?? '—',
         status,
         card.urgency || 'medium',
-        card.department || '',
+        card.department || '—',
         deadlineStr,
         assigneesStr,
-        card.assignedByName || '',
-        completedStr
+        card.assignedByName || '—',
+        completedStr,
+        card.link || '—',
+        card.linkType || '—',
+        card.recurringTemplateId ? 'Yes' : '—'
       ]);
     });
 
@@ -1510,15 +1567,116 @@
     URL.revokeObjectURL(link.href);
   }
 
-  function exportToExcel(period) {
-    const rows = getEmployeePerformanceByPeriod(period);
+  /** Returns task cards filtered by period (day = today, week = this week, month = this month, overall = all). Same source as Stored data tab. */
+  function getTaskCardsByPeriod(period) {
+    const allCards = getAllTaskCards();
+    if (!period || period === 'overall') return allCards;
+    const today = new Date();
+    const todayKey = getTodayDateKey();
+    const startOfWeek = new Date(today);
+    const dayOfWeek = startOfWeek.getDay();
+    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    startOfWeek.setDate(today.getDate() - diff);
+    const startOfWeekKey =
+      startOfWeek.getFullYear() +
+      '-' +
+      String(startOfWeek.getMonth() + 1).padStart(2, '0') +
+      '-' +
+      String(startOfWeek.getDate()).padStart(2, '0');
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
+    const endOfWeekKey =
+      endOfWeek.getFullYear() +
+      '-' +
+      String(endOfWeek.getMonth() + 1).padStart(2, '0') +
+      '-' +
+      String(endOfWeek.getDate()).padStart(2, '0');
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const startOfMonthKey = year + '-' + month + '-01';
+    const lastDay = new Date(year, today.getMonth() + 1, 0);
+    const endOfMonthKey = year + '-' + month + '-' + String(lastDay.getDate()).padStart(2, '0');
+    return allCards.filter(card => {
+      const dateKey = getCardDateKey(card);
+      if (!dateKey) return false;
+      if (period === 'day') return dateKey === todayKey;
+      if (period === 'week') return dateKey >= startOfWeekKey && dateKey <= endOfWeekKey;
+      if (period === 'month') return dateKey >= startOfMonthKey && dateKey <= endOfMonthKey;
+      return true;
+    });
+  }
+
+  /** Exports task data to Excel (same columns as Stored data tab) filtered by period: day, week, month, or overall. */
+  function exportTaskDataToExcel(period) {
+    const cards = getTaskCardsByPeriod(period);
+    const headers = [
+      'S.No',
+      'ID',
+      'Date',
+      'Title',
+      'Description',
+      'Status',
+      'Urgency',
+      'Department',
+      'Deadline',
+      'Assigned to',
+      'Assigned by',
+      'Completed at',
+      'Link',
+      'Link type',
+      'Recurring'
+    ];
+    const rows = [];
+    const periodLabel =
+      period === 'day' ? 'Day-wise' : period === 'week' ? 'Week-wise' : period === 'month' ? 'Month-wise' : 'All tasks';
+    rows.push(['TASK DATA EXPORT - ' + periodLabel]);
+    rows.push(['Generated: ' + new Date().toLocaleString()]);
+    rows.push([]);
+    rows.push(headers);
+    cards.forEach((card, idx) => {
+      const dateRaw = card.assignedAt || card.createdAt;
+      const dateStr = dateRaw ? (isNaN(new Date(dateRaw).getTime()) ? '—' : new Date(dateRaw).toLocaleString()) : '—';
+      const deadlineStr = card.deadline
+        ? isNaN(new Date(card.deadline).getTime())
+          ? '—'
+          : new Date(card.deadline).toLocaleString()
+        : '—';
+      const completedStr = card.completedAt
+        ? isNaN(new Date(card.completedAt).getTime())
+          ? '—'
+          : new Date(card.completedAt).toLocaleString()
+        : '—';
+      const status = isCardDone(card) ? 'Completed' : 'Pending';
+      const assigneesStr = getAssigneesList(card).join(', ') || '—';
+      rows.push([
+        idx + 1,
+        card.id || '—',
+        dateStr,
+        card.title || '—',
+        card.description ?? '—',
+        status,
+        card.urgency || 'medium',
+        card.department || '—',
+        deadlineStr,
+        assigneesStr,
+        card.assignedByName || '—',
+        completedStr,
+        card.link || '—',
+        card.linkType || '—',
+        card.recurringTemplateId ? 'Yes' : '—'
+      ]);
+    });
     const csv = rows.map(row => row.map(escapeCsvCell).join(',')).join('\r\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'employee-performance-' + period + '-' + getTodayDateKey() + '.csv';
+    link.download = 'task-data-' + period + '-' + getTodayDateKey() + '.csv';
     link.click();
     URL.revokeObjectURL(link.href);
+  }
+
+  function exportToExcel(period) {
+    exportTaskDataToExcel(period);
   }
 
   let kanbanCalendarMonth = new Date();
@@ -2662,7 +2820,7 @@
     const managerMenuItem = document.getElementById('menu-item-manager');
     if (managerMenuItem) managerMenuItem.classList.toggle('d-none', !isManager());
     const tasksMenuItem = document.querySelector('.menu-item[data-tab="tasks"]');
-    if (tasksMenuItem) tasksMenuItem.classList.toggle('d-none', !isManager());
+    if (tasksMenuItem) tasksMenuItem.classList.toggle('d-none', !(isManager() || canCreateAndAssign()));
     const btnChangePw = document.getElementById('btn-change-password');
     if (btnChangePw) btnChangePw.classList.toggle('d-none', !isManager());
     const btnLoadDemo = document.getElementById('btn-load-demo-data');
@@ -2671,8 +2829,10 @@
   }
 
   function switchTab(tabId) {
-    if ((tabId === 'stored-data' || tabId === 'manager' || tabId === 'tasks') && !isManager()) {
-      tabId = 'kanban';
+    if (tabId === 'stored-data' || tabId === 'manager') {
+      if (!isManager()) tabId = 'kanban';
+    } else if (tabId === 'tasks') {
+      if (!isManager() && !canCreateAndAssign()) tabId = 'kanban';
     }
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
@@ -2689,6 +2849,7 @@
     }
     if (tabId === 'stored-data') renderStoredDataView();
     if (tabId === 'manager') renderManagerTab();
+    if (tabId === 'tasks') renderTasksTab();
   }
 
   function renderStoredDataView() {
@@ -2709,10 +2870,11 @@
     html +=
       '<div class="mb-2"><input type="text" class="form-control form-control-sm stored-search" id="stored-search-tasks" placeholder="Search task, name, status..." style="max-width: 280px;" /></div>';
     html +=
-      '<div class="table-responsive mb-4"><table class="table table-bordered table-sm stored-table" id="stored-tasks-table"><thead><tr><th>S.No</th><th>Date</th><th>Title</th><th>Description</th><th>Status</th><th>Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th>Assigned by</th></tr></thead><tbody>';
+      '<div class="table-responsive mb-4"><table class="table table-bordered table-sm stored-table" id="stored-tasks-table"><thead><tr><th>S.No</th><th>ID</th><th>Date</th><th>Title</th><th>Description</th><th>Status</th><th>Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th>Assigned by</th><th>Completed at</th><th>Link</th><th>Link type</th><th>Recurring</th></tr></thead><tbody>';
     allCards.forEach((card, idx) => {
       const dateStr = card.assignedAt ? new Date(card.assignedAt).toLocaleString() : '—';
       const deadlineStr = card.deadline ? new Date(card.deadline).toLocaleString() : '—';
+      const completedStr = card.completedAt ? new Date(card.completedAt).toLocaleString() : '—';
       const assigneesStr = getAssigneesList(card).join(', ') || '—';
       const status = isCardDone(card) ? 'Completed' : 'Pending';
       html +=
@@ -2722,11 +2884,12 @@
         ).toLowerCase() +
         '">';
       html += '<td>' + (idx + 1) + '</td>';
+      html += '<td>' + escapeHtml(card.id || '—') + '</td>';
       html += '<td>' + dateStr + '</td>';
-      html += '<td>' + escapeHtml(card.title) + '</td>';
+      html += '<td>' + escapeHtml(card.title || '—') + '</td>';
       html +=
         '<td>' +
-        escapeHtml((card.description || '').slice(0, 80)) +
+        escapeHtml((card.description || '—').slice(0, 80)) +
         (card.description && card.description.length > 80 ? '…' : '') +
         '</td>';
       html +=
@@ -2740,9 +2903,13 @@
       html += '<td>' + deadlineStr + '</td>';
       html += '<td>' + escapeHtml(assigneesStr) + '</td>';
       html += '<td>' + escapeHtml(card.assignedByName || '—') + '</td>';
+      html += '<td>' + completedStr + '</td>';
+      html += '<td>' + escapeHtml(card.link || '—') + '</td>';
+      html += '<td>' + escapeHtml(card.linkType || '—') + '</td>';
+      html += '<td>' + (card.recurringTemplateId ? 'Yes' : '—') + '</td>';
       html += '</tr>';
     });
-    if (allCards.length === 0) html += '<tr><td colspan="10" class="text-muted text-center">No tasks</td></tr>';
+    if (allCards.length === 0) html += '<tr><td colspan="15" class="text-muted text-center">No tasks</td></tr>';
     html += '</tbody></table></div>';
 
     html += '<h6 class="mb-2">Upcoming tasks (not yet assigned)</h6>';
@@ -3249,23 +3416,23 @@
 
     document.getElementById('export-stored-data')?.addEventListener('click', e => {
       e.preventDefault();
-      exportStoredDataToExcel();
+      loadBoard().then(() => exportStoredDataToExcel());
     });
     document.getElementById('export-day')?.addEventListener('click', e => {
       e.preventDefault();
-      exportToExcel('day');
+      loadBoard().then(() => exportTaskDataToExcel('day'));
     });
     document.getElementById('export-week')?.addEventListener('click', e => {
       e.preventDefault();
-      exportToExcel('week');
+      loadBoard().then(() => exportTaskDataToExcel('week'));
     });
     document.getElementById('export-month')?.addEventListener('click', e => {
       e.preventDefault();
-      exportToExcel('month');
+      loadBoard().then(() => exportTaskDataToExcel('month'));
     });
     document.getElementById('export-overall')?.addEventListener('click', e => {
       e.preventDefault();
-      exportToExcel('overall');
+      loadBoard().then(() => exportTaskDataToExcel('overall'));
     });
     const openCalBtn = document.getElementById('open-kanban-calendar-btn');
     if (openCalBtn) {
@@ -3509,9 +3676,40 @@
           alert('Please enter email and password.');
           return;
         }
-        const endpoint = role === 'employee' ? '/api/auth/employee/login' : '/api/auth/manager/login';
-        const url = (API_BASE || window.location.origin || '') + endpoint;
-        fetch(url, {
+        if (role === 'employee') {
+          const url = (API_BASE || window.location.origin || '') + '/api/auth/employee/login';
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          })
+            .then(async res => {
+              let data = {};
+              try {
+                const text = await res.text();
+                if (text) data = JSON.parse(text);
+              } catch (_) {}
+              if (res.ok && data.user) {
+                setCurrentUser(data.user);
+                showAppPage();
+                loadBoard();
+                updateRoleUI();
+              } else {
+                alert(data.error || (res.status === 401 ? 'Invalid email or password' : 'Login failed'));
+              }
+              document.getElementById('login-email').value = '';
+              document.getElementById('login-password').value = '';
+            })
+            .catch(() => {
+              alert('Login failed. Check your connection and that the API is available.');
+              document.getElementById('login-email').value = '';
+              document.getElementById('login-password').value = '';
+            });
+          return;
+        }
+        const managerUrl = (API_BASE || window.location.origin || '') + '/api/auth/manager/login';
+        const employeeUrl = (API_BASE || window.location.origin || '') + '/api/auth/employee/login';
+        fetch(managerUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -3527,8 +3725,54 @@
               showAppPage();
               loadBoard();
               updateRoleUI();
+              document.getElementById('login-email').value = '';
+              document.getElementById('login-password').value = '';
+              return;
+            }
+            return fetch(employeeUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password })
+            });
+          })
+          .then(async res => {
+            if (res === undefined) return;
+            if (!res.ok) {
+              if (res.status === 401) {
+                alert(
+                  'Invalid email or password. If you are an employee without task assignment rights, please select "Employee" and log in from the Employee page.'
+                );
+              } else {
+                let data = {};
+                try {
+                  const text = await res.text();
+                  if (text) data = JSON.parse(text);
+                } catch (_) {}
+                alert(data.error || 'Login failed.');
+              }
+              document.getElementById('login-email').value = '';
+              document.getElementById('login-password').value = '';
+              return;
+            }
+            let data = {};
+            try {
+              const text = await res.text();
+              if (text) data = JSON.parse(text);
+            } catch (_) {}
+            if (!data.user) {
+              document.getElementById('login-email').value = '';
+              document.getElementById('login-password').value = '';
+              return;
+            }
+            if (data.user.canCreateAndAssign) {
+              setCurrentUser(data.user);
+              showAppPage();
+              loadBoard();
+              updateRoleUI();
             } else {
-              alert(data.error || (res.status === 401 ? 'Invalid email or password' : 'Login failed'));
+              alert(
+                'You do not have task assignment rights. Please select "Employee" and log in from the Employee page.'
+              );
             }
             document.getElementById('login-email').value = '';
             document.getElementById('login-password').value = '';

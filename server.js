@@ -229,11 +229,22 @@ app.post('/api/auth/manager/remove-employee-login', (req, res) => {
   res.json({ ok: true });
 });
 
-// List employee logins (manager only – enforced via X-User-Role).
+// List employee logins (manager, or employee with canCreateAndAssign – for assigning tasks).
 app.get('/api/auth/employees', (req, res) => {
   const role = (req.headers['x-user-role'] || '').toLowerCase();
-  if (role !== 'manager') {
-    return res.status(403).json({ error: 'Only managers can list employee logins.' });
+  const userId = (req.headers['x-user-id'] || '').trim();
+  let allow = false;
+  if (role === 'manager') {
+    allow = true;
+  } else if (role === 'employee' && userId) {
+    const employees = readEmployees();
+    const emp = employees.find(e => e.id === userId);
+    if (emp && emp.canCreateAndAssign) allow = true;
+  }
+  if (!allow) {
+    return res
+      .status(403)
+      .json({ error: 'Only managers or employees with create/assign rights can list employee logins.' });
   }
   const employees = readEmployees();
   res.json(
