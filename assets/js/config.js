@@ -9,33 +9,40 @@
 /* JS global variables
  !Please use the hex color code (#000) here. Don't use rgba(), hsl(), etc
 */
-window.config = {
-  colors: {
-    primary: window.Helpers.getCssVar('primary'),
-    secondary: window.Helpers.getCssVar('secondary'),
-    success: window.Helpers.getCssVar('success'),
-    info: window.Helpers.getCssVar('info'),
-    warning: window.Helpers.getCssVar('warning'),
-    danger: window.Helpers.getCssVar('danger'),
-    dark: window.Helpers.getCssVar('dark'),
-    black: window.Helpers.getCssVar('pure-black'),
-    white: window.Helpers.getCssVar('white'),
-    cardColor: window.Helpers.getCssVar('paper-bg'),
-    bodyBg: window.Helpers.getCssVar('body-bg'),
-    bodyColor: window.Helpers.getCssVar('body-color'),
-    headingColor: window.Helpers.getCssVar('heading-color'),
-    textMuted: window.Helpers.getCssVar('secondary-color'),
-    borderColor: window.Helpers.getCssVar('border-color')
-  },
-  colors_label: {
-    primary: window.Helpers.getCssVar('primary-bg-subtle'),
-    secondary: window.Helpers.getCssVar('secondary-bg-subtle'),
-    success: window.Helpers.getCssVar('success-bg-subtle'),
-    info: window.Helpers.getCssVar('info-bg-subtle'),
-    warning: window.Helpers.getCssVar('warning-bg-subtle'),
-    danger: window.Helpers.getCssVar('danger-bg-subtle'),
-    dark: window.Helpers.getCssVar('dark-bg-subtle')
-  },
-  fontFamily: window.Helpers.getCssVar('font-family-base'),
-};
-
+(function () {
+  function getCssVar(name) {
+    if (typeof window.Helpers !== 'undefined' && typeof window.Helpers.getCssVar === 'function') {
+      return window.Helpers.getCssVar(name);
+    }
+    return 'var(--bs-' + name + ')';
+  }
+  window.config = {
+    colors: {
+      primary: getCssVar('primary'),
+      secondary: getCssVar('secondary'),
+      success: getCssVar('success'),
+      info: getCssVar('info'),
+      warning: getCssVar('warning'),
+      danger: getCssVar('danger'),
+      dark: getCssVar('dark'),
+      black: getCssVar('pure-black'),
+      white: getCssVar('white'),
+      cardColor: getCssVar('paper-bg'),
+      bodyBg: getCssVar('body-bg'),
+      bodyColor: getCssVar('body-color'),
+      headingColor: getCssVar('heading-color'),
+      textMuted: getCssVar('secondary-color'),
+      borderColor: getCssVar('border-color')
+    },
+    colors_label: {
+      primary: getCssVar('primary-bg-subtle'),
+      secondary: getCssVar('secondary-bg-subtle'),
+      success: getCssVar('success-bg-subtle'),
+      info: getCssVar('info-bg-subtle'),
+      warning: getCssVar('warning-bg-subtle'),
+      danger: getCssVar('danger-bg-subtle'),
+      dark: getCssVar('dark-bg-subtle')
+    },
+    fontFamily: getCssVar('font-family-base')
+  };
+})();

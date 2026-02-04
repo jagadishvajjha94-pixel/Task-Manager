@@ -71,8 +71,9 @@
       .assignee-with-name { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; }
       .assignee-clickable { cursor: pointer; border-radius: 999px; padding: 0.1rem 0.35rem; transition: background 0.2s; }
       .assignee-clickable:hover { background: rgba(30,58,95,.1); }
-      .card-deadline { font-size: 0.75rem; color: var(--bs-secondary); }
-      .card-deadline.overdue { color: var(--bs-danger); font-weight: 600; }
+      .card-deadline, .card-countdown-timer { font-size: 0.9rem; font-weight: 700; color: #1e3a5f; }
+      .card-deadline.overdue, .card-countdown-timer.overdue { font-size: 0.95rem; font-weight: 800; color: #b91c1c; background: linear-gradient(135deg, rgba(254,226,226,0.95) 0%, rgba(254,202,202,0.9) 100%); padding: 0.3rem 0.55rem; border-radius: 6px; display: inline-block; border: 2px solid #dc2626; box-shadow: 0 1px 4px rgba(220,38,38,0.2); }
+      .kanban-card-overdue { border-left: 5px solid #b91c1c !important; background: linear-gradient(90deg, rgba(220,38,38,0.14) 0%, rgba(254,226,226,0.08) 40%, transparent 100%) !important; box-shadow: 0 0 0 1px rgba(220,38,38,0.35), 0 2px 8px rgba(220,38,38,0.12); }
       .assignee-chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0.5rem; background: var(--bs-secondary-bg); border-radius: 999px; font-size: 0.8125rem; }
       .accuracy-circle-wrap { position: relative; width: 32px; height: 32px; flex-shrink: 0; }
       .accuracy-circle-svg { transform: rotate(-90deg); }
@@ -110,8 +111,6 @@
       .kanban-card .badge.bg-label-info { background: linear-gradient(135deg,#e9d5ff,#ddd6fe) !important; color: #5b21b6 !important; font-weight: 700; border-radius: 6px; border: 1px solid #c4b5fd; }
       .kanban-card .badge.bg-label-secondary { background: linear-gradient(135deg,#f1f5f9,#e2e8f0) !important; color: #475569; font-weight: 600; border-radius: 6px; }
       .kanban-column-header h6 { line-height: 1.3; }
-      .notification-item { font-size: 0.8125rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid #e2e8f0; color: #000; }
-      .notification-item:last-child { border-bottom: 0; }
       .tab-pane { display: none; }
       .tab-pane.active { display: block; }
       .task-row-assign, .tasks-assign-col { min-width: 180px; }
@@ -431,8 +430,34 @@
       #upcoming-assignee-dropdown .dropdown-item:hover { background-color: #f1f5f9; color: #000; }
       .dropdown-menu .dropdown-item { color: #000; }
       .dropdown-menu .dropdown-header { color: #000; font-weight: 700; }
-      #kanban-search-input { border-right: 0; }
-      #kanban-search-clear { border-left: 0; }
+      #kanban-search-input, #global-search-input { border-right: 0; }
+      #kanban-search-clear, #global-search-clear { border-left: 0; }
+      #layout-navbar #current-role-label { font-size: 1rem; font-weight: 700; color: #1e3a5f; }
+      #layout-navbar .navbar-nav-right > .text-muted.small { font-size: 1rem !important; font-weight: 600 !important; color: #1e3a5f !important; }
+      .team-accuracy-modal-content { border: none; border-radius: 16px; box-shadow: 0 24px 48px -12px rgba(0,0,0,.25); }
+      .team-accuracy-modal-header { background: linear-gradient(135deg, #1e3a5f 0%, #152a47 100%); color: #fff; padding: 1.25rem 1.5rem; border-radius: 16px 16px 0 0; }
+      .team-accuracy-modal-header .modal-title { font-weight: 800; font-size: 1.25rem; color: #fff !important; }
+      .team-accuracy-modal-body { background: linear-gradient(180deg, #f8fafc 0%, #fff 100%); padding: 1.5rem 1.75rem; }
+      .team-accuracy-summary { font-size: 1.35rem; font-weight: 800; color: #1e3a5f; margin: 0; }
+      .team-accuracy-hint { font-size: 0.875rem; font-weight: 600; color: #475569; }
+      .team-accuracy-bars { display: flex; flex-direction: column; gap: 0.85rem; }
+      .team-accuracy-row { display: flex; flex-direction: row; align-items: stretch; width: 100%; height: 60px; min-height: 60px; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.12); cursor: pointer; transition: box-shadow 0.2s, transform 0.15s; }
+      .team-accuracy-row:hover { box-shadow: 0 4px 18px rgba(0,0,0,.16); transform: translateY(-1px); }
+      .team-accuracy-row-left { display: flex; align-items: center; gap: 0.85rem; padding: 0 1rem; min-width: 200px; max-width: 240px; flex-shrink: 0; }
+      .team-accuracy-row-avatar { width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 50%; background: rgba(255,255,255,.28); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; color: #fff; flex-shrink: 0; border: 2px solid rgba(255,255,255,.5); box-sizing: border-box; }
+      .team-accuracy-row-info { min-width: 0; }
+      .team-accuracy-row-name { font-weight: 800; font-size: 0.95rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25; }
+      .team-accuracy-row-meta { font-size: 0.7rem; color: rgba(255,255,255,.9); margin-top: 0.2rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .team-accuracy-row-bar-wrap { display: flex; flex: 1; min-width: 0; align-items: stretch; }
+      .team-accuracy-row-fill { min-width: 0; transition: min-width 0.3s ease; }
+      .team-accuracy-row-remain { flex: 1; min-width: 0; transition: flex 0.3s ease; }
+      .team-accuracy-row-pct-end { display: flex; align-items: center; justify-content: center; min-width: 64px; padding: 0 1rem; font-weight: 800; font-size: 1.2rem; color: #1e3a5f; background: #f8fafc; border-left: 1px solid #e2e8f0; flex-shrink: 0; }
+      .team-accuracy-modal-footer { padding: 1rem 1.5rem; background: #f1f5f9; border-top: 1px solid #e2e8f0; border-radius: 0 0 16px 16px; }
+      #accuracy-widget { cursor: pointer; }
+      #accuracy-widget .accuracy-circle-wrap { width: 36px; height: 36px; }
+      #accuracy-widget .accuracy-circle-svg { width: 36px; height: 36px; }
+      #accuracy-widget .accuracy-circle-text { font-size: 0.85rem; font-weight: 800; color: #1e3a5f; }
+      #accuracy-widget #accuracy-badge { font-size: 0.9rem; font-weight: 700; color: #1e3a5f; }
       #open-kanban-calendar-btn { border-radius: 10px; font-weight: 600; }
       #kanban-board > p.text-muted { padding: 3rem 2rem !important; text-align: center; font-size: 1rem; color: #64748b; background: linear-gradient(135deg,#fafbfc,#f8fafc); border-radius: 16px; border: 2px dashed #e2e8f0; margin: 1rem 0; }
       .employee-name-link:hover { text-decoration: underline; }
@@ -576,8 +601,9 @@
             <div class="layout-menu-toggle navbar-nav align-items-xl-center me-4 me-xl-0 d-xl-none">
               <a class="nav-item nav-link px-0 me-xl-6" href="javascript:void(0)"><i class="bx bx-menu"></i></a>
             </div>
-            <div class="navbar-nav-right d-flex align-items-center gap-2 ms-4">
-              <div class="d-none d-flex align-items-center gap-2 me-2" id="accuracy-widget" title="Your task completion accuracy">
+            <div class="navbar-nav-right d-flex align-items-center gap-2 ms-4 flex-grow-1 pe-2">
+              <span class="text-muted small me-2"><i class="bx bx-user me-1"></i><span id="current-role-label">Manager</span></span>
+              <div class="d-flex align-items-center gap-2 me-2" id="accuracy-widget" title="Task completion accuracy (yours or team)">
                 <div class="accuracy-circle-wrap" id="accuracy-circle-wrap">
                   <svg class="accuracy-circle-svg" viewBox="0 0 36 36" width="32" height="32">
                     <path class="accuracy-circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
@@ -587,28 +613,21 @@
                 </div>
                 <span class="small text-body-secondary" id="accuracy-badge">accuracy</span>
               </div>
-              <span class="text-muted small me-2"><i class="bx bx-user me-1"></i><span id="current-role-label">Manager</span></span>
               <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="btn-change-password" title="Change password">
                 <i class="bx bx-lock-alt"></i> Change password
               </button>
               <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-logout" title="Sign out">
                 <i class="bx bx-log-out"></i> Logout
               </button>
-              <div class="dropdown">
-                <button class="btn btn-sm btn-icon rounded-pill position-relative notif-btn-glass" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Assignment status">
-                  <i class="bx bx-bell"></i>
-                  <span class="badge rounded-pill bg-danger badge-dot position-absolute top-0 end-0 border border-white d-none" id="notif-badge"></span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-lg" style="max-height: 320px; overflow-y: auto;" id="notifications-list">
-                  <li class="dropdown-header">Who assigned what to whom</li>
-                  <li><hr class="dropdown-divider" /></li>
-                  <li id="notifications-placeholder"><span class="text-muted small px-3 py-2">No assignment notifications yet.</span></li>
-                </ul>
-              </div>
               <button type="button" class="btn btn-sm btn-outline-primary" id="btn-load-demo-data" title="Reset board to demo data for showcase (remove this button later)">
                 <i class="bx bx-data"></i> Load demo data
               </button>
               <h5 class="mb-0 text-body" id="page-title">Kanban Board</h5>
+              <div class="input-group global-search-wrap ms-auto" style="max-width: 240px; min-width: 140px;">
+                <span class="input-group-text"><i class="bx bx-search"></i></span>
+                <input type="text" class="form-control" id="global-search-input" placeholder="Search task, employee, task ID..." />
+                <button type="button" class="btn btn-outline-secondary" id="global-search-clear" title="Clear search"><i class="bx bx-x"></i></button>
+              </div>
             </div>
           </nav>
 
@@ -616,15 +635,6 @@
             <div class="container-xxl flex-grow-1 container-p-y">
               <div id="kanban-view" class="tab-pane active">
                 <div class="d-flex justify-content-between align-items-center mb-3 gap-3">
-                  <div class="flex-grow-1" style="max-width: 400px;">
-                    <div class="input-group">
-                      <span class="input-group-text"><i class="bx bx-search"></i></span>
-                      <input type="text" class="form-control" id="kanban-search-input" placeholder="Search by task or employee name..." />
-                      <button type="button" class="btn btn-outline-secondary" id="kanban-search-clear" title="Clear search">
-                        <i class="bx bx-x"></i>
-                      </button>
-                    </div>
-                  </div>
                   <div class="d-none" id="kanban-calendar-btn-wrap">
                     <button type="button" class="btn btn-outline-primary" id="open-kanban-calendar-btn" title="View day-wise tasks calendar">
                       <i class="bx bx-calendar me-1"></i> Calendar
@@ -703,6 +713,42 @@
                             </table>
                           </div>
                           <p class="text-muted small mt-2 mb-0" id="employee-logins-empty">No employee logins yet. Create one above.</p>
+                        </div>
+                        <div class="modal fade" id="edit-employee-login-modal" tabindex="-1" aria-labelledby="edit-employee-login-modal-label" aria-hidden="true">
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="edit-employee-login-modal-label"><i class="bx bx-edit me-2"></i>Edit employee login</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <form id="edit-employee-login-form">
+                                <div class="modal-body">
+                                  <input type="hidden" id="edit-emp-id" name="id" />
+                                  <div class="mb-3">
+                                    <label class="form-label" for="edit-emp-email">Employee email</label>
+                                    <input type="email" class="form-control" id="edit-emp-email" required placeholder="employee@company.com" />
+                                  </div>
+                                  <div class="mb-3">
+                                    <label class="form-label" for="edit-emp-name">Display name</label>
+                                    <input type="text" class="form-control" id="edit-emp-name" placeholder="Employee name" />
+                                  </div>
+                                  <div class="mb-3">
+                                    <label class="form-label" for="edit-emp-password">New password</label>
+                                    <input type="text" class="form-control" id="edit-emp-password" minlength="6" placeholder="Leave blank to keep current password" autocomplete="off" />
+                                    <div class="form-text">Only fill this if you want to change the password.</div>
+                                  </div>
+                                  <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" id="edit-emp-can-create-assign" title="Can create and assign tasks" />
+                                    <label class="form-check-label" for="edit-emp-can-create-assign">Can create & assign tasks</label>
+                                  </div>
+                                </div>
+                                <div class="modal-footer">
+                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                  <button type="submit" class="btn btn-primary"><i class="bx bx-save me-1"></i>Save changes</button>
+                                </div>
+                              </form>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1058,6 +1104,26 @@
           </div>
           <div class="modal-footer employee-modal-footer">
             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="teamAccuracyModal" tabindex="-1" aria-labelledby="teamAccuracyModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content team-accuracy-modal-content">
+          <div class="modal-header team-accuracy-modal-header">
+            <h5 class="modal-title" id="teamAccuracyModalLabel"><i class="bx bx-pie-chart-alt me-2"></i>Team accuracy</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body team-accuracy-modal-body">
+            <p class="team-accuracy-summary mb-3 mb-4" id="team-accuracy-summary">Team accuracy: 0%</p>
+            <p class="team-accuracy-hint mb-3">Each bar shows an employee&apos;s completion rate (completed ÷ assigned). Click a row to view that employee&apos;s performance.</p>
+            <div class="team-accuracy-bars" id="team-accuracy-bars"></div>
+            <p class="text-muted small mt-3 mb-0 d-none" id="team-accuracy-empty">No employees with assigned tasks yet.</p>
+          </div>
+          <div class="modal-footer team-accuracy-modal-footer">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
       </div>

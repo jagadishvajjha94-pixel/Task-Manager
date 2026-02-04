@@ -174,6 +174,45 @@ app.post('/api/auth/manager/create-employee-login', (req, res) => {
   });
 });
 
+// Manager updates an employee login (email, name, password optional, canCreateAndAssign)
+app.put('/api/auth/manager/update-employee-login', (req, res) => {
+  const role = (req.headers['x-user-role'] || '').toLowerCase();
+  if (role !== 'manager') {
+    return res.status(403).json({ error: 'Only managers can update employee logins.' });
+  }
+  const { id, email, name, password, canCreateAndAssign } = req.body || {};
+  const idStr = typeof id === 'string' ? id.trim() : '';
+  if (!idStr) {
+    return res.status(400).json({ error: 'Employee id required' });
+  }
+  const employees = readEmployees();
+  const index = employees.findIndex(e => e.id === idStr);
+  if (index === -1) {
+    return res.status(404).json({ error: 'Employee login not found' });
+  }
+  const emp = employees[index];
+  const emailStr = typeof email === 'string' ? email.trim() : '';
+  if (emailStr) {
+    const existing = employees.find(e => e.id !== idStr && (e.email || '').toLowerCase() === emailStr.toLowerCase());
+    if (existing) {
+      return res.status(400).json({ error: 'Another employee already has this email' });
+    }
+    emp.email = emailStr.toLowerCase();
+  }
+  if (typeof name === 'string') emp.name = name.trim() || (emp.email || '').split('@')[0] || 'Employee';
+  if (password != null && String(password).trim().length >= 6) {
+    emp.passwordHash = hashPassword(String(password));
+  }
+  if (typeof canCreateAndAssign === 'boolean') emp.canCreateAndAssign = canCreateAndAssign;
+  employees[index] = emp;
+  writeEmployees(employees);
+  broadcastSync('employees-updated');
+  res.json({
+    ok: true,
+    employee: { id: emp.id, email: emp.email, name: emp.name, canCreateAndAssign: !!emp.canCreateAndAssign }
+  });
+});
+
 // Manager removes an employee login
 app.post('/api/auth/manager/remove-employee-login', (req, res) => {
   const id = typeof (req.body && req.body.id) === 'string' ? req.body.id.trim() : '';
@@ -190,8 +229,12 @@ app.post('/api/auth/manager/remove-employee-login', (req, res) => {
   res.json({ ok: true });
 });
 
-// List employee logins (manager only – no auth check for simplicity; use session in production)
+// List employee logins (manager only – enforced via X-User-Role).
 app.get('/api/auth/employees', (req, res) => {
+  const role = (req.headers['x-user-role'] || '').toLowerCase();
+  if (role !== 'manager') {
+    return res.status(403).json({ error: 'Only managers can list employee logins.' });
+  }
   const employees = readEmployees();
   res.json(
     employees.map(e => ({
@@ -300,12 +343,26 @@ app.post('/api/auth/google', (req, res) => {
     });
 });
 
+// Role-based board: employees get filtered data (no upcomingTasks, minimal notifications).
+// Client must send X-User-Role: manager | employee and optionally X-User-Id for employee.
 app.get('/api/board', (req, res) => {
   const board = readBoard();
   const data = board || { columns: [], notifications: [], users: [], upcomingTasks: [] };
   if (!Array.isArray(data.notifications)) data.notifications = [];
   if (!Array.isArray(data.users)) data.users = [];
   if (!Array.isArray(data.upcomingTasks)) data.upcomingTasks = [];
+
+  const role = (req.headers['x-user-role'] || '').toLowerCase();
+  const userId = (req.headers['x-user-id'] || '').trim();
+
+  if (role === 'employee') {
+    // Employees must not see upcoming tasks (manager-only section).
+    data.upcomingTasks = [];
+    // Keep only essential notifications for employees (e.g. assignments to them); limit to last 10.
+    const essential = (data.notifications || []).slice(0, 10);
+    data.notifications = essential;
+  }
+
   res.json(data);
 });
 
@@ -332,7 +389,12 @@ app.get('/api/sync/events', (req, res) => {
   });
 });
 
+// Only managers can update the board. Enforced via X-User-Role header.
 app.put('/api/board', (req, res) => {
+  const role = (req.headers['x-user-role'] || '').toLowerCase();
+  if (role !== 'manager') {
+    return res.status(403).json({ error: 'Only managers can update the board.' });
+  }
   const board = req.body;
   if (board && typeof board === 'object') {
     if (!Array.isArray(board.columns)) board.columns = [];

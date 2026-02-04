@@ -6,6 +6,15 @@
       ? window.location.origin
       : '';
 
+  /** Build headers for API calls: role validation for backend enforcement. */
+  function apiHeaders(extra) {
+    const u = getCurrentUser();
+    const role = (u && u.role) === 'manager' ? 'manager' : 'employee';
+    const h = { 'Content-Type': 'application/json', 'X-User-Role': role };
+    if (u && u.id) h['X-User-Id'] = String(u.id);
+    return extra ? { ...h, ...extra } : h;
+  }
+
   const defaultUsers = [
     { id: 'm1', name: 'Sarah', role: 'manager' },
     { id: 'e1', name: 'Alice', role: 'employee' },
@@ -245,19 +254,8 @@
 
   let serverReachable = false;
 
-  function addNotification(taskTitle, assigneeName, assignedByName) {
-    if (!board.notifications) board.notifications = [];
-    const msg = assignedByName + ' assigned "' + (taskTitle || '') + '" to ' + assigneeName;
-    board.notifications.unshift({
-      id: uid(),
-      message: msg,
-      taskTitle,
-      assigneeName,
-      assignedByName,
-      at: new Date().toISOString()
-    });
-    const maxNotifs = 50;
-    if (board.notifications.length > maxNotifs) board.notifications = board.notifications.slice(0, maxNotifs);
+  function addNotification() {
+    // Notifications removed from application
   }
 
   function escapeHtml(s) {
@@ -269,7 +267,7 @@
 
   async function loadBoard() {
     try {
-      const res = await fetch(API_BASE + '/api/board');
+      const res = await fetch(API_BASE + '/api/board', { headers: apiHeaders() });
       if (!res.ok) throw new Error('Server returned ' + res.status);
       const data = await res.json();
       serverReachable = true;
@@ -321,11 +319,26 @@
     if (recurringAdded) {
       await saveBoard();
     }
-    render();
-    renderTasksTab();
-    renderManagerTab();
-    renderNotifications();
-    updateRoleUI();
+    try {
+      render();
+      renderTasksTab();
+      renderManagerTab();
+      renderNotifications();
+      updateRoleUI();
+    } catch (renderErr) {
+      console.error('Render error:', renderErr);
+      const container = document.getElementById('kanban-board');
+      if (container) {
+        container.innerHTML =
+          '<p class="text-muted py-5">Could not load board. <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="kanban-retry-render">Retry</button> or <a href="#" id="kanban-back-login">return to login</a>.</p>';
+        document.getElementById('kanban-retry-render')?.addEventListener('click', () => loadBoard());
+        document.getElementById('kanban-back-login')?.addEventListener('click', e => {
+          e.preventDefault();
+          localStorage.removeItem('kanban-current-user');
+          showLoginPage();
+        });
+      }
+    }
   }
 
   function getDepartments() {
@@ -381,7 +394,7 @@
     const tbody = document.getElementById('employee-logins-tbody');
     const emptyEl = document.getElementById('employee-logins-empty');
     if (!tbody) return;
-    fetch(API_BASE + '/api/auth/employees')
+    fetch(API_BASE + '/api/auth/employees', { headers: apiHeaders() })
       .then(res => (res.ok ? res.json() : []))
       .then(employees => {
         cachedEmployeeLogins = Array.isArray(employees) ? employees : [];
@@ -398,9 +411,32 @@
         tbody.innerHTML = cachedEmployeeLogins
           .map(
             e =>
-              `<tr><td>${escapeHtml(e.email || '')}</td><td>${escapeHtml(e.name || '')}</td><td>${e.canCreateAndAssign ? '<span class="badge bg-success">Can create & assign</span>' : '<span class="badge bg-secondary">View & update only</span>'}</td><td><button type="button" class="btn btn-sm btn-outline-danger remove-employee-login-btn" data-employee-id="${escapeHtml(e.id)}" title="Remove this login">Remove</button></td></tr>`
+              `<tr><td>${escapeHtml(e.email || '')}</td><td>${escapeHtml(e.name || '')}</td><td>${e.canCreateAndAssign ? '<span class="badge bg-success">Can create & assign</span>' : '<span class="badge bg-secondary">View & update only</span>'}</td><td><button type="button" class="btn btn-sm btn-outline-primary edit-employee-login-btn me-1" data-employee-id="${escapeHtml(e.id)}" title="Edit this login"><i class="bx bx-edit"></i> Edit</button><button type="button" class="btn btn-sm btn-outline-danger remove-employee-login-btn" data-employee-id="${escapeHtml(e.id)}" title="Remove this login">Remove</button></td></tr>`
           )
           .join('');
+        tbody.querySelectorAll('.edit-employee-login-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-employee-id');
+            if (!id) return;
+            const emp = cachedEmployeeLogins.find(e => e.id === id);
+            if (!emp) return;
+            const modal = document.getElementById('edit-employee-login-modal');
+            const idEl = document.getElementById('edit-emp-id');
+            const emailEl = document.getElementById('edit-emp-email');
+            const nameEl = document.getElementById('edit-emp-name');
+            const passwordEl = document.getElementById('edit-emp-password');
+            const canEl = document.getElementById('edit-emp-can-create-assign');
+            if (idEl) idEl.value = emp.id;
+            if (emailEl) emailEl.value = emp.email || '';
+            if (nameEl) nameEl.value = emp.name || '';
+            if (passwordEl) passwordEl.value = '';
+            if (canEl) canEl.checked = !!emp.canCreateAndAssign;
+            if (modal && typeof bootstrap !== 'undefined') {
+              const bsModal = new bootstrap.Modal(modal);
+              bsModal.show();
+            }
+          });
+        });
         tbody.querySelectorAll('.remove-employee-login-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const id = btn.getAttribute('data-employee-id');
@@ -408,7 +444,7 @@
             if (!confirm('Remove this employee login? They will no longer be able to sign in.')) return;
             fetch(API_BASE + '/api/auth/manager/remove-employee-login', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: apiHeaders(),
               body: JSON.stringify({ id })
             })
               .then(res => (res.ok ? Promise.resolve() : res.json().then(d => Promise.reject(d))))
@@ -539,7 +575,7 @@
     try {
       const res = await fetch(API_BASE + '/api/board', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify(board)
       });
       if (!res.ok) throw new Error('Server returned ' + res.status);
@@ -616,6 +652,18 @@
     const hours = Math.floor(mins / 60);
     if (hours < 24) return 'Due in ' + hours + ' hr';
     return 'Due in ' + Math.floor(hours / 24) + ' days';
+  }
+
+  /** Due-time progress: 0 = no time left, 100 = full time remaining. Used for circular indicator. */
+  function getDueTimeProgressPercent(deadlineIso, completedAt, isDone, assignedAtIso) {
+    if (!deadlineIso || isDone) return 100;
+    const deadline = new Date(deadlineIso).getTime();
+    const now = Date.now();
+    if (now >= deadline) return 0;
+    const start = assignedAtIso ? new Date(assignedAtIso).getTime() : now;
+    const total = Math.max(deadline - start, 1);
+    const remaining = deadline - now;
+    return Math.min(100, Math.max(0, Math.round((remaining / total) * 100)));
   }
 
   function getTodayDateKey() {
@@ -837,6 +885,7 @@
     return !!(card && card.completedAt);
   }
 
+  /** Single source for task accuracy / performance metrics. Used by Manager tab, accuracy widget, and employee modal. No duplicate recalculation. */
   function computeEmployeeStats() {
     const stats = {};
     (board.columns || []).forEach(col => {
@@ -923,6 +972,148 @@
 
   let employeeChartInstance = null;
   let employeeStatsChartInstance = null;
+
+  /** Team accuracy modal: one horizontal progress bar per employee (filled + light unfilled), left card with avatar + name. */
+  const TEAM_ACCURACY_FILL_COLORS = [
+    '#2563eb',
+    '#7c3aed',
+    '#db2777',
+    '#ea580c',
+    '#059669',
+    '#0d9488',
+    '#0284c7',
+    '#c026d3',
+    '#ca8a04',
+    '#65a30d',
+    '#0891b2',
+    '#4f46e5'
+  ];
+  const TEAM_ACCURACY_LEFT_COLORS = [
+    '#1e40af',
+    '#5b21b6',
+    '#9d174d',
+    '#c2410c',
+    '#047857',
+    '#0f766e',
+    '#0369a1',
+    '#a21caf',
+    '#a16207',
+    '#4d7c0f',
+    '#0e7490',
+    '#3730a3'
+  ];
+  const TEAM_ACCURACY_LIGHT_COLORS = [
+    '#93c5fd',
+    '#c4b5fd',
+    '#f9a8d4',
+    '#fdba74',
+    '#6ee7b7',
+    '#5eead4',
+    '#7dd3fc',
+    '#f0abfc',
+    '#fde047',
+    '#bef264',
+    '#67e8f9',
+    '#a5b4fc'
+  ];
+
+  function getInitials(name) {
+    if (!name || !name.trim()) return '?';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    return name.trim().charAt(0).toUpperCase();
+  }
+
+  function openTeamAccuracyModal() {
+    const modal = document.getElementById('teamAccuracyModal');
+    const summaryEl = document.getElementById('team-accuracy-summary');
+    const barsContainer = document.getElementById('team-accuracy-bars');
+    const emptyEl = document.getElementById('team-accuracy-empty');
+    const hintEl = modal ? modal.querySelector('.team-accuracy-hint') : null;
+    if (!modal || !barsContainer) return;
+    const stats = computeEmployeeStats();
+    const names = Object.keys(stats || {}).filter(n => (n || '').trim());
+    const totalAssigned = names.reduce((sum, k) => sum + (stats[k].assigned || 0), 0);
+    const totalCompleted = names.reduce((sum, k) => sum + (stats[k].completed || 0), 0);
+    const teamPct = totalAssigned > 0 ? Math.round((totalCompleted / totalAssigned) * 100) : 0;
+    if (summaryEl) summaryEl.textContent = 'Team accuracy: ' + teamPct + '%';
+    if (hintEl) hintEl.style.display = names.length > 0 ? 'block' : 'none';
+    barsContainer.innerHTML = '';
+    if (emptyEl) {
+      emptyEl.classList.toggle('d-none', names.length > 0);
+      emptyEl.classList.toggle('d-block', names.length === 0);
+    }
+    if (names.length === 0) {
+      if (typeof bootstrap !== 'undefined') {
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+      }
+      return;
+    }
+    const employees = names
+      .map(name => {
+        const s = stats[name] || {};
+        const assigned = s.assigned || 0;
+        const completed = s.completed || 0;
+        const accuracy = assigned > 0 ? Math.round((completed / assigned) * 100) : 0;
+        return { name, assigned, completed, accuracy };
+      })
+      .filter(e => e.assigned > 0)
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    employees.forEach((emp, idx) => {
+      const fillColor = TEAM_ACCURACY_FILL_COLORS[idx % TEAM_ACCURACY_FILL_COLORS.length];
+      const leftColor = TEAM_ACCURACY_LEFT_COLORS[idx % TEAM_ACCURACY_LEFT_COLORS.length];
+      const lightColor = TEAM_ACCURACY_LIGHT_COLORS[idx % TEAM_ACCURACY_LIGHT_COLORS.length];
+      const row = document.createElement('div');
+      row.className = 'team-accuracy-row';
+      row.title = 'Click to view ' + escapeHtml(emp.name) + "'s performance";
+      row.setAttribute('data-employee-name', emp.name);
+      const fillPct = Math.min(100, Math.max(0, emp.accuracy));
+      const fillMinWidth = fillPct > 0 ? Math.max(fillPct, 10) + '%' : '0';
+      row.innerHTML =
+        '<div class="team-accuracy-row-left" style="background:' +
+        leftColor +
+        ';">' +
+        '<div class="team-accuracy-row-avatar">' +
+        escapeHtml(getInitials(emp.name)) +
+        '</div>' +
+        '<div class="team-accuracy-row-info">' +
+        '<div class="team-accuracy-row-name">' +
+        escapeHtml(emp.name) +
+        '</div>' +
+        '<div class="team-accuracy-row-meta">' +
+        emp.completed +
+        ' completed / ' +
+        emp.assigned +
+        ' assigned' +
+        '</div>' +
+        '</div>' +
+        '</div>' +
+        '<div class="team-accuracy-row-bar-wrap">' +
+        '<div class="team-accuracy-row-fill" style="background:' +
+        fillColor +
+        ';min-width:' +
+        fillMinWidth +
+        ';"></div>' +
+        '<div class="team-accuracy-row-remain" style="background:' +
+        lightColor +
+        ';"></div>' +
+        '</div>' +
+        '<div class="team-accuracy-row-pct-end">' +
+        emp.accuracy +
+        '%</div>';
+      row.addEventListener('click', () => {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal.getInstance(modal))
+          bootstrap.Modal.getInstance(modal).hide();
+        openEmployeeModal(emp.name);
+      });
+      barsContainer.appendChild(row);
+    });
+    if (typeof bootstrap !== 'undefined') {
+      const bsModal = new bootstrap.Modal(modal);
+      bsModal.show();
+    }
+  }
 
   function openEmployeeModal(employeeName) {
     const modal = document.getElementById('employeeDetailsModal');
@@ -1539,7 +1730,8 @@
           const titleMatch = (card.title || '').toLowerCase().includes(lowerQuery);
           const descMatch = (card.description || '').toLowerCase().includes(lowerQuery);
           const assigneeMatch = getAssigneesList(card).some(name => name.toLowerCase().includes(lowerQuery));
-          return titleMatch || descMatch || assigneeMatch;
+          const taskIdMatch = (card.id || '').toLowerCase().includes(lowerQuery);
+          return titleMatch || descMatch || assigneeMatch || taskIdMatch;
         });
       }
       if (group.dateKey === todayKey) {
@@ -1601,9 +1793,11 @@
               const deptHtml = card.department
                 ? `<span class="badge bg-label-info me-1 small">${escapeHtml(card.department)}</span>`
                 : '';
-              const deadlineHtml = card.deadline
-                ? `<span class="card-deadline d-block mt-1 small ${!isDone && new Date(card.deadline) < new Date() ? 'overdue' : ''}">${escapeHtml(formatDeadlineTimer(card.deadline, card.completedAt, isDone))}</span>`
-                : '';
+              const isOverdue = card.deadline && !isDone && new Date(card.deadline) < new Date();
+              const countdownTimerText = card.deadline
+                ? formatDeadlineTimer(card.deadline, card.completedAt, isDone)
+                : 'No deadline';
+              const deadlineHtml = `<span class="card-deadline card-countdown-timer d-block mt-1 ${isOverdue ? 'overdue' : ''}">${escapeHtml(countdownTimerText)}</span>`;
               const assignedByHtml = card.assignedByName
                 ? `<span class="card-assigned-by d-block mt-1 small text-muted"><i class="bx bx-user-plus me-1"></i>Assigned by ${escapeHtml(card.assignedByName)}</span>`
                 : '';
@@ -1625,12 +1819,11 @@
               const toggleIcon = isDone ? 'bx-like' : 'bx-circle';
               const toggleTitle = isDone ? 'Mark as not done' : 'Mark as done';
               const clickTitle = manager ? 'Click to edit' : 'Click to view';
+              const showMarkDone = isManager();
               return `
-            <div class="card kanban-card kanban-card-clickable ${urgencyClass} ${doneClass} ${rolloverClass}" data-card-id="${card.id}" data-column-id="${colId}" title="${clickTitle}">
+            <div class="card kanban-card kanban-card-clickable ${urgencyClass} ${doneClass} ${rolloverClass} ${isOverdue ? 'kanban-card-overdue' : ''}" data-card-id="${card.id}" data-column-id="${colId}" title="${clickTitle}">
               <div class="card-body py-3 d-flex gap-2 align-items-start">
-                <button type="button" class="${toggleBtnClass}" data-card-id="${escapeHtml(card.id)}" title="${toggleTitle}" aria-label="${toggleTitle}">
-                  <i class="bx ${toggleIcon}"></i>
-                </button>
+                ${showMarkDone ? `<button type="button" class="${toggleBtnClass}" data-card-id="${escapeHtml(card.id)}" title="${toggleTitle}" aria-label="${toggleTitle}"><i class="bx ${toggleIcon}"></i></button>` : '<span class="kanban-done-toggle-btn-placeholder" style="width:40px;height:40px;flex-shrink:0;"></span>'}
                 <div class="flex-grow-1 min-w-0 kanban-card-main">
                 ${rolloverBadge}
                 ${taskDateHtml}
@@ -1719,6 +1912,7 @@
     container.querySelectorAll('.kanban-done-toggle-btn').forEach(btn => {
       btn.addEventListener('click', onToggleDone);
     });
+    onToggleDone.managerOnly = true;
     if (manager) {
       container.querySelectorAll('.add-card').forEach(btn => btn.addEventListener('click', onAddCard));
     }
@@ -1997,6 +2191,7 @@
   }
 
   async function saveCardFromModal() {
+    if (!isManager()) return;
     const form = document.getElementById('cardForm');
     const titleInput = document.getElementById('cardTitle');
     const descInput = document.getElementById('cardDescription');
@@ -2390,40 +2585,10 @@
   }
 
   function renderNotifications() {
-    const placeholder = document.getElementById('notifications-placeholder');
-    const list = document.getElementById('notifications-list');
-    const badge = document.getElementById('notif-badge');
-    if (!list) return;
-
-    const notifs = (board.notifications || []).slice(0, 20);
-    const items = list.querySelectorAll('li:not(.dropdown-header):not(.dropdown-divider)');
-    items.forEach(el => {
-      if (el.id !== 'notifications-placeholder') el.remove();
-    });
-
-    if (placeholder) placeholder.style.display = notifs.length ? 'none' : '';
-
-    notifs.forEach(n => {
-      const li = document.createElement('li');
-      li.className = 'notification-item';
-      const span = document.createElement('span');
-      span.className = 'text-body';
-      span.textContent = n.message || '';
-      li.appendChild(span);
-      if (placeholder && placeholder.parentNode) list.insertBefore(li, placeholder);
-      else list.appendChild(li);
-    });
-
-    if (badge) {
-      if (notifs.length > 0) {
-        badge.textContent = notifs.length > 9 ? '9+' : notifs.length;
-        badge.classList.remove('d-none');
-      } else {
-        badge.classList.add('d-none');
-      }
-    }
+    // Notifications removed from application
   }
 
+  /** Accuracy visible to both manager and employee (backend also enforces visibility). */
   function updateAccuracyUI() {
     const widget = document.getElementById('accuracy-widget');
     const circleFill = document.getElementById('accuracy-circle-fill');
@@ -2431,11 +2596,24 @@
     const badge = document.getElementById('accuracy-badge');
     const u = getCurrentUser();
     if (!widget) return;
-    if (!u || u.role === 'manager') {
-      widget.classList.add('d-none');
+    widget.classList.remove('d-none');
+    if (!u) {
+      if (circleFill) circleFill.setAttribute('stroke-dasharray', '0 100');
+      if (circleText) circleText.textContent = '—';
+      if (badge) badge.textContent = 'accuracy';
       return;
     }
     const stats = computeEmployeeStats();
+    if (u.role === 'manager') {
+      const names = Object.keys(stats || {});
+      const totalAssigned = names.reduce((s, k) => s + (stats[k].assigned || 0), 0);
+      const totalCompleted = names.reduce((s, k) => s + (stats[k].completed || 0), 0);
+      const pct = totalAssigned > 0 ? Math.round((totalCompleted / totalAssigned) * 100) : 0;
+      if (circleFill) circleFill.setAttribute('stroke-dasharray', pct + ' 100');
+      if (circleText) circleText.textContent = pct + '%';
+      if (badge) badge.textContent = 'team accuracy';
+      return;
+    }
     const myName = (u.name || '').trim();
     const myKey = Object.keys(stats || {}).find(k => (k || '').trim().toLowerCase() === myName.toLowerCase());
     const my = myKey ? stats[myKey] : null;
@@ -2443,7 +2621,6 @@
       if (circleFill) circleFill.setAttribute('stroke-dasharray', '0 100');
       if (circleText) circleText.textContent = '0%';
       if (badge) badge.textContent = 'accuracy';
-      widget.classList.remove('d-none');
       return;
     }
     const assigned = my ? my.assigned : 0;
@@ -2452,7 +2629,6 @@
     if (circleFill) circleFill.setAttribute('stroke-dasharray', pct + ' 100');
     if (circleText) circleText.textContent = pct + '%';
     if (badge) badge.textContent = 'accuracy';
-    widget.classList.remove('d-none');
   }
 
   function updateRoleUI() {
@@ -2472,13 +2648,17 @@
     if (storedDataMenuItem) storedDataMenuItem.classList.toggle('d-none', !isManager());
     const managerMenuItem = document.getElementById('menu-item-manager');
     if (managerMenuItem) managerMenuItem.classList.toggle('d-none', !isManager());
+    const tasksMenuItem = document.querySelector('.menu-item[data-tab="tasks"]');
+    if (tasksMenuItem) tasksMenuItem.classList.toggle('d-none', !isManager());
     const btnChangePw = document.getElementById('btn-change-password');
     if (btnChangePw) btnChangePw.classList.toggle('d-none', !isManager());
+    const btnLoadDemo = document.getElementById('btn-load-demo-data');
+    if (btnLoadDemo) btnLoadDemo.classList.toggle('d-none', !isManager());
     updateAccuracyUI();
   }
 
   function switchTab(tabId) {
-    if ((tabId === 'stored-data' || tabId === 'manager') && !isManager()) {
+    if ((tabId === 'stored-data' || tabId === 'manager' || tabId === 'tasks') && !isManager()) {
       tabId = 'kanban';
     }
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
@@ -2509,7 +2689,6 @@
     const allCards = [];
     cols.forEach(col => (col.cards || []).forEach(card => allCards.push(card)));
     const upcoming = board.upcomingTasks || [];
-    const notifs = board.notifications || [];
 
     let html = '';
 
@@ -2575,28 +2754,6 @@
     if (upcoming.length === 0) html += '<tr><td colspan="4" class="text-muted text-center">No upcoming tasks</td></tr>';
     html += '</tbody></table></div>';
 
-    html += '<h6 class="mb-2">Assignment history (who assigned what to whom)</h6>';
-    html +=
-      '<div class="mb-2"><input type="text" class="form-control form-control-sm stored-search" id="stored-search-notifs" placeholder="Search message, name..." style="max-width: 280px;" /></div>';
-    html +=
-      '<div class="table-responsive"><table class="table table-bordered table-sm stored-table" id="stored-notifs-table"><thead><tr><th>S.No</th><th>Message</th><th>Date</th></tr></thead><tbody>';
-    notifs.forEach((n, idx) => {
-      const at = n.at ? new Date(n.at).toLocaleString() : '—';
-      html +=
-        '<tr data-search="' +
-        escapeHtml((n.message || '') + ' ' + (n.assigneeName || '') + (n.assignedByName || '')).toLowerCase() +
-        '"><td>' +
-        (idx + 1) +
-        '</td><td>' +
-        escapeHtml(n.message || '') +
-        '</td><td>' +
-        at +
-        '</td></tr>';
-    });
-    if (notifs.length === 0)
-      html += '<tr><td colspan="3" class="text-muted text-center">No notifications yet</td></tr>';
-    html += '</tbody></table></div>';
-
     container.innerHTML = html;
 
     function filterTable(inputId, tableId) {
@@ -2614,7 +2771,6 @@
     }
     filterTable('stored-search-tasks', 'stored-tasks-table');
     filterTable('stored-search-upcoming', 'stored-upcoming-table');
-    filterTable('stored-search-notifs', 'stored-notifs-table');
   }
 
   function openUpcomingTaskModal(predefinedDept) {
@@ -3101,18 +3257,20 @@
       });
     }
 
-    const kanbanSearchInput = document.getElementById('kanban-search-input');
-    const kanbanSearchClear = document.getElementById('kanban-search-clear');
-    if (kanbanSearchInput) {
-      kanbanSearchInput.addEventListener('input', e => {
+    const globalSearchInput =
+      document.getElementById('global-search-input') || document.getElementById('kanban-search-input');
+    const globalSearchClear =
+      document.getElementById('global-search-clear') || document.getElementById('kanban-search-clear');
+    if (globalSearchInput) {
+      globalSearchInput.addEventListener('input', e => {
         searchQuery = e.target.value.trim();
         render();
       });
     }
-    if (kanbanSearchClear) {
-      kanbanSearchClear.addEventListener('click', () => {
+    if (globalSearchClear) {
+      globalSearchClear.addEventListener('click', () => {
         searchQuery = '';
-        if (kanbanSearchInput) kanbanSearchInput.value = '';
+        if (globalSearchInput) globalSearchInput.value = '';
         render();
       });
     }
@@ -3303,6 +3461,19 @@
         localStorage.removeItem('kanban-current-user');
         showLoginPage();
       });
+    const accuracyWidget = document.getElementById('accuracy-widget');
+    if (accuracyWidget) {
+      accuracyWidget.addEventListener('click', () => {
+        const u = getCurrentUser();
+        if (!u) return;
+        if (u.role === 'manager') {
+          openTeamAccuracyModal();
+        } else {
+          const name = (u.name || '').trim();
+          if (name) openEmployeeModal(name);
+        }
+      });
+    }
     document.getElementById('btn-load-demo-data')?.addEventListener('click', () => {
       loadDemoData();
     });
@@ -3369,7 +3540,7 @@
         }
         fetch(API_BASE + '/api/auth/manager/create-employee-login', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: apiHeaders(),
           body: JSON.stringify({ email, password, name, canCreateAndAssign })
         })
           .then(async res => {
@@ -3398,6 +3569,58 @@
       });
     }
 
+    const editEmployeeLoginForm = document.getElementById('edit-employee-login-form');
+    const editEmployeeLoginModal = document.getElementById('edit-employee-login-modal');
+    if (editEmployeeLoginForm && editEmployeeLoginModal) {
+      editEmployeeLoginForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const id = (document.getElementById('edit-emp-id')?.value || '').trim();
+        const email = (document.getElementById('edit-emp-email')?.value || '').trim();
+        const name = (document.getElementById('edit-emp-name')?.value || '').trim();
+        const password = (document.getElementById('edit-emp-password')?.value || '').trim();
+        const canCreateAndAssign = !!document.getElementById('edit-emp-can-create-assign')?.checked;
+        if (!id) {
+          alert('Employee id is missing.');
+          return;
+        }
+        if (!email) {
+          alert('Employee email is required.');
+          return;
+        }
+        const body = { id, email, name, canCreateAndAssign };
+        if (password.length >= 6) body.password = password;
+        fetch(API_BASE + '/api/auth/manager/update-employee-login', {
+          method: 'PUT',
+          headers: apiHeaders(),
+          body: JSON.stringify(body)
+        })
+          .then(async res => {
+            let data = {};
+            try {
+              const text = await res.text();
+              if (text) data = JSON.parse(text);
+            } catch (_) {}
+            if (res.ok && data.ok) {
+              if (typeof bootstrap !== 'undefined' && bootstrap.Modal.getInstance(editEmployeeLoginModal)) {
+                bootstrap.Modal.getInstance(editEmployeeLoginModal).hide();
+              }
+              editEmployeeLoginForm.reset();
+              document.getElementById('edit-emp-password').value = '';
+              loadAndRenderEmployeeLogins();
+              alert('Employee login updated.');
+            } else {
+              alert(
+                data.error ||
+                  (res.status === 403
+                    ? 'Only managers can update employee logins.'
+                    : 'Failed to update employee login.')
+              );
+            }
+          })
+          .catch(() => alert('Failed to update employee login. Check your connection and that the API is available.'));
+      });
+    }
+
     const changePasswordForm = document.getElementById('change-password-form');
     const changePasswordModal = document.getElementById('changePasswordModal');
     if (changePasswordForm && changePasswordModal) {
@@ -3418,7 +3641,7 @@
         }
         fetch(API_BASE + '/api/auth/manager/change-password', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: apiHeaders(),
           body: JSON.stringify({
             email: u.email,
             currentPassword,
@@ -3460,12 +3683,17 @@
       modal.show();
     });
 
-    if (getCurrentUser()) {
-      showAppPage();
-      loadBoard();
-      updateRoleUI();
-    } else {
+    try {
       showLoginPage();
+      const user = getCurrentUser();
+      if (user && user.id && user.role) {
+        showAppPage();
+        loadBoard();
+        updateRoleUI();
+      }
+    } catch (err) {
+      showLoginPage();
+      console.error('Kanban init error:', err);
     }
   }
 
