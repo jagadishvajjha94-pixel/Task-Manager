@@ -73,6 +73,13 @@
       .assignee-clickable:hover { background: rgba(30,58,95,.1); }
       .card-deadline, .card-countdown-timer { font-size: 0.9rem; font-weight: 700; color: #1e3a5f; }
       .card-deadline.overdue, .card-countdown-timer.overdue { font-size: 0.95rem; font-weight: 800; color: #c9706b; background: linear-gradient(135deg, rgba(255,245,245,0.95) 0%, rgba(254,235,235,0.5) 100%); padding: 0.3rem 0.55rem; border-radius: 6px; display: inline-block; border: 1px solid #eeb8b4; box-shadow: 0 1px 3px rgba(201,112,107,0.12); }
+      .card-countdown-circle-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+      .card-countdown-circle-svg { position: absolute; left: 0; top: 0; width: 64px; height: 64px; transform: rotate(-90deg); pointer-events: none; }
+      .card-countdown-circle-bg { fill: none; stroke: rgba(30,58,95,.15); stroke-width: 4; }
+      .card-countdown-circle-fill { fill: none; stroke: #1e3a5f; stroke-width: 4; stroke-linecap: round; transition: stroke-dasharray 0.3s ease, stroke 0.2s ease; }
+      .card-countdown-circle-wrap.card-countdown-warning .card-countdown-circle-fill { stroke: #c9706b; }
+      .card-countdown-digital { position: relative; z-index: 1; font-size: 0.75rem; font-weight: 800; line-height: 1.15; color: #0f172a; text-align: center; letter-spacing: 0.03em; }
+      .card-countdown-circle-wrap.card-countdown-warning .card-countdown-digital { color: #b91c1c; font-weight: 800; }
       .kanban-card-overdue { border-left: 4px solid #e0a5a0 !important; background: linear-gradient(90deg, rgba(238,184,180,0.1) 0%, rgba(254,235,235,0.05) 40%, transparent 100%) !important; box-shadow: 0 0 0 1px rgba(201,112,107,0.15), 0 2px 6px rgba(201,112,107,0.06); }
       .assignee-chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0.5rem; background: var(--bs-secondary-bg); border-radius: 999px; font-size: 0.8125rem; }
       .accuracy-circle-wrap { position: relative; width: 32px; height: 32px; flex-shrink: 0; }
@@ -645,9 +652,6 @@
               </button>
               <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-logout" title="Sign out">
                 <i class="bx bx-log-out"></i> Logout
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-primary" id="btn-load-demo-data" title="Reset board to demo data for showcase (remove this button later)">
-                <i class="bx bx-data"></i> Load demo data
               </button>
               <h5 class="mb-0 text-body" id="page-title">Kanban Board</h5>
               <div class="input-group global-search-wrap ms-auto" style="max-width: 240px; min-width: 140px;">
@@ -1251,6 +1255,7 @@
     <script src="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
     <script src="/assets/vendor/js/menu.js"></script>
     <script src="/assets/js/main.js"></script>
+    <script src="/assets/vendor/libs/xlsx/xlsx.full.min.js"></script>
     <script src="/assets/js/app-kanban.js"></script>
   </body>
 </html>

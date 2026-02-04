@@ -15,175 +15,26 @@
     return extra ? { ...h, ...extra } : h;
   }
 
-  const defaultUsers = [
-    { id: 'm1', name: 'Sarah', role: 'manager' },
-    { id: 'e1', name: 'Alice', role: 'employee' },
-    { id: 'e2', name: 'Bob', role: 'employee' },
-    { id: 'e3', name: 'Charlie', role: 'employee' }
-  ];
-
   const defaultDepartments = ['Training dept.', 'Placement dept.', 'H.R. dept.'];
 
-  function getMockBoard() {
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const nextWeek = new Date(now);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    const lastWeek = new Date(now);
-    lastWeek.setDate(lastWeek.getDate() - 7);
-    const fmt = d => d.toISOString().slice(0, 16);
+  /** Empty board for real-time use: no mock data. */
+  function getEmptyBoard() {
     return {
       columns: [
-        {
-          id: 'todo',
-          title: 'To Do',
-          cards: [
-            {
-              id: 'mc1',
-              title: 'Onboard new interns',
-              description: 'Prepare materials and schedule orientation',
-              urgency: 'high',
-              assignees: ['Alice'],
-              department: 'H.R. dept.',
-              deadline: fmt(tomorrow),
-              assignedByName: 'Manager',
-              assignedAt: now.toISOString()
-            },
-            {
-              id: 'mc2',
-              title: 'Update training slides',
-              description: 'Q4 product updates for Training dept.',
-              urgency: 'medium',
-              assignees: ['Bob'],
-              department: 'Training dept.',
-              deadline: fmt(nextWeek),
-              assignedByName: 'Manager',
-              assignedAt: now.toISOString()
-            },
-            {
-              id: 'mc3',
-              title: 'Placement drive coordination',
-              description: 'Coordinate with colleges for campus drive',
-              urgency: 'high',
-              assignees: ['Alice', 'Charlie'],
-              department: 'Placement dept.',
-              deadline: fmt(tomorrow),
-              assignedByName: 'Manager',
-              assignedAt: now.toISOString()
-            },
-            {
-              id: 'mc4',
-              title: 'Policy document review',
-              description: 'Review and sign off HR policy changes',
-              urgency: 'low',
-              assignees: ['Alice'],
-              department: 'H.R. dept.',
-              deadline: fmt(nextWeek),
-              assignedByName: 'Manager',
-              assignedAt: now.toISOString()
-            }
-          ]
-        },
-        {
-          id: 'progress',
-          title: 'In Progress',
-          cards: [
-            {
-              id: 'mc5',
-              title: 'Conduct skill assessment',
-              description: 'Run assessments for Training batch',
-              urgency: 'high',
-              assignees: ['Bob'],
-              department: 'Training dept.',
-              deadline: fmt(tomorrow),
-              assignedByName: 'Manager',
-              assignedAt: now.toISOString()
-            },
-            {
-              id: 'mc6',
-              title: 'Interview scheduling',
-              description: 'Schedule rounds for shortlisted candidates',
-              urgency: 'medium',
-              assignees: ['Charlie'],
-              department: 'Placement dept.',
-              deadline: fmt(nextWeek),
-              assignedByName: 'Manager',
-              assignedAt: now.toISOString()
-            }
-          ]
-        },
-        {
-          id: 'done',
-          title: 'Done',
-          cards: [
-            {
-              id: 'mc7',
-              title: 'Quarterly report submitted',
-              description: 'Q3 metrics and placement report',
-              urgency: 'low',
-              assignees: ['Alice'],
-              department: 'Placement dept.',
-              deadline: fmt(lastWeek),
-              completedAt: lastWeek.toISOString(),
-              assignedByName: 'Manager',
-              assignedAt: now.toISOString()
-            },
-            {
-              id: 'mc8',
-              title: 'Training session completed',
-              description: 'New joiner induction completed',
-              urgency: 'medium',
-              assignees: ['Bob'],
-              department: 'Training dept.',
-              deadline: fmt(lastWeek),
-              completedAt: lastWeek.toISOString(),
-              assignedByName: 'Manager',
-              assignedAt: now.toISOString()
-            }
-          ]
-        }
+        { id: 'todo', title: 'To Do', cards: [] },
+        { id: 'progress', title: 'In Progress', cards: [] },
+        { id: 'done', title: 'Done', cards: [] }
       ],
       departments: defaultDepartments.slice(),
-      upcomingTasks: [
-        {
-          id: 'ut1',
-          title: 'Annual appraisal forms',
-          description: 'Send and collect appraisal forms',
-          urgency: 'high',
-          department: 'H.R. dept.'
-        },
-        {
-          id: 'ut2',
-          title: 'Campus recruitment calendar',
-          description: 'Finalize calendar with colleges',
-          urgency: 'medium',
-          department: 'Placement dept.'
-        }
-      ],
-      notifications: [
-        {
-          id: 'n1',
-          message: 'Manager assigned "Onboard new interns" to Alice',
-          taskTitle: 'Onboard new interns',
-          assigneeName: 'Alice',
-          assignedByName: 'Manager',
-          at: now.toISOString()
-        },
-        {
-          id: 'n2',
-          message: 'Manager assigned "Conduct skill assessment" to Bob',
-          taskTitle: 'Conduct skill assessment',
-          assigneeName: 'Bob',
-          assignedByName: 'Manager',
-          at: now.toISOString()
-        }
-      ],
-      users: []
+      upcomingTasks: [],
+      notifications: [],
+      users: [],
+      recurringTasks: [],
+      employeeProfiles: {}
     };
   }
 
-  const defaultBoard = getMockBoard();
+  const emptyBoard = getEmptyBoard();
 
   let board = {
     columns: [],
@@ -287,7 +138,7 @@
           });
         });
       } else {
-        board = JSON.parse(JSON.stringify(defaultBoard));
+        board = JSON.parse(JSON.stringify(emptyBoard));
       }
     } catch (e) {
       serverReachable = false;
@@ -308,10 +159,10 @@
             });
           });
         } catch (_) {
-          board = JSON.parse(JSON.stringify(defaultBoard));
+          board = JSON.parse(JSON.stringify(emptyBoard));
         }
       } else {
-        board = JSON.parse(JSON.stringify(defaultBoard));
+        board = JSON.parse(JSON.stringify(emptyBoard));
       }
       showConnectionBanner();
     }
@@ -569,23 +420,6 @@
     if (el) el.remove();
   }
 
-  function loadDemoData() {
-    board = JSON.parse(JSON.stringify(getMockBoard()));
-    if (!Array.isArray(board.columns)) board.columns = [];
-    if (!Array.isArray(board.departments)) board.departments = defaultDepartments.slice();
-    if (!Array.isArray(board.upcomingTasks)) board.upcomingTasks = [];
-    if (!Array.isArray(board.notifications)) board.notifications = [];
-    if (!Array.isArray(board.users)) board.users = [];
-    if (!Array.isArray(board.recurringTasks)) board.recurringTasks = [];
-    if (typeof board.employeeProfiles !== 'object') board.employeeProfiles = {};
-    saveBoard();
-    render();
-    renderTasksTab();
-    renderManagerTab();
-    renderNotifications();
-    updateRoleUI();
-  }
-
   async function saveBoard() {
     try {
       const res = await fetch(API_BASE + '/api/board', {
@@ -679,6 +513,39 @@
     const total = Math.max(deadline - start, 1);
     const remaining = deadline - now;
     return Math.min(100, Math.max(0, Math.round((remaining / total) * 100)));
+  }
+
+  /** Digital clock style countdown for circular timer: "1d 02:30", "02:45", "00:05", or "Over 1d". */
+  function formatDeadlineDigital(deadlineIso, completedAt, isDone) {
+    if (!deadlineIso) return '—';
+    const deadline = new Date(deadlineIso);
+    const now = new Date();
+    if (completedAt) {
+      const completed = new Date(completedAt);
+      return completed <= deadline ? 'On time' : 'Late';
+    }
+    if (isDone) return 'Done';
+    const pad2 = n => String(n).padStart(2, '0');
+    if (now >= deadline) {
+      const ms = now - deadline;
+      const mins = Math.floor(ms / 60000);
+      if (mins < 60) return 'Over ' + mins + 'm';
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return 'Over ' + hours + 'h';
+      const days = Math.floor(hours / 24);
+      const h = hours % 24;
+      const m = mins % 60;
+      return 'Over ' + days + 'd ' + pad2(h) + ':' + pad2(m);
+    }
+    const ms = deadline - now;
+    const mins = Math.floor(ms / 60000);
+    const hours = Math.floor(mins / 60);
+    const days = Math.floor(hours / 24);
+    const h = hours % 24;
+    const m = mins % 60;
+    if (days > 0) return days + 'd ' + pad2(h) + ':' + pad2(m);
+    if (hours > 0) return pad2(h) + ':' + pad2(m);
+    return '00:' + pad2(mins);
   }
 
   function getTodayDateKey() {
@@ -1498,6 +1365,38 @@
     );
   }
 
+  /** Build dashboard summary from cards: key metrics, by urgency, by department. */
+  function buildDashboardData(allCards) {
+    const now = new Date();
+    let completed = 0;
+    let overdue = 0;
+    const urgencyCount = { high: 0, medium: 0, low: 0 };
+    const deptCount = {};
+    allCards.forEach(card => {
+      const done = isCardDone(card);
+      if (done) completed += 1;
+      if (!done && card.deadline && new Date(card.deadline) < now) overdue += 1;
+      const u = (card.urgency || 'medium').toLowerCase();
+      if (u === 'high') urgencyCount.high += 1;
+      else if (u === 'low') urgencyCount.low += 1;
+      else urgencyCount.medium += 1;
+      const dept = (card.department || '').trim() || 'Other';
+      deptCount[dept] = (deptCount[dept] || 0) + 1;
+    });
+    const pending = allCards.length - completed;
+    const deptRows = Object.keys(deptCount)
+      .sort((a, b) => deptCount[b] - deptCount[a])
+      .map(d => [d, deptCount[d]]);
+    return {
+      total: allCards.length,
+      completed,
+      pending,
+      overdue,
+      urgencyCount,
+      deptRows
+    };
+  }
+
   function exportStoredDataToExcel() {
     const allCards = getAllTaskCards();
 
@@ -1518,12 +1417,8 @@
       'Link type',
       'Recurring'
     ];
-    const rows = [];
-    rows.push(['TASK DATA EXPORT']);
-    rows.push(['Generated: ' + new Date().toLocaleString()]);
-    rows.push([]);
-    rows.push(headers);
 
+    const dataRows = [];
     allCards.forEach((card, idx) => {
       const dateRaw = card.assignedAt || card.createdAt;
       const dateStr = dateRaw ? (isNaN(new Date(dateRaw).getTime()) ? '—' : new Date(dateRaw).toLocaleString()) : '—';
@@ -1539,7 +1434,7 @@
         : '—';
       const status = isCardDone(card) ? 'Completed' : 'Pending';
       const assigneesStr = getAssigneesList(card).join(', ') || '—';
-      rows.push([
+      dataRows.push([
         idx + 1,
         card.id || '—',
         dateStr,
@@ -1558,6 +1453,60 @@
       ]);
     });
 
+    if (typeof XLSX !== 'undefined') {
+      const dash = buildDashboardData(allCards);
+      const genDate = new Date().toLocaleString();
+      const dashboardRows = [
+        ['TASK MANAGER - DASHBOARD'],
+        [],
+        ['Report generated:', genDate],
+        [],
+        ['KEY METRICS'],
+        ['Metric', 'Value'],
+        ['Total Tasks', dash.total],
+        ['Completed', dash.completed],
+        ['Pending', dash.pending],
+        ['Overdue', dash.overdue],
+        [],
+        ['BY URGENCY'],
+        ['Urgency', 'Count'],
+        ['High', dash.urgencyCount.high],
+        ['Medium', dash.urgencyCount.medium],
+        ['Low', dash.urgencyCount.low],
+        [],
+        ['BY DEPARTMENT'],
+        ['Department', 'Count']
+      ].concat(dash.deptRows);
+
+      const wsDashboard = XLSX.utils.aoa_to_sheet(dashboardRows);
+      const wsData = XLSX.utils.aoa_to_sheet([headers].concat(dataRows));
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, wsDashboard, 'Dashboard');
+      XLSX.utils.book_append_sheet(wb, wsData, 'Task Data');
+
+      if (!wb.Workbook) wb.Workbook = {};
+      if (!wb.Workbook.Views) wb.Workbook.Views = [];
+      wb.Workbook.Views[0] = { activeTab: 0 };
+      wb.Props = wb.Props || {};
+      wb.Props.Application = 'Task Manager';
+
+      const colWidthsDashboard = [{ wch: 22 }, { wch: 12 }];
+      wsDashboard['!cols'] = colWidthsDashboard;
+      const colWidthsData = headers.map((_, i) => ({ wch: i === 2 || i === 3 ? 28 : i === 4 ? 40 : 14 }));
+      wsData['!cols'] = colWidthsData;
+
+      const xlsxBlob = XLSX.write(wb, { bookType: 'xlsx', type: 'array', bookSST: false, cellStyles: false });
+      const blob = new Blob([xlsxBlob], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'task-manager-export-' + getTodayDateKey() + '.xlsx';
+      link.click();
+      URL.revokeObjectURL(link.href);
+      return;
+    }
+
+    const rows = [['TASK DATA EXPORT'], ['Generated: ' + new Date().toLocaleString()], [], headers].concat(dataRows);
     const csv = rows.map(row => row.map(escapeCsvCell).join(',')).join('\r\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -1879,8 +1828,7 @@
     const dateGroups = getTasksByDate();
 
     if (dateGroups.length === 0) {
-      container.innerHTML =
-        '<p class="text-muted py-5">No tasks yet. Add tasks from the Tasks tab or use "Load demo data".</p>';
+      container.innerHTML = '<p class="text-muted py-5">No tasks yet. Add tasks from the Tasks tab.</p>';
       const todoCol = (board.columns || []).find(c => (c.id || '').toString().toLowerCase() === 'todo');
       if (manager && todoCol) {
         const addBtn = document.createElement('button');
@@ -1971,7 +1919,44 @@
               const countdownTimerText = card.deadline
                 ? formatDeadlineTimer(card.deadline, card.completedAt, isDone)
                 : 'No deadline';
-              const deadlineHtml = `<span class="card-deadline card-countdown-timer d-block mt-1 ${isOverdue ? 'overdue' : ''}">${escapeHtml(countdownTimerText)}</span>`;
+              const progressPct =
+                card.deadline && !isDone && !isOverdue
+                  ? getDueTimeProgressPercent(card.deadline, card.completedAt, false, card.assignedAt || card.createdAt)
+                  : 100;
+              const isCountdownWarning = !isDone && card.deadline && !isOverdue && progressPct <= 50;
+              const circR = 28;
+              const circC = 2 * Math.PI * circR;
+              const circFill = card.deadline && !isDone && !isOverdue ? (progressPct / 100) * circC : circC;
+              const digitalText = card.deadline ? formatDeadlineDigital(card.deadline, card.completedAt, isDone) : '—';
+              const deadlineHtml = !card.deadline
+                ? '<span class="card-deadline card-countdown-timer d-block mt-1">' +
+                  escapeHtml('No deadline') +
+                  '</span>'
+                : isOverdue
+                  ? '<span class="card-deadline card-countdown-timer d-block mt-1 overdue">' +
+                    escapeHtml(countdownTimerText) +
+                    '</span>'
+                  : '<div class="card-countdown-circle-wrap mt-1 ' +
+                    (isCountdownWarning ? 'card-countdown-warning' : '') +
+                    '" title="' +
+                    escapeHtml(countdownTimerText) +
+                    '">' +
+                    '<svg class="card-countdown-circle-svg" viewBox="0 0 64 64" width="64" height="64">' +
+                    '<circle class="card-countdown-circle-bg" cx="32" cy="32" r="' +
+                    circR +
+                    '"/>' +
+                    '<circle class="card-countdown-circle-fill" cx="32" cy="32" r="' +
+                    circR +
+                    '" stroke-dasharray="' +
+                    circFill +
+                    ' ' +
+                    circC +
+                    '"/>' +
+                    '</svg>' +
+                    '<span class="card-countdown-digital">' +
+                    escapeHtml(digitalText) +
+                    '</span>' +
+                    '</div>';
               const assignedByHtml = card.assignedByName
                 ? `<span class="card-assigned-by d-block mt-1 small text-muted"><i class="bx bx-user-plus me-1"></i>Assigned by ${escapeHtml(card.assignedByName)}</span>`
                 : '';
@@ -2037,7 +2022,7 @@
     if (nonEmptyGroups.length === 0) {
       container.innerHTML = searchQuery
         ? '<p class="text-muted py-5">No tasks found matching your search.</p>'
-        : '<p class="text-muted py-5">No tasks yet. Add tasks from the Tasks tab or use "Load demo data".</p>';
+        : '<p class="text-muted py-5">No tasks yet. Add tasks from the Tasks tab.</p>';
       return;
     }
 
@@ -2823,8 +2808,6 @@
     if (tasksMenuItem) tasksMenuItem.classList.toggle('d-none', !(isManager() || canCreateAndAssign()));
     const btnChangePw = document.getElementById('btn-change-password');
     if (btnChangePw) btnChangePw.classList.toggle('d-none', !isManager());
-    const btnLoadDemo = document.getElementById('btn-load-demo-data');
-    if (btnLoadDemo) btnLoadDemo.classList.toggle('d-none', !isManager());
     updateAccuracyUI();
   }
 
@@ -3660,9 +3643,6 @@
         }
       });
     }
-    document.getElementById('btn-load-demo-data')?.addEventListener('click', () => {
-      loadDemoData();
-    });
 
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
