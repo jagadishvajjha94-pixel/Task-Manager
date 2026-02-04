@@ -336,15 +336,18 @@
       .employee-modal-header { background: linear-gradient(135deg, #1e3a5f 0%, #152a47 45%, #0f2038 100%); border: none; padding: 1.75rem 2rem; color: #fff; position: relative; overflow: hidden; }
       .employee-modal-header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 60%; height: 200%; background: radial-gradient(ellipse, rgba(255,255,255,.08) 0%, transparent 70%); pointer-events: none; }
       .employee-modal-header .modal-title { color: #fff !important; font-weight: 800; font-size: 1.4rem; letter-spacing: 0.02em; text-shadow: 0 1px 2px rgba(0,0,0,.2); }
-      .employee-modal-header #employee-modal-designation { font-weight: 700 !important; color: rgba(255,255,255,1) !important; font-size: 0.95rem; }
-      .employee-modal-header #employee-modal-contact, .employee-modal-header #employee-modal-dept, .employee-modal-header #employee-modal-mobile, .employee-modal-header #employee-modal-mail { font-weight: 700 !important; color: rgba(255,255,255,1) !important; font-size: 0.9rem; }
       .employee-modal-avatar { width: 64px; height: 64px; border-radius: 16px; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 800; color: #fff; flex-shrink: 0; border: 3px solid rgba(255,255,255,.4); box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+      .employee-modal-header-details { display: inline-block; background: rgba(255,255,255,.95); color: #000; padding: 0.4rem 0.75rem; border-radius: 10px; max-width: 100%; }
+      .employee-modal-header-details #employee-modal-designation, .employee-modal-header-details #employee-modal-contact, .employee-modal-header-details #employee-modal-dept, .employee-modal-header-details #employee-modal-mobile, .employee-modal-header-details #employee-modal-mail { color: #000 !important; font-weight: 800 !important; font-size: 0.95rem !important; }
+      .employee-modal-header-details #employee-modal-contact { font-size: 0.875rem !important; }
+      .employee-modal-edit-btn { background: #fff !important; border: 2px solid rgba(255,255,255,.8) !important; color: #000 !important; font-weight: 800 !important; }
+      .employee-modal-edit-btn:hover { background: #f8fafc !important; color: #000 !important; border-color: #fff !important; }
       .employee-modal-body { padding: 2rem; background: linear-gradient(180deg, #fafbfc 0%, #fff 100%); color: #000; }
       .emp-stats-circle-wrap .emp-chart-body { justify-content: center; }
       .emp-performance-card { border: 2px solid #e2e8f0; box-shadow: 0 4px 20px rgba(30,58,95,.08); }
       .emp-performance-card .emp-chart-header { padding: 1.25rem 1.5rem; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); border-bottom: 2px solid #e2e8f0; }
-      .emp-performance-card .emp-chart-header h6 { font-size: 1.15rem; font-weight: 800; color: #000; letter-spacing: 0.02em; }
-      .emp-performance-card .emp-chart-header small { font-size: .875rem; color: #000; font-weight: 700; }
+      .emp-performance-card .emp-chart-header h6 { font-size: 1.15rem; font-weight: 800; color: #000 !important; letter-spacing: 0.02em; }
+      .emp-performance-card .emp-chart-header small { font-size: .875rem; color: #000 !important; font-weight: 700; }
       .emp-performance-card .apexcharts-legend-text { font-size: 14px !important; font-weight: 700 !important; color: #000 !important; }
       .emp-performance-card .apexcharts-datalabel-value { font-size: 16px !important; font-weight: 800 !important; color: #000 !important; }
       .emp-chart-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,.08); border: 1px solid #e2e8f0; transition: box-shadow .2s; }
@@ -354,23 +357,29 @@
       .emp-charts-row { margin-bottom: 0 !important; }
       .emp-chart-compact .emp-chart-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .25rem; }
       .emp-chart-header { padding: 1.25rem 1.5rem; border-bottom: 2px solid #e2e8f0; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); color: #000; }
-      .emp-chart-header h6 { color: #000; font-weight: 800; font-size: 1.05rem; }
-      .emp-chart-header small { color: #000; font-weight: 700; }
+      .emp-chart-header h6 { color: #000 !important; font-weight: 800; font-size: 1.05rem; }
+      .emp-chart-header small { color: #000 !important; font-weight: 700; }
       .employee-modal-body .text-muted { color: #000 !important; font-weight: 700 !important; }
       .emp-chart-body { padding: 1.5rem; color: #000; }
       .emp-tasks-section { margin-top: 2rem; }
-      .emp-section-title { font-weight: 800; color: #000; font-size: 1.1rem; letter-spacing: 0.02em; }
+      .emp-section-title { font-weight: 800; color: #000 !important; font-size: 1.1rem; letter-spacing: 0.02em; }
       .emp-tasks-table-wrap { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,.08); border: 2px solid #e2e8f0; max-height: 280px; overflow-y: auto; }
       .emp-tasks-table { margin: 0; color: #000; }
       .emp-tasks-table thead { position: sticky; top: 0; background: linear-gradient(180deg, #1e3a5f 0%, #152a47 100%); z-index: 1; }
       .emp-tasks-table th { padding: .9rem 1.25rem; font-size: .8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #fff !important; font-weight: 800; }
-      .emp-tasks-table td { padding: 1rem 1.25rem; vertical-align: middle; color: #000; font-weight: 700; font-size: 0.95rem; }
+      .emp-tasks-table td { padding: 1rem 1.25rem; vertical-align: middle; color: #000 !important; font-weight: 700; font-size: 0.95rem; }
       .emp-tasks-table tbody tr { transition: background .15s; border-bottom: 1px solid #e2e8f0; }
       .emp-tasks-table tbody tr:hover { background: #f1f5f9; }
-      .emp-tasks-table .text-muted { color: #000 !important; font-weight: 600 !important; }
+      .emp-tasks-table .text-muted { color: #000 !important; font-weight: 700 !important; }
       .employee-modal-footer { padding: 1.25rem 2rem; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); border-top: 2px solid #e2e8f0; }
-      .employee-modal-footer .btn { color: #000; }
-      .employee-modal-footer .btn { font-weight: 700; padding: 0.5rem 1.25rem; }
+      .employee-modal-footer .btn { color: #0f172a; font-weight: 700; padding: 0.5rem 1.25rem; }
+      #employeeDetailsModal .employee-modal-body { color: #000 !important; font-weight: 700 !important; }
+      #employeeDetailsModal .employee-modal-body p, #employeeDetailsModal .employee-modal-body h6, #employeeDetailsModal .employee-modal-body small, #employeeDetailsModal .employee-modal-body span, #employeeDetailsModal .employee-modal-body .emp-section-title { color: #000 !important; font-weight: 700 !important; }
+      #employeeDetailsModal .employee-modal-body .emp-chart-header h6, #employeeDetailsModal .employee-modal-body .emp-chart-header small { color: #000 !important; font-weight: 800 !important; }
+      #employeeDetailsModal .employee-modal-body .emp-tasks-table td { color: #000 !important; font-weight: 700 !important; }
+      #employeeDetailsModal .employee-modal-body .apexcharts-legend-text, #employeeDetailsModal .employee-modal-body .apexcharts-datalabel-label, #employeeDetailsModal .employee-modal-body .apexcharts-datalabel-value { color: #000 !important; font-weight: 800 !important; fill: #000 !important; }
+      #employeeDetailsModal .employee-modal-body .apexcharts-text tspan { fill: #000 !important; font-weight: 800 !important; }
+      #employeeDetailsModal .employee-modal-body .apexcharts-canvas text { fill: #000 !important; }
       .kanban-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
       #kanbanCalendarModal .modal-body, #kanban-day-detail-body { color: #000; }
       #kanban-day-detail-title { color: #000; font-weight: 700; }
@@ -469,6 +478,8 @@
       #employee-modal-profile-pic { width: 64px !important; height: 64px !important; border-radius: 16px !important; border: 3px solid rgba(255,255,255,.5) !important; }
       #employee-edit-profile-btn { font-weight: 700 !important; }
       #employee-edit-profile-btn:hover { background: rgba(255,255,255,.35) !important; border-color: #fff !important; color: #fff !important; }
+      #navbar-edit-profile-btn { opacity: 0.85; }
+      #navbar-edit-profile-btn:hover { opacity: 1; color: #1e3a5f !important; }
       .notif-btn-glass {
         background: rgba(0,0,0,0.35) !important;
         border: 1px solid rgba(255,255,255,0.15);
@@ -501,12 +512,27 @@
       #manager-view #recurring-tasks-list { color: #000; }
       .modal-content { border: 1px solid var(--pro-border); border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.12); }
       .modal-header { background: linear-gradient(180deg, #fafbfc 0%, #f8fafc 100%); border-bottom: 1px solid var(--pro-border); border-radius: 12px 12px 0 0; }
-      .modal-header .modal-title { color: #000 !important; font-weight: 700; }
-      .modal-body { color: #000; background: #fff; }
-      .modal-body .form-label { color: #000 !important; font-weight: 600; }
-      .modal-body .form-control, .modal-body .form-select { color: #000; }
-      .modal-body .text-muted { color: #000 !important; }
+      .modal-header .modal-title { color: #0f172a !important; font-weight: 800 !important; font-size: 1.2rem !important; }
+      .modal-body { color: #000; background: #fff; font-weight: 700; }
+      .modal-body .form-label { color: #000 !important; font-weight: 800 !important; font-size: 0.95rem !important; }
+      .modal-body .form-control, .modal-body .form-select { color: #000; font-weight: 700; }
+      .modal-body .text-muted { color: #1e293b !important; font-weight: 700 !important; }
+      .modal-body p, .modal-body span, .modal-body td, .modal-body li, .modal-body .detail-value, .modal-body .detail-label { color: #000 !important; font-weight: 700 !important; }
+      .modal-body .detail-label { font-weight: 800 !important; color: #000 !important; }
+      .modal-body h1, .modal-body h2, .modal-body h3, .modal-body h4, .modal-body h5, .modal-body h6 { color: #000 !important; font-weight: 800 !important; }
       .modal-footer { border-top-color: #e2e8f0; }
+      .modal-footer .btn { font-weight: 700; }
+      #taskDetailsModal .modal-body { color: #000 !important; font-weight: 700 !important; }
+      #taskDetailsModal .detail-label { font-weight: 800 !important; color: #000 !important; font-size: 0.9rem !important; }
+      #taskDetailsModal .detail-value { font-weight: 700 !important; color: #000 !important; font-size: 1rem !important; }
+      #taskDetailsModal .detail-value#detail-title { font-size: 1.2rem !important; font-weight: 800 !important; color: #000 !important; }
+      #taskDetailsModal #detail-description { color: #000 !important; font-weight: 700 !important; }
+      .team-accuracy-modal-body .team-accuracy-summary { color: #000 !important; font-weight: 800 !important; }
+      .team-accuracy-modal-body .team-accuracy-hint { color: #000 !important; font-weight: 700 !important; }
+      .card-task-modal-body .form-label { font-weight: 800 !important; color: #000 !important; }
+      .deadline-picker-body .deadline-section-title { font-weight: 800 !important; color: #0f172a !important; }
+      #kanbanCalendarModal .modal-body { color: #000 !important; font-weight: 700 !important; }
+      #kanbanCalendarModal .modal-body .cal-num, #kanbanCalendarModal .modal-body .cal-count { font-weight: 700 !important; color: #000 !important; }
       .btn-primary { background: linear-gradient(180deg, #1e3a5f 0%, #152a47 100%); border-color: #1e3a5f; }
       .btn-primary:hover { background: linear-gradient(180deg, #152a47 0%, #0f2038 100%); border-color: #152a47; opacity: 0.95; }
       .dropdown-menu { border: 1px solid var(--pro-border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
@@ -602,7 +628,7 @@
               <a class="nav-item nav-link px-0 me-xl-6" href="javascript:void(0)"><i class="bx bx-menu"></i></a>
             </div>
             <div class="navbar-nav-right d-flex align-items-center gap-2 ms-4 flex-grow-1 pe-2">
-              <span class="text-muted small me-2"><i class="bx bx-user me-1"></i><span id="current-role-label">Manager</span></span>
+              <span class="text-muted small me-2 d-flex align-items-center gap-1"><i class="bx bx-user me-1"></i><span id="current-role-label">Manager</span><button type="button" class="btn btn-link btn-sm p-0 ms-1 text-body" id="navbar-edit-profile-btn" title="Edit my profile" aria-label="Edit my profile"><i class="bx bx-edit-alt" style="font-size:1.1rem;"></i></button></span>
               <div class="d-flex align-items-center gap-2 me-2" id="accuracy-widget" title="Task completion accuracy (yours or team)">
                 <div class="accuracy-circle-wrap" id="accuracy-circle-wrap">
                   <svg class="accuracy-circle-svg" viewBox="0 0 36 36" width="32" height="32">
@@ -1060,16 +1086,18 @@
                 <img id="employee-modal-profile-pic" class="employee-profile-pic d-none" src="" alt="" style="width:56px;height:56px;border-radius:14px;object-fit:cover;border:2px solid rgba(255,255,255,0.5);" />
                 <div class="employee-modal-avatar" id="employee-modal-avatar">A</div>
               </div>
-              <div>
+              <div class="flex-grow-1">
                 <h5 class="modal-title mb-0"><span id="employee-modal-name">Employee</span></h5>
-                <p class="mb-0 small" id="employee-modal-designation" style="color: rgba(255,255,255,0.95);"></p>
-                <div class="mt-2 small" id="employee-modal-contact" style="color: rgba(255,255,255,0.95);">
-                  <span id="employee-modal-dept"></span>
-                  <span id="employee-modal-mobile" class="ms-2"></span>
-                  <span id="employee-modal-mail" class="ms-2"></span>
+                <div class="employee-modal-header-details mt-2">
+                  <p class="mb-0" id="employee-modal-designation"></p>
+                  <div class="small mt-1" id="employee-modal-contact">
+                    <span id="employee-modal-dept"></span>
+                    <span id="employee-modal-mobile" class="ms-2"></span>
+                    <span id="employee-modal-mail" class="ms-2"></span>
+                  </div>
                 </div>
               </div>
-              <button type="button" class="btn btn-sm ms-auto d-none" id="employee-edit-profile-btn" title="Edit my profile" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.6);color:#fff;font-weight:700;">
+              <button type="button" class="btn btn-sm ms-auto d-none employee-modal-edit-btn" id="employee-edit-profile-btn" title="Edit my profile">
                 <i class="bx bx-edit me-1"></i> Edit Profile
               </button>
             </div>

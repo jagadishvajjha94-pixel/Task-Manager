@@ -1194,7 +1194,7 @@
     }
     if (statsChartEl && typeof ApexCharts !== 'undefined') {
       const statsConfig = {
-        chart: { type: 'radialBar', height: 280, fontFamily: 'inherit' },
+        chart: { type: 'radialBar', height: 280, fontFamily: 'inherit', foreColor: '#0f172a' },
         plotOptions: {
           radialBar: {
             startAngle: -90,
@@ -1203,16 +1203,29 @@
             track: { background: '#e9ecef', strokeWidth: '90%', margin: 2 },
             dataLabels: {
               show: true,
-              name: { show: true, fontSize: '13px', fontWeight: 600, offsetY: -2 },
-              value: { show: true, fontSize: '16px', fontWeight: 700, offsetY: 2, formatter: v => v + '%' },
-              total: { show: true, label: 'Overall', fontSize: '12px', formatter: () => accuracy + '%' }
+              name: { show: true, fontSize: '13px', fontWeight: 700, offsetY: -2, color: '#0f172a' },
+              value: {
+                show: true,
+                fontSize: '16px',
+                fontWeight: 800,
+                offsetY: 2,
+                formatter: v => v + '%',
+                color: '#0f172a'
+              },
+              total: {
+                show: true,
+                label: 'Overall',
+                fontSize: '12px',
+                formatter: () => accuracy + '%',
+                color: '#0f172a'
+              }
             }
           }
         },
         series: [assignedRate, completionRate, onTimeRate, accuracy],
         labels: ['Assigned', 'Completed', 'On time', 'Accuracy'],
         colors: ['#696cff', '#28c76f', '#00cfe8', '#ff9f43'],
-        legend: { show: true, position: 'bottom', fontSize: '12px' },
+        legend: { show: true, position: 'bottom', fontSize: '12px', labels: { colors: '#0f172a' } },
         tooltip: {
           y: {
             formatter: function (val, opts) {
@@ -1233,7 +1246,7 @@
       const completedTasks = (tasks || []).filter(t => isCardDone(t));
       const completedNames = completedTasks.map(t => t.title || 'Task').slice(0, 8);
       const chartConfig = {
-        chart: { type: 'radialBar', height: 180 },
+        chart: { type: 'radialBar', height: 180, foreColor: '#0f172a' },
         series: [accuracy],
         colors: s.assigned > 0 ? ['#28c76f'] : ['#e9ecef'],
         plotOptions: {
@@ -1245,25 +1258,28 @@
               name: {
                 show: true,
                 fontSize: '11px',
-                fontWeight: 600,
+                fontWeight: 700,
                 offsetY: -10,
-                formatter: () => 'Goal: 100%'
+                formatter: () => 'Goal: 100%',
+                color: '#0f172a'
               },
               value: {
                 show: true,
                 fontSize: '24px',
-                fontWeight: 700,
+                fontWeight: 800,
                 offsetY: 2,
-                formatter: v => v + '% achieved'
+                formatter: v => v + '% achieved',
+                color: '#0f172a'
               },
               total: {
                 show: true,
                 label: 'Tasks',
                 fontSize: '11px',
-                fontWeight: 500,
+                fontWeight: 700,
                 formatter: function () {
                   return s.completed + ' / ' + s.assigned;
-                }
+                },
+                color: '#0f172a'
               }
             }
           }
@@ -2636,10 +2652,7 @@
     const u = getCurrentUser();
     let roleText = '';
     if (u) {
-      if (u.role === 'manager') roleText = 'Manager';
-      else if (u.canCreateAndAssign) roleText = 'Employee (can create & assign)';
-      else roleText = 'Employee (view & update only)';
-      roleText = u.name + ' (' + roleText + ')';
+      roleText = u.role === 'manager' ? 'Manager' : u.name || 'Employee';
     }
     if (label) label.textContent = roleText;
     const addBtn = document.getElementById('add-upcoming-task');
@@ -3198,6 +3211,12 @@
       const name = (nameEl?.textContent || '').trim();
       if (!name) return;
       openEmployeeProfileModal(name);
+    });
+
+    document.getElementById('navbar-edit-profile-btn')?.addEventListener('click', () => {
+      const u = getCurrentUser();
+      if (!u || !u.name) return;
+      openEmployeeProfileModal(u.name.trim());
     });
 
     const profileForm = document.getElementById('employeeProfileForm');
