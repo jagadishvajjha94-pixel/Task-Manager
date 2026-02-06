@@ -2724,6 +2724,83 @@
         });
       });
 
+      // Manager-only: drag & drop reorder of upcoming tasks within each department table (when no search filter).
+      if (isManager() && !tasksTabSearchQuery) {
+        let dragSrcRow = null;
+        container.querySelectorAll('.tasks-dept-table tbody tr').forEach(row => {
+          row.setAttribute('draggable', 'true');
+          row.classList.add('tasks-draggable-row');
+          row.addEventListener('dragstart', e => {
+            dragSrcRow = row;
+            row.classList.add('tasks-dragging');
+            try {
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', row.dataset.taskId || '');
+            } catch (_) {}
+          });
+          row.addEventListener('dragend', () => {
+            row.classList.remove('tasks-dragging', 'tasks-drag-over');
+            dragSrcRow = null;
+          });
+          row.addEventListener('dragover', e => {
+            e.preventDefault();
+            if (!dragSrcRow || dragSrcRow === row) return;
+            row.classList.add('tasks-drag-over');
+          });
+          row.addEventListener('dragleave', () => {
+            row.classList.remove('tasks-drag-over');
+          });
+          row.addEventListener('drop', e => {
+            e.preventDefault();
+            row.classList.remove('tasks-drag-over');
+            if (!dragSrcRow || dragSrcRow === row) return;
+            const tbody = row.parentElement;
+            if (!tbody || tbody !== dragSrcRow.parentElement) return; // Only reorder within same department
+            const rowsArr = Array.from(tbody.querySelectorAll('tr'));
+            const srcIndex = rowsArr.indexOf(dragSrcRow);
+            const targetIndex = rowsArr.indexOf(row);
+            if (srcIndex < 0 || targetIndex < 0) return;
+            if (srcIndex < targetIndex) tbody.insertBefore(dragSrcRow, row.nextSibling);
+            else tbody.insertBefore(dragSrcRow, row);
+
+            // Apply new order back to board.upcomingTasks and persist.
+            try {
+              const taskOrderByDept = {};
+              container.querySelectorAll('.tasks-dept-section').forEach(section => {
+                const header = section.querySelector('h6');
+                const deptName = header ? header.textContent.replace(/\s+/g, ' ').trim() : 'Other';
+                const ids = Array.from(section.querySelectorAll('.tasks-dept-table tbody tr')).map(
+                  tr => tr.dataset.taskId
+                );
+                taskOrderByDept[deptName] = ids.filter(Boolean);
+              });
+              const tasksById = {};
+              (board.upcomingTasks || []).forEach(t => {
+                if (t && t.id) tasksById[t.id] = t;
+              });
+              const used = new Set();
+              const newUpcoming = [];
+              Object.keys(taskOrderByDept).forEach(deptName => {
+                taskOrderByDept[deptName].forEach(id => {
+                  const t = tasksById[id];
+                  if (t && !used.has(id)) {
+                    newUpcoming.push(t);
+                    used.add(id);
+                  }
+                });
+              });
+              (board.upcomingTasks || []).forEach(t => {
+                if (!t || !t.id) return;
+                if (!used.has(t.id)) newUpcoming.push(t);
+              });
+              board.upcomingTasks = newUpcoming;
+              saveBoard();
+              renderTasksTab();
+            } catch (_) {}
+          });
+        });
+      }
+
       const upcomingDropdown = document.getElementById('upcoming-assignee-dropdown');
       if (upcomingDropdown) {
         const UPCOMING_DROPDOWN_MAX_H = 200;
