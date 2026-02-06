@@ -12,6 +12,7 @@
     const role = (u && u.role) === 'manager' ? 'manager' : 'employee';
     const h = { 'Content-Type': 'application/json', 'X-User-Role': role };
     if (u && u.id) h['X-User-Id'] = String(u.id);
+    if (role === 'employee' && u && u.canCreateAndAssign === true) h['X-Can-Edit-Board'] = 'true';
     return extra ? { ...h, ...extra } : h;
   }
 
@@ -2407,7 +2408,7 @@
     }
 
     const assigneeNames = card ? getAssigneesList(card) : [];
-    const onlyManagerCanRemove = isManager();
+    const onlyManagerCanRemove = canCreateAndAssign();
     function removeAssignee(name) {
       const list = getAssigneesFromChips().filter(n => n !== name);
       renderAssigneesChips(assigneesChips, list, removeAssignee, onlyManagerCanRemove);
@@ -2457,7 +2458,7 @@
   }
 
   async function saveCardFromModal() {
-    if (!isManager()) return;
+    if (!canCreateAndAssign()) return;
     const form = document.getElementById('cardForm');
     const titleInput = document.getElementById('cardTitle');
     const descInput = document.getElementById('cardDescription');
@@ -3084,7 +3085,7 @@
     const linkUrlEl = document.getElementById('cardLink');
     if (linkTypeEl) linkTypeEl.value = '';
     if (linkUrlEl) linkUrlEl.value = '';
-    if (assigneesChips) renderAssigneesChips(assigneesChips, [], () => {}, isManager());
+    if (assigneesChips) renderAssigneesChips(assigneesChips, [], () => {}, canCreateAndAssign());
     if (assignedByInfo) assignedByInfo.style.display = 'none';
     if (recurringGroup) recurringGroup.style.display = canEdit ? 'block' : 'none';
     if (recurringCheckbox) recurringCheckbox.checked = false;
@@ -3749,7 +3750,7 @@
       const container = document.getElementById('card-assignees-chips');
       const current = getAssigneesFromChips();
       if (current.indexOf(name) !== -1) return;
-      const onlyManagerCanRemove = isManager();
+      const onlyManagerCanRemove = canCreateAndAssign();
       function removeAssignee(n) {
         const list = getAssigneesFromChips().filter(x => x !== n);
         renderAssigneesChips(container, list, removeAssignee, onlyManagerCanRemove);

@@ -107,7 +107,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Role, X-User-Id, X-Can-Edit-Board');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
@@ -365,11 +365,11 @@ app.get('/api/board', (req, res) => {
 
   const role = (req.headers['x-user-role'] || '').toLowerCase();
   const userId = (req.headers['x-user-id'] || '').trim();
+  const canEditBoard = (req.headers['x-can-edit-board'] || '').toLowerCase() === 'true';
 
-  if (role === 'employee') {
-    // Employees must not see upcoming tasks (manager-only section).
+  if (role === 'employee' && !canEditBoard) {
+    // Employees without create rights: no upcoming tasks, minimal notifications.
     data.upcomingTasks = [];
-    // Keep only essential notifications for employees (e.g. assignments to them); limit to last 10.
     const essential = (data.notifications || []).slice(0, 10);
     data.notifications = essential;
   }
@@ -400,11 +400,13 @@ app.get('/api/sync/events', (req, res) => {
   });
 });
 
-// Only managers can update the board. Enforced via X-User-Role header.
+// Managers and employees with "can create & assign" can update the board.
 app.put('/api/board', (req, res) => {
   const role = (req.headers['x-user-role'] || '').toLowerCase();
-  if (role !== 'manager') {
-    return res.status(403).json({ error: 'Only managers can update the board.' });
+  const canEditBoard = (req.headers['x-can-edit-board'] || '').toLowerCase() === 'true';
+  const allowed = role === 'manager' || (role === 'employee' && canEditBoard);
+  if (!allowed) {
+    return res.status(403).json({ error: 'Only managers or employees with create & assign rights can update the board.' });
   }
   const board = req.body;
   if (board && typeof board === 'object') {
