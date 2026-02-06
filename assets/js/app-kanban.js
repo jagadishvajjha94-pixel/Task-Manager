@@ -135,6 +135,7 @@
         board.columns.forEach(col => {
           (col.cards || []).forEach(card => {
             if (!card.urgency) card.urgency = 'medium';
+            if (!Array.isArray(card.comments)) card.comments = [];
           });
         });
       } else {
@@ -156,6 +157,7 @@
           (board.columns || []).forEach(col => {
             (col.cards || []).forEach(card => {
               if (!card.urgency) card.urgency = 'medium';
+              if (!Array.isArray(card.comments)) card.comments = [];
             });
           });
         } catch (_) {
@@ -621,7 +623,8 @@
         isRecurringTask: true,
         recurringFrequency: template.frequency || 'daily',
         link: template.link || undefined,
-        linkType: template.linkType || undefined
+        linkType: template.linkType || undefined,
+        comments: []
       };
       if (!todoCol.cards) todoCol.cards = [];
       todoCol.cards.push(newCard);
@@ -1991,9 +1994,12 @@
                     ${recurringBadge}
                     <h6 class="kanban-card-title mb-0 text-truncate">${escapeHtml(card.title)}</h6>
                   </div>
-                  <div class="kanban-card-right d-flex align-items-center gap-2 flex-shrink-0">
-                    ${assigneeHtml}
-                    ${deptHtml}
+                  <div class="kanban-card-right d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                    <div class="d-flex align-items-center gap-2">
+                      ${assigneeHtml}
+                      ${deptHtml}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary task-comments-btn py-1 px-2" data-card-id="${escapeHtml(card.id)}" title="Comments & messages"><i class="bx bx-message-dots me-1"></i><span class="task-comments-count">${(card.comments || []).length}</span></button>
                   </div>
                 </div>
                 ${card.description ? `<p class="kanban-card-description card-text small mb-0 mt-1">${escapeHtml(card.description)}</p>` : ''}
@@ -2079,6 +2085,7 @@
       el.addEventListener('click', e => {
         if (e.target.closest('.kanban-done-toggle-btn')) return;
         if (e.target.closest('.assignee-clickable')) return;
+        if (e.target.closest('.task-comments-btn')) return;
         const cardId = el.dataset.cardId;
         if (!cardId) return;
         const col = board.columns.find(c => (c.cards || []).some(card => card.id === cardId));
@@ -2095,6 +2102,14 @@
         e.stopPropagation();
         const name = el.dataset.employeeName;
         if (name) openEmployeeModal(name);
+      });
+    });
+    container.querySelectorAll('.task-comments-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        const cardId = btn.dataset.cardId;
+        if (cardId) openTaskCommentsPanel(cardId);
       });
     });
     const calBtnWrap = document.getElementById('kanban-calendar-btn-wrap');
@@ -2193,8 +2208,100 @@
       assigneeEl.innerHTML = names.length > 0 ? names.map(n => assigneeBlock(n)).join(' ') : '— Unassigned —';
     }
     if (assignedByEl) assignedByEl.textContent = card.assignedByName || '—';
+    modal.dataset.currentCardId = card.id || '';
     const bsModal = new bootstrap.Modal(modal);
     bsModal.show();
+  }
+
+  function getCardById(cardId) {
+    if (!cardId) return null;
+    for (const col of board.columns || []) {
+      const card = (col.cards || []).find(c => c.id === cardId);
+      if (card) return { card, col };
+    }
+    return null;
+  }
+
+  function renderTaskCommentsPanel(card) {
+    const listEl = document.getElementById('taskCommentsList');
+    const titleEl = document.getElementById('taskCommentsTaskTitle');
+    if (!listEl) return;
+    if (titleEl) titleEl.textContent = card ? (card.title || 'Task') : '—';
+    const comments = (card && Array.isArray(card.comments)) ? card.comments : [];
+    if (comments.length === 0) {
+      listEl.innerHTML = '<div class="task-comments-empty">No comments yet. Add a message or link for the team.</div>';
+      return;
+    }
+    listEl.innerHTML = comments
+      .map(c => {
+        const author = (c.authorName || 'Someone').trim();
+        const initial = getInitials(author);
+        const text = (c.text || '').trim();
+        const link = (c.link || '').trim();
+        const timeStr = c.createdAt ? (function () {
+          const d = new Date(c.createdAt);
+          if (isNaN(d.getTime())) return '';
+          const now = new Date();
+          const diff = now - d;
+          if (diff < 60000) return 'Just now';
+          if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+          if (diff < 86400000) return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+          return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        })() : '';
+        const linkHtml = link
+          ? '<a href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer" class="task-comment-link">' + escapeHtml(link.length > 50 ? link.slice(0, 47) + '…' : link) + '</a>'
+          : '';
+        return (
+          '<div class="task-comment-item">' +
+          '<div class="task-comment-avatar">' + escapeHtml(initial) + '</div>' +
+          '<div class="task-comment-body">' +
+          '<div class="task-comment-author">' + escapeHtml(author) + '</div>' +
+          (text ? '<div class="task-comment-text">' + escapeHtml(text) + '</div>' : '') +
+          linkHtml +
+          (timeStr ? '<div class="task-comment-time">' + escapeHtml(timeStr) + '</div>' : '') +
+          '</div></div>'
+        );
+      })
+      .join('');
+  }
+
+  function openTaskCommentsPanel(cardId) {
+    const found = getCardById(cardId);
+    if (!found) return;
+    const { card } = found;
+    const offcanvas = document.getElementById('taskCommentsOffcanvas');
+    if (!offcanvas) return;
+    offcanvas.dataset.cardId = card.id || '';
+    renderTaskCommentsPanel(card);
+    const msgInput = document.getElementById('taskCommentsMessageInput');
+    const linkInput = document.getElementById('taskCommentsLinkInput');
+    if (msgInput) msgInput.value = '';
+    if (linkInput) linkInput.value = '';
+    const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvas);
+    bsOffcanvas.show();
+    setTimeout(() => { if (msgInput) msgInput.focus(); }, 300);
+  }
+
+  function addTaskComment(cardId, text, link) {
+    const found = getCardById(cardId);
+    if (!found) return;
+    const { card } = found;
+    if (!Array.isArray(card.comments)) card.comments = [];
+    const user = getCurrentUser();
+    const authorName = (user && (user.name || user.email)) ? (user.name || user.email) : 'Unknown';
+    const authorId = (user && user.id) ? user.id : '';
+    const comment = {
+      id: uid(),
+      authorId,
+      authorName,
+      text: (text || '').trim(),
+      link: (link || '').trim() || undefined,
+      createdAt: new Date().toISOString()
+    };
+    card.comments.push(comment);
+    saveBoard();
+    renderTaskCommentsPanel(card);
+    render();
   }
 
   function fillDepartmentSelect(selectEl) {
@@ -2477,7 +2584,8 @@
         department: department || undefined,
         deadline,
         link: linkUrl || undefined,
-        linkType: linkType || undefined
+        linkType: linkType || undefined,
+        comments: []
       };
       card.assignees = assigneeNames.length > 0 ? assigneeNames.slice() : undefined;
       card.assigneeName = assigneeNames[0] || undefined;
@@ -2732,6 +2840,7 @@
     const todoCol = (board.columns || []).find(c => (c.id || '').toString().toLowerCase() === 'todo');
     if (!cardOnBoard && todoCol) {
       todoCol.cards = todoCol.cards || [];
+      if (!Array.isArray(task.comments)) task.comments = [];
       todoCol.cards.push(task);
     }
 
@@ -3368,6 +3477,32 @@
       if (!u || !u.name) return;
       openEmployeeProfileModal(u.name.trim());
     });
+
+    document.getElementById('task-details-open-comments-btn')?.addEventListener('click', () => {
+      const modal = document.getElementById('taskDetailsModal');
+      const cardId = modal && modal.dataset.currentCardId;
+      if (cardId) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal.getInstance(modal)) bootstrap.Modal.getInstance(modal).hide();
+        openTaskCommentsPanel(cardId);
+      }
+    });
+
+    const taskCommentsSendBtn = document.getElementById('taskCommentsSendBtn');
+    const taskCommentsMessageInput = document.getElementById('taskCommentsMessageInput');
+    const taskCommentsLinkInput = document.getElementById('taskCommentsLinkInput');
+    const taskCommentsOffcanvas = document.getElementById('taskCommentsOffcanvas');
+    if (taskCommentsSendBtn && taskCommentsOffcanvas) {
+      taskCommentsSendBtn.addEventListener('click', () => {
+        const cardId = taskCommentsOffcanvas.dataset.cardId;
+        const text = taskCommentsMessageInput ? taskCommentsMessageInput.value : '';
+        const link = taskCommentsLinkInput ? taskCommentsLinkInput.value : '';
+        if (!cardId) return;
+        if (!text.trim() && !(link || '').trim()) return;
+        addTaskComment(cardId, text, link);
+        if (taskCommentsMessageInput) taskCommentsMessageInput.value = '';
+        if (taskCommentsLinkInput) taskCommentsLinkInput.value = '';
+      });
+    }
 
     const profileForm = document.getElementById('employeeProfileForm');
     if (profileForm) {

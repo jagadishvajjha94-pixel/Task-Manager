@@ -469,6 +469,24 @@
       .team-accuracy-row-remain { flex: 1; min-width: 0; transition: flex 0.3s ease; }
       .team-accuracy-row-pct-end { display: flex; align-items: center; justify-content: center; min-width: 64px; padding: 0 1rem; font-weight: 800; font-size: 1.2rem; color: #1e3a5f; background: #f8fafc; border-left: 1px solid #e2e8f0; flex-shrink: 0; }
       .team-accuracy-modal-footer { padding: 1rem 1.5rem; background: #f1f5f9; border-top: 1px solid #e2e8f0; border-radius: 0 0 16px 16px; }
+      .task-comments-offcanvas { width: 400px; max-width: 95vw; }
+      .task-comments-offcanvas-header { background: linear-gradient(135deg, #1e3a5f 0%, #152a47 100%); color: #fff; border-bottom: 0; padding: 1rem 1.25rem; }
+      .task-comments-offcanvas-header .offcanvas-title { font-weight: 800; font-size: 1.15rem; color: #fff !important; }
+      .task-comments-offcanvas-body { background: #f8fafc; padding: 0; display: flex; flex-direction: column; }
+      .task-comments-task-title { font-weight: 800; font-size: 0.95rem; color: #0f172a; background: #fff; border-bottom: 1px solid #e2e8f0; }
+      .task-comments-list { min-height: 200px; background: #fff; }
+      .task-comments-compose { background: #fff; border-top: 2px solid #e2e8f0; }
+      .task-comment-item { display: flex; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9; align-items: flex-start; }
+      .task-comment-item:last-child { border-bottom: 0; }
+      .task-comment-avatar { width: 40px; height: 40px; min-width: 40px; min-height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.95rem; color: #fff; flex-shrink: 0; background: linear-gradient(135deg, #1e3a5f, #2563eb); }
+      .task-comment-body { min-width: 0; flex: 1; }
+      .task-comment-author { font-weight: 800; font-size: 0.9rem; color: #0f172a; margin-bottom: 0.2rem; }
+      .task-comment-text { font-weight: 700; font-size: 0.95rem; color: #1e293b; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+      .task-comment-link { display: inline-block; margin-top: 0.35rem; font-weight: 700; font-size: 0.85rem; color: #2563eb; text-decoration: none; }
+      .task-comment-link:hover { text-decoration: underline; color: #1d4ed8; }
+      .task-comment-time { font-size: 0.75rem; font-weight: 600; color: #64748b; margin-top: 0.25rem; }
+      .task-comments-empty { padding: 1.5rem; text-align: center; font-weight: 700; color: #64748b; font-size: 0.95rem; }
+      .task-comments-message-input { font-weight: 600; }
       #accuracy-widget { cursor: pointer; }
       #accuracy-widget .accuracy-circle-wrap { width: 36px; height: 36px; }
       #accuracy-widget .accuracy-circle-svg { width: 36px; height: 36px; }
@@ -1051,9 +1069,32 @@
               <div class="detail-value" id="detail-assigned-by"></div>
             </div>
           </div>
-          <div class="modal-footer border-top">
+          <div class="modal-footer border-top d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-outline-primary" id="task-details-open-comments-btn" title="Open comments"><i class="bx bx-message-dots me-1"></i>Comments</button>
             <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="offcanvas offcanvas-end task-comments-offcanvas" tabindex="-1" id="taskCommentsOffcanvas" aria-labelledby="taskCommentsOffcanvasLabel">
+      <div class="offcanvas-header task-comments-offcanvas-header">
+        <h5 class="offcanvas-title" id="taskCommentsOffcanvasLabel"><i class="bx bx-message-dots me-2"></i>Comments</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body task-comments-offcanvas-body d-flex flex-column p-0">
+        <div class="task-comments-task-title px-3 py-2" id="taskCommentsTaskTitle">—</div>
+        <div class="task-comments-list flex-grow-1 overflow-auto px-3 py-2" id="taskCommentsList"></div>
+        <div class="task-comments-compose border-top p-3">
+          <div class="mb-2">
+            <label class="form-label small fw-bold mb-1">Message</label>
+            <textarea class="form-control task-comments-message-input" id="taskCommentsMessageInput" rows="2" placeholder="Add a message, note, or instruction..."></textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold mb-1">Link (optional)</label>
+            <input type="url" class="form-control form-control-sm" id="taskCommentsLinkInput" placeholder="https://..." />
+          </div>
+          <button type="button" class="btn btn-primary w-100" id="taskCommentsSendBtn"><i class="bx bx-send me-1"></i>Send</button>
         </div>
       </div>
     </div>
