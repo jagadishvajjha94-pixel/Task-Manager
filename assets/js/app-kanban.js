@@ -49,6 +49,7 @@
   let searchQuery = '';
   let tasksTabSearchQuery = '';
   let checkinsTabSearchQuery = '';
+  let checkinsFocusTaskIdAfterRender = null;
   let lastRecurringCheckDate = '';
   let cachedEmployeeLogins = [];
 
@@ -2137,7 +2138,7 @@
         e.preventDefault();
         e.stopPropagation();
         const cardId = btn.dataset.cardId;
-        if (cardId) openTaskCommentsPanel(cardId);
+        if (cardId) openTaskCommentsPanel(cardId, e.currentTarget);
       });
     });
     const calBtnWrap = document.getElementById('kanban-calendar-btn-wrap');
@@ -2300,6 +2301,7 @@
     const panel = document.getElementById('taskCommentsOffcanvas');
     const wrap = document.getElementById('taskCommentsBookWrap');
     if (!panel || !wrap) return;
+    panel.removeAttribute('style');
     panel.dataset.cardId = card.id || '';
     renderTaskCommentsPanel(card);
     const msgInput = document.getElementById('taskCommentsMessageInput');
@@ -2314,17 +2316,11 @@
 
   function closeTaskCommentsPanel() {
     const wrap = document.getElementById('taskCommentsBookWrap');
-    const page = document.getElementById('taskCommentsOffcanvas');
     if (!wrap) return;
     wrap.classList.remove('active');
     wrap.classList.add('closing');
     document.body.style.overflow = '';
-    const onTransitionEnd = () => {
-      wrap.classList.remove('closing');
-      page.removeEventListener('transitionend', onTransitionEnd);
-    };
-    if (page) page.addEventListener('transitionend', onTransitionEnd);
-    else wrap.classList.remove('closing');
+    setTimeout(() => wrap.classList.remove('closing'), 420);
   }
 
   function addTaskComment(cardId, text, link) {
@@ -2698,6 +2694,13 @@
     const dept = (task.department || '').trim().toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ');
     const checkInsDept = dept === 'check ins' || dept === 'checkins';
     return recurring || checkInsDept;
+  }
+
+  /** True if Check-ins tab should be visible: managers always; employees only if they have recurring/check-in tasks assigned. */
+  function hasCheckinTasksAssignedToMe() {
+    if (isManager()) return true;
+    const tasks = getTasksForCheckinsTab();
+    return tasks && tasks.length > 0;
   }
 
   /** Get combined tasks for Tasks tab: upcomingTasks + kanban cards, excluding check-in tasks. */
@@ -3153,12 +3156,100 @@
     container.innerHTML = html;
 
     if (canEdit) {
+      const checkinsDropdown = document.getElementById('checkins-assignee-dropdown');
+      const CHECKINS_DROPDOWN_MAX_H = 200;
+      function showCheckinsSuggestions(inputEl, query) {
+        if (!inputEl || !checkinsDropdown) return;
+        const q = (query || '').trim().toLowerCase();
+        const allEmployees = getAllEmployeeNames();
+        const matches =
+          q.length === 0
+            ? allEmployees
+            : allEmployees.filter(name => name.toLowerCase().startsWith(q)).sort((a, b) => a.localeCompare(b));
+        if (matches.length > 0) {
+          const rect = inputEl.getBoundingClientRect();
+          const spaceBelow =
+            typeof window !== 'undefined' && window.innerHeight ? window.innerHeight - rect.bottom : 250;
+          const showAbove = spaceBelow < CHECKINS_DROPDOWN_MAX_H + 8;
+          checkinsDropdown.style.left = rect.left + 'px';
+          checkinsDropdown.style.width = Math.max(rect.width, 180) + 'px';
+          checkinsDropdown.style.minWidth = '180px';
+          if (showAbove) {
+            checkinsDropdown.style.top = rect.top - CHECKINS_DROPDOWN_MAX_H - 4 + 'px';
+            checkinsDropdown.style.maxHeight = Math.min(rect.top - 8, CHECKINS_DROPDOWN_MAX_H) + 'px';
+          } else {
+            checkinsDropdown.style.top = rect.bottom + 2 + 'px';
+            checkinsDropdown.style.maxHeight = CHECKINS_DROPDOWN_MAX_H + 'px';
+          }
+          checkinsDropdown.innerHTML = matches
+            .map(
+              name =>
+                `<div class="dropdown-item checkins-assignee-option" role="option" data-name="${escapeHtml(name)}" tabindex="-1">${escapeHtml(name)}</div>`
+            )
+            .join('');
+          checkinsDropdown.style.display = 'block';
+          checkinsDropdown.classList.add('show');
+          checkinsDropdown.querySelectorAll('.checkins-assignee-option').forEach(opt => {
+            opt.addEventListener('mousedown', ev => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              const selectedName = opt.dataset.name;
+              if (selectedName && inputEl) {
+                inputEl.value = selectedName;
+                checkinsDropdown.style.display = 'none';
+                checkinsDropdown.classList.remove('show');
+                checkinsDropdown.innerHTML = '';
+                inputEl.focus();
+              }
+            });
+          });
+          setTimeout(() => inputEl.focus(), 0);
+        } else {
+          checkinsDropdown.style.display = 'none';
+          checkinsDropdown.classList.remove('show');
+          checkinsDropdown.innerHTML = '';
+        }
+      }
+
+      container.querySelectorAll('.assign-upcoming-input').forEach(input => {
+        input.removeAttribute('readonly');
+        input.removeAttribute('disabled');
+        input.setAttribute('autocomplete', 'off');
+        input.addEventListener('focus', () => showCheckinsSuggestions(input, input.value || ''));
+        input.addEventListener('input', e => {
+          showCheckinsSuggestions(input, e.target.value || '');
+          setTimeout(() => input.focus(), 0);
+        });
+        input.addEventListener('blur', () => {
+          setTimeout(() => {
+            if (checkinsDropdown) {
+              checkinsDropdown.style.display = 'none';
+              checkinsDropdown.classList.remove('show');
+              checkinsDropdown.innerHTML = '';
+            }
+          }, 220);
+        });
+      });
+
       container.querySelectorAll('.assign-upcoming-btn').forEach(btn => {
+        btn.addEventListener('mousedown', e => {
+          e.preventDefault();
+          e.stopPropagation();
+        });
         btn.addEventListener('click', e => {
           const input = e.target.closest('tr').querySelector('.assign-upcoming-input');
           if (input) onAssignUpcoming(input);
         });
       });
+
+      if (checkinsFocusTaskIdAfterRender) {
+        const restored = container.querySelector('.assign-upcoming-input[data-task-id="' + checkinsFocusTaskIdAfterRender + '"]');
+        if (restored) {
+          restored.value = '';
+          restored.focus();
+        }
+        checkinsFocusTaskIdAfterRender = null;
+      }
     }
   }
 
@@ -3169,21 +3260,30 @@
     const assigneeName = (inputEl.value || '').trim();
     if (!assigneeName) return;
 
-    const task = (board.upcomingTasks || []).find(t => t.id === taskId);
-    if (!task) return;
     const currentUser = getCurrentUser();
+    let task = (board.upcomingTasks || []).find(t => t.id === taskId);
+    let cardOnBoard = null;
+    if (!task) {
+      const found = getCardById(taskId);
+      if (found) {
+        cardOnBoard = found.card;
+        task = cardOnBoard;
+      }
+    } else {
+      for (const col of board.columns || []) {
+        cardOnBoard = (col.cards || []).find(c => c.id === task.id);
+        if (cardOnBoard) break;
+      }
+    }
+    if (!task) return;
+
     task.assigneeName = assigneeName;
     task.assignees = [assigneeName];
     task.assignedById = currentUser ? currentUser.id : '';
     task.assignedByName = currentUser ? currentUser.name : 'Manager';
     task.assignedAt = task.assignedAt || new Date().toISOString();
 
-    let cardOnBoard = null;
-    for (const col of board.columns || []) {
-      cardOnBoard = (col.cards || []).find(c => c.id === task.id);
-      if (cardOnBoard) break;
-    }
-    if (cardOnBoard) {
+    if (cardOnBoard && cardOnBoard !== task) {
       cardOnBoard.assignees = task.assignees;
       cardOnBoard.assigneeName = task.assigneeName;
       cardOnBoard.assignedById = task.assignedById;
@@ -3201,8 +3301,10 @@
     saveBoard();
     render();
     renderTasksTab();
+    checkinsFocusTaskIdAfterRender = taskId;
     renderCheckinsTab();
     renderNotifications();
+    updateRoleUI();
     inputEl.value = '';
   }
 
@@ -3270,7 +3372,7 @@
     const tasksMenuItem = document.querySelector('.menu-item[data-tab="tasks"]');
     if (tasksMenuItem) tasksMenuItem.classList.toggle('d-none', !(isManager() || canCreateAndAssign()));
     const checkinsMenuItem = document.querySelector('.menu-item[data-tab="check-ins"]');
-    if (checkinsMenuItem) checkinsMenuItem.classList.toggle('d-none', !(isManager() || canCreateAndAssign()));
+    if (checkinsMenuItem) checkinsMenuItem.classList.toggle('d-none', !hasCheckinTasksAssignedToMe());
     const btnChangePw = document.getElementById('btn-change-password');
     if (btnChangePw) btnChangePw.classList.toggle('d-none', !isManager());
     updateAccuracyUI();
@@ -3322,8 +3424,10 @@
   function switchTab(tabId) {
     if (tabId === 'stored-data' || tabId === 'manager') {
       if (!isManager()) tabId = 'kanban';
-    } else if (tabId === 'tasks' || tabId === 'check-ins') {
+    } else if (tabId === 'tasks') {
       if (!isManager() && !canCreateAndAssign()) tabId = 'kanban';
+    } else if (tabId === 'check-ins') {
+      if (!hasCheckinTasksAssignedToMe()) tabId = 'kanban';
     }
     searchQuery = '';
     tasksTabSearchQuery = '';
@@ -3922,12 +4026,12 @@
       openEmployeeProfileModal(u.name.trim());
     });
 
-    document.getElementById('task-details-open-comments-btn')?.addEventListener('click', () => {
+    document.getElementById('task-details-open-comments-btn')?.addEventListener('click', (e) => {
       const modal = document.getElementById('taskDetailsModal');
       const cardId = modal && modal.dataset.currentCardId;
       if (cardId) {
         if (typeof bootstrap !== 'undefined' && bootstrap.Modal.getInstance(modal)) bootstrap.Modal.getInstance(modal).hide();
-        openTaskCommentsPanel(cardId);
+        openTaskCommentsPanel(cardId, e.currentTarget);
       }
     });
 
