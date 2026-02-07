@@ -2390,10 +2390,12 @@
     if (deadlineGroup) deadlineGroup.style.display = canEdit ? 'block' : 'none';
     if (assignedByInfo) assignedByInfo.style.display = 'none';
     if (newDeptWrap) newDeptWrap.classList.add('d-none');
-    if (recurringGroup) recurringGroup.style.display = canEdit && !card ? 'block' : 'none';
-    if (recurringCheckbox) recurringCheckbox.checked = false;
+    if (recurringGroup) recurringGroup.style.display = canEdit ? 'block' : 'none';
     const freqWrap = document.getElementById('recurring-frequency-wrap');
-    if (freqWrap) freqWrap.classList.add('d-none');
+    if (!card) {
+      if (recurringCheckbox) recurringCheckbox.checked = false;
+      if (freqWrap) freqWrap.classList.add('d-none');
+    }
     const deleteBtn = document.getElementById('card-modal-delete-btn');
     if (deleteBtn) deleteBtn.classList.toggle('d-none', !(canEdit && card));
 
@@ -2438,6 +2440,10 @@
         assignedByNameEl.textContent = card.assignedByName;
         assignedByInfo.style.display = 'block';
       }
+      if (recurringCheckbox) recurringCheckbox.checked = !!card.isRecurringTask;
+      const freqSelect = document.getElementById('cardRecurringFrequency');
+      if (freqSelect) freqSelect.value = (card.recurringFrequency || 'daily').toLowerCase();
+      if (freqWrap) freqWrap.classList.toggle('d-none', !card.isRecurringTask);
       form.dataset.cardId = card.id;
     } else {
       titleInput.value = '';
@@ -2560,6 +2566,10 @@
         } else {
           card.assignedById = card.assignedByName = card.assignedAt = undefined;
         }
+        const freqSelect = document.getElementById('cardRecurringFrequency');
+        const frequency = (freqSelect && freqSelect.value) ? freqSelect.value.toLowerCase() : 'daily';
+        card.isRecurringTask = isRecurring;
+        card.recurringFrequency = isRecurring ? frequency : undefined;
         const inUpcoming = (board.upcomingTasks || []).find(t => t.id === cardId);
         if (inUpcoming) {
           inUpcoming.assignees = card.assignees;
@@ -2574,6 +2584,8 @@
           inUpcoming.deadline = card.deadline;
           inUpcoming.link = card.link;
           inUpcoming.linkType = card.linkType;
+          inUpcoming.isRecurringTask = card.isRecurringTask;
+          inUpcoming.recurringFrequency = card.recurringFrequency;
         }
       }
     } else {
@@ -2629,9 +2641,17 @@
     }
     const byDept = {};
     tasks.forEach(task => {
-      const dept = (task.department || '').trim() || 'Other';
+      const displaySection = (task.pinnedDept || '').trim() || (task.department || '').trim() || 'Other';
+      const dept = displaySection || 'Other';
       if (!byDept[dept]) byDept[dept] = [];
       byDept[dept].push(task);
+    });
+
+    const completedTaskIds = new Set();
+    (board.columns || []).forEach(col => {
+      (col.cards || []).forEach(card => {
+        if (card && card.id && card.completedAt) completedTaskIds.add(card.id);
+      });
     });
 
     const deptOrder = getDepartments().slice();
@@ -2657,7 +2677,7 @@
     let html = '';
     deptOrder.forEach(dept => {
       const deptTasks = byDept[dept] || [];
-      html += '<div class="tasks-dept-section border-bottom">';
+      html += '<div class="tasks-dept-section border-bottom" data-dept="' + escapeHtml(dept) + '">';
       html += '<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">';
       html +=
         '<h6 class="mb-0 d-flex align-items-center"><i class="bx bx-building-house me-2"></i>' +
@@ -2675,14 +2695,17 @@
       html +=
         '<div class="table-responsive rounded border"><table class="table table-hover table-align-middle mb-0 tasks-dept-table"><thead><tr><th class="tasks-sno">S.No</th><th>Task</th><th>Description</th><th class="tasks-urgency">Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th class="tasks-assign-col">Assign to</th></tr></thead><tbody>';
       deptTasks.forEach((task, idx) => {
+        const isCompleted = task.id && completedTaskIds.has(task.id);
+        const rowClass = isCompleted ? 'tasks-row-completed' : '';
         const assigneesStr = getAssigneesList(task).join(', ') || '—';
         const deadlineStr = task.deadline ? new Date(task.deadline).toLocaleString() : '—';
         const assignInput = canEdit
           ? `<div class="input-group input-group-sm"><input type="text" class="form-control assign-upcoming-input" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}" placeholder="Employee name" /><button type="button" class="btn btn-primary btn-sm assign-upcoming-btn" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}">Assign</button></div>`
           : '<span class="text-muted">—</span>';
-        html += `<tr data-task-id="${task.id}">
+        const completedBadge = isCompleted ? ' <span class="task-completed-badge-inline"><i class="bx bx-like"></i> Completed</span>' : '';
+        html += `<tr data-task-id="${task.id}" class="${rowClass}">
         <td class="tasks-sno">${idx + 1}</td>
-        <td class="tasks-title">${escapeHtml(task.title)}</td>
+        <td class="tasks-title">${escapeHtml(task.title)}${completedBadge}</td>
         <td class="tasks-desc">${escapeHtml(task.description || '—')}</td>
         <td class="tasks-urgency"><span class="badge ${task.urgency === 'high' ? 'bg-danger' : task.urgency === 'low' ? 'bg-success' : 'bg-warning'}">${escapeHtml(task.urgency || 'medium')}</span></td>
         <td class="tasks-dept">${escapeHtml(task.department || '—')}</td>
@@ -2724,10 +2747,10 @@
         });
       });
 
-      // Manager-only: drag & drop reorder of upcoming tasks within each department table (when no search filter).
-      if (isManager() && !tasksTabSearchQuery) {
+      // Drag & drop: reorder within a dept or move task from one dept table to another (for anyone with Tasks tab rights).
+      if (canEdit && !tasksTabSearchQuery) {
         let dragSrcRow = null;
-        container.querySelectorAll('.tasks-dept-table tbody tr').forEach(row => {
+        container.querySelectorAll('.tasks-dept-table tbody tr[data-task-id]').forEach(row => {
           row.setAttribute('draggable', 'true');
           row.classList.add('tasks-draggable-row');
           row.addEventListener('dragstart', e => {
@@ -2754,22 +2777,32 @@
             e.preventDefault();
             row.classList.remove('tasks-drag-over');
             if (!dragSrcRow || dragSrcRow === row) return;
-            const tbody = row.parentElement;
-            if (!tbody || tbody !== dragSrcRow.parentElement) return; // Only reorder within same department
-            const rowsArr = Array.from(tbody.querySelectorAll('tr'));
-            const srcIndex = rowsArr.indexOf(dragSrcRow);
-            const targetIndex = rowsArr.indexOf(row);
-            if (srcIndex < 0 || targetIndex < 0) return;
-            if (srcIndex < targetIndex) tbody.insertBefore(dragSrcRow, row.nextSibling);
-            else tbody.insertBefore(dragSrcRow, row);
+            const targetTbody = row.parentElement;
+            const srcTbody = dragSrcRow.parentElement;
+            const targetTaskRows = targetTbody.querySelectorAll('tr[data-task-id]');
+            if (targetTaskRows.length === 0) return;
+            if (srcTbody !== targetTbody) {
+              const countBefore = targetTbody.querySelectorAll('tr[data-task-id]').length;
+              if (countBefore === 0) return;
+            }
+            if (srcTbody === targetTbody) {
+              const rowsArr = Array.from(targetTbody.querySelectorAll('tr[data-task-id]'));
+              const srcIndex = rowsArr.indexOf(dragSrcRow);
+              const targetIndex = rowsArr.indexOf(row);
+              if (srcIndex >= 0 && targetIndex >= 0) {
+                if (srcIndex < targetIndex) targetTbody.insertBefore(dragSrcRow, row.nextSibling);
+                else targetTbody.insertBefore(dragSrcRow, row);
+              }
+            } else {
+              targetTbody.insertBefore(dragSrcRow, row);
+            }
 
-            // Apply new order back to board.upcomingTasks and persist.
+            // Apply display position only: set pinnedDept so task appears under this section. Do NOT change department or assignees.
             try {
               const taskOrderByDept = {};
               container.querySelectorAll('.tasks-dept-section').forEach(section => {
-                const header = section.querySelector('h6');
-                const deptName = header ? header.textContent.replace(/\s+/g, ' ').trim() : 'Other';
-                const ids = Array.from(section.querySelectorAll('.tasks-dept-table tbody tr')).map(
+                const deptName = (section.dataset && section.dataset.dept) || 'Other';
+                const ids = Array.from(section.querySelectorAll('.tasks-dept-table tbody tr[data-task-id]')).map(
                   tr => tr.dataset.taskId
                 );
                 taskOrderByDept[deptName] = ids.filter(Boolean);
@@ -2780,10 +2813,11 @@
               });
               const used = new Set();
               const newUpcoming = [];
-              Object.keys(taskOrderByDept).forEach(deptName => {
-                taskOrderByDept[deptName].forEach(id => {
+              Object.keys(taskOrderByDept).forEach(sectionName => {
+                taskOrderByDept[sectionName].forEach(id => {
                   const t = tasksById[id];
                   if (t && !used.has(id)) {
+                    t.pinnedDept = sectionName === 'Other' ? '' : sectionName;
                     newUpcoming.push(t);
                     used.add(id);
                   }
