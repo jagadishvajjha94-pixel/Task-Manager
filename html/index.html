@@ -142,6 +142,10 @@
       .tasks-row-completed .tasks-title, .tasks-row-completed .tasks-desc { text-decoration: line-through; color: #047857 !important; }
       .tasks-row-completed .badge { opacity: 0.85; }
       .task-completed-badge-inline { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 700; color: #047857; margin-left: 0.35rem; }
+      .tasks-draggable-row { cursor: grab; }
+      .tasks-draggable-row:active { cursor: grabbing; }
+      .tasks-dragging { opacity: 0.6; }
+      .tasks-drag-over { background: rgba(30,58,95,.08) !important; }
       .table-align-middle td { vertical-align: middle; }
       /* Login page — best-in-class, eye-pleasing design */
       #login-page {
@@ -474,23 +478,36 @@
       .team-accuracy-row-remain { flex: 1; min-width: 0; transition: flex 0.3s ease; }
       .team-accuracy-row-pct-end { display: flex; align-items: center; justify-content: center; min-width: 64px; padding: 0 1rem; font-weight: 800; font-size: 1.2rem; color: #1e3a5f; background: #f8fafc; border-left: 1px solid #e2e8f0; flex-shrink: 0; }
       .team-accuracy-modal-footer { padding: 1rem 1.5rem; background: #f1f5f9; border-top: 1px solid #e2e8f0; border-radius: 0 0 16px 16px; }
-      .task-comments-offcanvas { width: 400px; max-width: 95vw; }
-      .task-comments-offcanvas-header { background: linear-gradient(135deg, #1e3a5f 0%, #152a47 100%); color: #fff; border-bottom: 0; padding: 1rem 1.25rem; }
-      .task-comments-offcanvas-header .offcanvas-title { font-weight: 800; font-size: 1.15rem; color: #fff !important; }
-      .task-comments-offcanvas-body { background: #f8fafc; padding: 0; display: flex; flex-direction: column; }
-      .task-comments-task-title { font-weight: 800; font-size: 0.95rem; color: #0f172a; background: #fff; border-bottom: 1px solid #e2e8f0; }
-      .task-comments-list { min-height: 200px; background: #fff; }
-      .task-comments-compose { background: #fff; border-top: 2px solid #e2e8f0; }
+      /* Book-style comment section – compact, partial page, page-turn effect */
+      .task-comments-book-wrap { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1060; pointer-events: none; visibility: hidden; }
+      .task-comments-book-wrap.active,
+      .task-comments-book-wrap.closing { visibility: visible; }
+      .task-comments-book-wrap.active { pointer-events: auto; }
+      .task-comments-book-backdrop { position: absolute; inset: 0; background: rgba(15,23,42,0.35); opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0.4s ease; }
+      .task-comments-book-wrap.active .task-comments-book-backdrop { opacity: 1; visibility: visible; }
+      .task-comments-book-perspective { position: absolute; top: 0; right: 0; bottom: 0; width: 380px; max-width: 45vw; perspective: 1400px; transform-style: preserve-3d; overflow: hidden; }
+      .task-comments-book-page { position: absolute; top: 50%; right: 24px; transform: translateY(-50%) rotateY(92deg); transform-origin: left center; width: 340px; max-height: 75vh; min-height: 400px; background: #fff; border-radius: 0 16px 16px 0; box-shadow: -8px 12px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.06); transition: transform 0.55s cubic-bezier(0.23, 1, 0.32, 1); backface-visibility: hidden; display: flex; overflow: hidden; }
+      .task-comments-book-wrap.active .task-comments-book-page { transform: translateY(-50%) rotateY(0deg); box-shadow: -12px 16px 48px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05); }
+      .task-comments-book-spine { position: absolute; left: 0; top: 0; bottom: 0; width: 12px; background: linear-gradient(90deg, #1e3a5f 0%, #152a47 50%, #0f2038 100%); border-radius: 16px 0 0 16px; box-shadow: inset 2px 0 8px rgba(0,0,0,0.2); }
+      .task-comments-book-inner { flex: 1; display: flex; flex-direction: column; overflow: hidden; margin-left: 4px; }
+      .task-comments-book-header { background: linear-gradient(135deg, #1e3a5f 0%, #152a47 100%); color: #fff; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; border-radius: 0 16px 0 0; }
+      .task-comments-book-title { font-weight: 800; font-size: 1.1rem; color: #fff !important; margin: 0; display: flex; align-items: center; }
+      .task-comments-book-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: rgba(255,255,255,0.2); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, transform 0.2s; font-size: 1.25rem; }
+      .task-comments-book-close:hover { background: rgba(255,255,255,0.35); transform: scale(1.05); }
+      .task-comments-book-body { flex: 1; display: flex; flex-direction: column; padding: 0; background: linear-gradient(180deg, #f8fafc 0%, #fff 100%); overflow: hidden; }
+      .task-comments-task-title { font-weight: 800; font-size: 0.95rem; color: #0f172a; background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0.75rem 1rem; flex-shrink: 0; }
+      .task-comments-list { flex: 1; min-height: 180px; overflow-y: auto; padding: 0.75rem 1rem; background: #fff; }
+      .task-comments-compose { background: #fff; border-top: 2px solid #e2e8f0; padding: 1rem; flex-shrink: 0; }
       .task-comment-item { display: flex; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9; align-items: flex-start; }
-      .task-comment-item:last-child { border-bottom: 0; }
-      .task-comment-avatar { width: 40px; height: 40px; min-width: 40px; min-height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.95rem; color: #fff; flex-shrink: 0; background: linear-gradient(135deg, #1e3a5f, #2563eb); }
+      .task-comments-list .task-comment-item:last-child { border-bottom: 0; }
+      .task-comment-avatar { width: 38px; height: 38px; min-width: 38px; min-height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; color: #fff; flex-shrink: 0; background: linear-gradient(135deg, #1e3a5f, #2563eb); box-shadow: 0 2px 8px rgba(30,58,95,0.25); }
       .task-comment-body { min-width: 0; flex: 1; }
-      .task-comment-author { font-weight: 800; font-size: 0.9rem; color: #0f172a; margin-bottom: 0.2rem; }
-      .task-comment-text { font-weight: 700; font-size: 0.95rem; color: #1e293b; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
-      .task-comment-link { display: inline-block; margin-top: 0.35rem; font-weight: 700; font-size: 0.85rem; color: #2563eb; text-decoration: none; }
+      .task-comment-author { font-weight: 800; font-size: 0.88rem; color: #0f172a; margin-bottom: 0.2rem; }
+      .task-comment-text { font-weight: 600; font-size: 0.9rem; color: #1e293b; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+      .task-comment-link { display: inline-block; margin-top: 0.35rem; font-weight: 600; font-size: 0.82rem; color: #2563eb; text-decoration: none; }
       .task-comment-link:hover { text-decoration: underline; color: #1d4ed8; }
-      .task-comment-time { font-size: 0.75rem; font-weight: 600; color: #64748b; margin-top: 0.25rem; }
-      .task-comments-empty { padding: 1.5rem; text-align: center; font-weight: 700; color: #64748b; font-size: 0.95rem; }
+      .task-comment-time { font-size: 0.72rem; font-weight: 600; color: #64748b; margin-top: 0.25rem; }
+      .task-comments-empty { padding: 1.5rem; text-align: center; font-weight: 600; color: #64748b; font-size: 0.9rem; }
       .task-comments-message-input { font-weight: 600; }
       #accuracy-widget { cursor: pointer; }
       #accuracy-widget .accuracy-circle-wrap { width: 36px; height: 36px; }
@@ -636,6 +653,12 @@
               <a href="javascript:void(0);" class="menu-link tab-link">
                 <i class="menu-icon tf-icons bx bx-list-check"></i>
                 <div class="text-truncate" data-i18n="Tasks">Tasks</div>
+              </a>
+            </li>
+            <li class="menu-item" data-tab="check-ins">
+              <a href="javascript:void(0);" class="menu-link tab-link">
+                <i class="menu-icon tf-icons bx bx-calendar-check"></i>
+                <div class="text-truncate">Check_in's</div>
               </a>
             </li>
             <li class="menu-item d-none" id="menu-item-manager" data-tab="manager">
@@ -890,6 +913,23 @@
                   </div>
                 </div>
               </div>
+              <div id="check-ins-view" class="tab-pane">
+                <div class="card">
+                  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0"><i class="bx bx-calendar-check me-2"></i>Check_in's</h5>
+                    <p class="text-muted small mb-0">Recurring tasks and tasks in Check ins department</p>
+                  </div>
+                  <div class="card-body p-0">
+                    <div class="p-3 border-bottom bg-light d-flex align-items-center gap-2 flex-wrap">
+                      <div class="input-group input-group-sm" style="max-width: 360px;">
+                        <span class="input-group-text bg-white"><i class="bx bx-search text-muted"></i></span>
+                        <input type="text" class="form-control" id="checkins-tab-search" placeholder="Search by title, description, department, assignee..." />
+                      </div>
+                    </div>
+                    <div id="checkins-tab-content"><p class="text-muted text-center py-4 mb-0 px-3">Loading…</p></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1082,24 +1122,33 @@
       </div>
     </div>
 
-    <div class="offcanvas offcanvas-end task-comments-offcanvas" tabindex="-1" id="taskCommentsOffcanvas" aria-labelledby="taskCommentsOffcanvasLabel">
-      <div class="offcanvas-header task-comments-offcanvas-header">
-        <h5 class="offcanvas-title" id="taskCommentsOffcanvasLabel"><i class="bx bx-message-dots me-2"></i>Comments</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-      </div>
-      <div class="offcanvas-body task-comments-offcanvas-body d-flex flex-column p-0">
-        <div class="task-comments-task-title px-3 py-2" id="taskCommentsTaskTitle">—</div>
-        <div class="task-comments-list flex-grow-1 overflow-auto px-3 py-2" id="taskCommentsList"></div>
-        <div class="task-comments-compose border-top p-3">
-          <div class="mb-2">
-            <label class="form-label small fw-bold mb-1">Message</label>
-            <textarea class="form-control task-comments-message-input" id="taskCommentsMessageInput" rows="2" placeholder="Add a message, note, or instruction..."></textarea>
+    <!-- Book-style comment section: opens with page-turn effect -->
+    <div id="taskCommentsBookWrap" class="task-comments-book-wrap">
+      <div class="task-comments-book-backdrop" id="taskCommentsBookBackdrop" aria-hidden="true"></div>
+      <div class="task-comments-book-perspective">
+        <div class="task-comments-book-page" id="taskCommentsOffcanvas" aria-labelledby="taskCommentsOffcanvasLabel">
+          <div class="task-comments-book-inner">
+            <div class="task-comments-book-header">
+              <h5 class="task-comments-book-title" id="taskCommentsOffcanvasLabel"><i class="bx bx-message-dots me-2"></i>Comments</h5>
+              <button type="button" class="task-comments-book-close" id="taskCommentsBookClose" aria-label="Close"><i class="bx bx-x"></i></button>
+            </div>
+            <div class="task-comments-book-body">
+              <div class="task-comments-task-title" id="taskCommentsTaskTitle">—</div>
+              <div class="task-comments-list" id="taskCommentsList"></div>
+              <div class="task-comments-compose">
+                <div class="mb-2">
+                  <label class="form-label small fw-bold mb-1">Message</label>
+                  <textarea class="form-control task-comments-message-input" id="taskCommentsMessageInput" rows="2" placeholder="Add a message, note, or instruction..."></textarea>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label small fw-bold mb-1">Link (optional)</label>
+                  <input type="url" class="form-control form-control-sm" id="taskCommentsLinkInput" placeholder="https://..." />
+                </div>
+                <button type="button" class="btn btn-primary w-100" id="taskCommentsSendBtn"><i class="bx bx-send me-1"></i>Send</button>
+              </div>
+            </div>
           </div>
-          <div class="mb-2">
-            <label class="form-label small fw-bold mb-1">Link (optional)</label>
-            <input type="url" class="form-control form-control-sm" id="taskCommentsLinkInput" placeholder="https://..." />
-          </div>
-          <button type="button" class="btn btn-primary w-100" id="taskCommentsSendBtn"><i class="bx bx-send me-1"></i>Send</button>
+          <div class="task-comments-book-spine"></div>
         </div>
       </div>
     </div>

@@ -48,6 +48,7 @@
   };
   let searchQuery = '';
   let tasksTabSearchQuery = '';
+  let checkinsTabSearchQuery = '';
   let lastRecurringCheckDate = '';
   let cachedEmployeeLogins = [];
 
@@ -176,6 +177,7 @@
     try {
       render();
       renderTasksTab();
+      renderCheckinsTab();
       renderManagerTab();
       renderNotifications();
       updateRoleUI();
@@ -2295,17 +2297,34 @@
     const found = getCardById(cardId);
     if (!found) return;
     const { card } = found;
-    const offcanvas = document.getElementById('taskCommentsOffcanvas');
-    if (!offcanvas) return;
-    offcanvas.dataset.cardId = card.id || '';
+    const panel = document.getElementById('taskCommentsOffcanvas');
+    const wrap = document.getElementById('taskCommentsBookWrap');
+    if (!panel || !wrap) return;
+    panel.dataset.cardId = card.id || '';
     renderTaskCommentsPanel(card);
     const msgInput = document.getElementById('taskCommentsMessageInput');
     const linkInput = document.getElementById('taskCommentsLinkInput');
     if (msgInput) msgInput.value = '';
     if (linkInput) linkInput.value = '';
-    const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvas);
-    bsOffcanvas.show();
-    setTimeout(() => { if (msgInput) msgInput.focus(); }, 300);
+    wrap.classList.remove('closing');
+    wrap.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => { if (msgInput) msgInput.focus(); }, 450);
+  }
+
+  function closeTaskCommentsPanel() {
+    const wrap = document.getElementById('taskCommentsBookWrap');
+    const page = document.getElementById('taskCommentsOffcanvas');
+    if (!wrap) return;
+    wrap.classList.remove('active');
+    wrap.classList.add('closing');
+    document.body.style.overflow = '';
+    const onTransitionEnd = () => {
+      wrap.classList.remove('closing');
+      page.removeEventListener('transitionend', onTransitionEnd);
+    };
+    if (page) page.addEventListener('transitionend', onTransitionEnd);
+    else wrap.classList.remove('closing');
   }
 
   function addTaskComment(cardId, text, link) {
@@ -2557,12 +2576,40 @@
     }
 
     if (isUpcoming) {
-      const task = { id: uid(), title, description: descInput.value.trim(), urgency, department, deadline };
+      const task = {
+        id: uid(),
+        title,
+        description: descInput.value.trim(),
+        urgency,
+        department,
+        deadline,
+        link: linkUrl || undefined,
+        linkType: linkType || undefined
+      };
+      if (assigneeNames.length > 0) {
+        task.assignees = assigneeNames.slice();
+        task.assigneeName = assigneeNames[0];
+        task.assignedById = currentUser ? currentUser.id : '';
+        task.assignedByName = currentUser ? currentUser.name : 'Manager';
+        task.assignedAt = new Date().toISOString();
+      }
       if (!board.upcomingTasks) board.upcomingTasks = [];
       board.upcomingTasks.push(task);
+      if (assigneeNames.length > 0) {
+        const todoCol = (board.columns || []).find(c => (c.id || '').toString().toLowerCase() === 'todo') || (board.columns || [])[0];
+        if (todoCol) {
+          if (!Array.isArray(task.comments)) task.comments = [];
+          todoCol.cards = todoCol.cards || [];
+          todoCol.cards.push(task);
+          addNotification(task.title, assigneeNames.join(', '), task.assignedByName);
+        }
+      }
       bootstrap.Modal.getInstance(document.getElementById('cardModal')).hide();
       await saveBoard();
+      render();
       renderTasksTab();
+      renderNotifications();
+      updateAccuracyUI();
       return;
     }
 
@@ -2644,6 +2691,65 @@
     updateAccuracyUI();
   }
 
+  /** True if task belongs in Check-ins tab: recurring OR department is "Check ins". */
+  function isCheckinTask(task) {
+    if (!task) return false;
+    const recurring = !!(task.recurringTemplateId || task.isRecurringTask);
+    const dept = (task.department || '').trim().toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ');
+    const checkInsDept = dept === 'check ins' || dept === 'checkins';
+    return recurring || checkInsDept;
+  }
+
+  /** Get combined tasks for Tasks tab: upcomingTasks + kanban cards, excluding check-in tasks. */
+  function getTasksForTasksTab() {
+    const all = getTasksForTasksTabOrCheckins();
+    return all.filter(t => !isCheckinTask(t));
+  }
+
+  /** Get tasks for Check-ins tab only: recurring OR department "Check ins". */
+  function getTasksForCheckinsTab() {
+    const all = getTasksForTasksTabOrCheckins();
+    return all.filter(t => isCheckinTask(t));
+  }
+
+  /** Shared: upcomingTasks + kanban cards. */
+  function getTasksForTasksTabOrCheckins() {
+    const upcomingIds = new Set((board.upcomingTasks || []).map(t => t && t.id).filter(Boolean));
+    const tasks = (board.upcomingTasks || []).slice().map(t => ({ ...t, _source: 'upcoming' }));
+    const u = getCurrentUser();
+    const myName = (u && (u.name || u.email)) ? String(u.name || u.email).trim().toLowerCase() : '';
+    const isEmployee = u && u.role === 'employee' && !canCreateAndAssign();
+
+    (board.columns || []).forEach(col => {
+      (col.cards || []).forEach((card, idx) => {
+        if (!card || !card.id) return;
+        if (upcomingIds.has(card.id)) return;
+        if (isEmployee && myName) {
+          const assignees = getAssigneesList(card);
+          const assignedToMe = assignees.some(n => (n || '').trim().toLowerCase() === myName);
+          if (!assignedToMe) return;
+        }
+        tasks.push({
+          id: card.id,
+          title: card.title,
+          description: card.description,
+          department: card.department,
+          urgency: card.urgency,
+          deadline: card.deadline,
+          assignees: card.assignees,
+          assigneeName: card.assigneeName,
+          pinnedDept: card.department,
+          _source: 'card',
+          _columnId: col.id,
+          _colIndex: idx,
+          recurringTemplateId: card.recurringTemplateId,
+          isRecurringTask: card.isRecurringTask
+        });
+      });
+    });
+    return tasks;
+  }
+
   function renderTasksTab() {
     const container = document.getElementById('tasks-tab-content');
     const addBtn = document.getElementById('add-upcoming-task');
@@ -2653,7 +2759,7 @@
     if (addBtn) addBtn.style.display = canEdit ? 'inline-flex' : 'none';
     if (addDeptBtn) addDeptBtn.classList.toggle('d-none', !canEdit);
 
-    let tasks = board.upcomingTasks || [];
+    let tasks = getTasksForTasksTab();
     if (tasksTabSearchQuery) {
       const q = tasksTabSearchQuery.toLowerCase();
       tasks = tasks.filter(task => {
@@ -2724,13 +2830,16 @@
         const rowClass = isCompleted ? 'tasks-row-completed' : '';
         const assigneesStr = getAssigneesList(task).join(', ') || '—';
         const deadlineStr = task.deadline ? new Date(task.deadline).toLocaleString() : '—';
-        const assignInput = canEdit
-          ? `<div class="input-group input-group-sm"><input type="text" class="form-control assign-upcoming-input" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}" placeholder="Employee name" /><button type="button" class="btn btn-primary btn-sm assign-upcoming-btn" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}">Assign</button></div>`
-          : '<span class="text-muted">—</span>';
+        const assignInput =
+          canEdit
+            ? `<div class="input-group input-group-sm"><input type="text" class="form-control assign-upcoming-input" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}" placeholder="Type to search employees..." /><button type="button" class="btn btn-primary btn-sm assign-upcoming-btn" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}">Assign</button></div>`
+            : '<span class="text-muted">—</span>';
+        const recurringBadge = (task.recurringTemplateId || task.isRecurringTask)
+          ? ' <span class="badge bg-label-info ms-1">Recurring</span>' : '';
         const completedBadge = isCompleted ? ' <span class="task-completed-badge-inline"><i class="bx bx-like"></i> Completed</span>' : '';
-        html += `<tr data-task-id="${task.id}" class="${rowClass}">
+        html += `<tr data-task-id="${task.id}" data-task-source="${task._source || 'upcoming'}"${task._columnId ? ' data-column-id="' + escapeHtml(task._columnId) + '"' : ''} class="${rowClass}">
         <td class="tasks-sno">${idx + 1}</td>
-        <td class="tasks-title">${escapeHtml(task.title)}${completedBadge}</td>
+        <td class="tasks-title">${escapeHtml(task.title)}${recurringBadge}${completedBadge}</td>
         <td class="tasks-desc">${escapeHtml(task.description || '—')}</td>
         <td class="tasks-urgency"><span class="badge ${task.urgency === 'high' ? 'bg-danger' : task.urgency === 'low' ? 'bg-success' : 'bg-warning'}">${escapeHtml(task.urgency || 'medium')}</span></td>
         <td class="tasks-dept">${escapeHtml(task.department || '—')}</td>
@@ -2822,15 +2931,16 @@
               targetTbody.insertBefore(dragSrcRow, row);
             }
 
-            // Apply display position only: set pinnedDept so task appears under this section. Do NOT change department or assignees.
+            // Apply display position: pinnedDept for upcoming tasks, department for cards.
             try {
               const taskOrderByDept = {};
               container.querySelectorAll('.tasks-dept-section').forEach(section => {
                 const deptName = (section.dataset && section.dataset.dept) || 'Other';
-                const ids = Array.from(section.querySelectorAll('.tasks-dept-table tbody tr[data-task-id]')).map(
-                  tr => tr.dataset.taskId
-                );
-                taskOrderByDept[deptName] = ids.filter(Boolean);
+                const rows = Array.from(section.querySelectorAll('.tasks-dept-table tbody tr[data-task-id]'));
+                taskOrderByDept[deptName] = rows.map(tr => ({
+                  id: tr.dataset.taskId,
+                  source: tr.dataset.taskSource || 'upcoming'
+                }));
               });
               const tasksById = {};
               (board.upcomingTasks || []).forEach(t => {
@@ -2839,12 +2949,23 @@
               const used = new Set();
               const newUpcoming = [];
               Object.keys(taskOrderByDept).forEach(sectionName => {
-                taskOrderByDept[sectionName].forEach(id => {
-                  const t = tasksById[id];
-                  if (t && !used.has(id)) {
-                    t.pinnedDept = sectionName === 'Other' ? '' : sectionName;
-                    newUpcoming.push(t);
-                    used.add(id);
+                const targetDept = sectionName === 'Other' ? '' : sectionName;
+                taskOrderByDept[sectionName].forEach(({ id, source }) => {
+                  if (!id || used.has(id)) return;
+                  if (source === 'upcoming') {
+                    const t = tasksById[id];
+                    if (t) {
+                      t.pinnedDept = targetDept;
+                      newUpcoming.push(t);
+                      used.add(id);
+                    }
+                  } else {
+                    const col = (board.columns || []).find(c => (c.cards || []).some(card => card.id === id));
+                    const card = col && (col.cards || []).find(c => c.id === id);
+                    if (card) {
+                      card.department = targetDept || undefined;
+                      used.add(id);
+                    }
                   }
                 });
               });
@@ -2854,6 +2975,7 @@
               });
               board.upcomingTasks = newUpcoming;
               saveBoard();
+              render();
               renderTasksTab();
             } catch (_) {}
           });
@@ -2946,6 +3068,100 @@
     }
   }
 
+  function renderCheckinsTab() {
+    const container = document.getElementById('checkins-tab-content');
+    if (!container) return;
+    const canEdit = canCreateAndAssign();
+
+    let tasks = getTasksForCheckinsTab();
+    if (checkinsTabSearchQuery) {
+      const q = checkinsTabSearchQuery.toLowerCase();
+      tasks = tasks.filter(task => {
+        const title = (task.title || '').toLowerCase();
+        const desc = (task.description || '').toLowerCase();
+        const dept = (task.department || '').toLowerCase();
+        const assignees = (getAssigneesList(task) || []).join(' ').toLowerCase();
+        return title.includes(q) || desc.includes(q) || dept.includes(q) || assignees.includes(q);
+      });
+    }
+    const byDept = {};
+    tasks.forEach(task => {
+      const displaySection = (task.pinnedDept || '').trim() || (task.department || '').trim() || 'Other';
+      const dept = displaySection || 'Other';
+      if (!byDept[dept]) byDept[dept] = [];
+      byDept[dept].push(task);
+    });
+
+    const completedTaskIds = new Set();
+    (board.columns || []).forEach(col => {
+      (col.cards || []).forEach(card => {
+        if (card && card.id && card.completedAt) completedTaskIds.add(card.id);
+      });
+    });
+
+    const deptOrder = getDepartments().slice();
+    Object.keys(byDept).forEach(d => {
+      if (d !== 'Other' && deptOrder.indexOf(d) === -1) deptOrder.push(d);
+    });
+    if (byDept['Other']) deptOrder.push('Other');
+    if (deptOrder.length === 0 && checkinsTabSearchQuery) {
+      container.innerHTML = '<p class="text-muted text-center py-4 mb-0 px-3">No check-ins match your search.</p>';
+      return;
+    }
+    if (deptOrder.length === 0) {
+      container.innerHTML =
+        '<p class="text-muted text-center py-4 mb-0 px-3">No check-ins yet. Recurring tasks and tasks in <strong>Check ins</strong> department appear here.</p>';
+      return;
+    }
+
+    let html = '';
+    deptOrder.forEach(dept => {
+      const deptTasks = byDept[dept] || [];
+      html += '<div class="tasks-dept-section border-bottom" data-dept="' + escapeHtml(dept) + '">';
+      html += '<h6 class="mb-2 d-flex align-items-center"><i class="bx bx-building-house me-2"></i>' + escapeHtml(dept) + '</h6>';
+      html +=
+        '<div class="table-responsive rounded border"><table class="table table-hover table-align-middle mb-0 tasks-dept-table"><thead><tr><th class="tasks-sno">S.No</th><th>Task</th><th>Description</th><th class="tasks-urgency">Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th class="tasks-assign-col">Assign to</th></tr></thead><tbody>';
+      deptTasks.forEach((task, idx) => {
+        const isCompleted = task.id && completedTaskIds.has(task.id);
+        const rowClass = isCompleted ? 'tasks-row-completed' : '';
+        const assigneesStr = getAssigneesList(task).join(', ') || '—';
+        const deadlineStr = task.deadline ? new Date(task.deadline).toLocaleString() : '—';
+        const assignInput =
+          canEdit
+            ? `<div class="input-group input-group-sm"><input type="text" class="form-control assign-upcoming-input" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}" placeholder="Type to search employees..." /><button type="button" class="btn btn-primary btn-sm assign-upcoming-btn" data-task-id="${task.id}" data-title="${escapeHtml(task.title).replace(/"/g, '&quot;')}">Assign</button></div>`
+            : '<span class="text-muted">—</span>';
+        const recurringBadge = (task.recurringTemplateId || task.isRecurringTask)
+          ? ' <span class="badge bg-label-info ms-1">Recurring</span>' : '';
+        const completedBadge = isCompleted ? ' <span class="task-completed-badge-inline"><i class="bx bx-like"></i> Completed</span>' : '';
+        html += `<tr data-task-id="${task.id}" data-task-source="${task._source || 'upcoming'}"${task._columnId ? ' data-column-id="' + escapeHtml(task._columnId) + '"' : ''} class="${rowClass}">
+        <td class="tasks-sno">${idx + 1}</td>
+        <td class="tasks-title">${escapeHtml(task.title)}${recurringBadge}${completedBadge}</td>
+        <td class="tasks-desc">${escapeHtml(task.description || '—')}</td>
+        <td class="tasks-urgency"><span class="badge ${task.urgency === 'high' ? 'bg-danger' : task.urgency === 'low' ? 'bg-success' : 'bg-warning'}">${escapeHtml(task.urgency || 'medium')}</span></td>
+        <td class="tasks-dept">${escapeHtml(task.department || '—')}</td>
+        <td class="tasks-deadline small">${escapeHtml(deadlineStr)}</td>
+        <td class="tasks-assignees">${escapeHtml(assigneesStr)}</td>
+        <td class="tasks-assign-col">${assignInput}</td>
+      </tr>`;
+      });
+      if (deptTasks.length === 0) {
+        html += '<tr><td colspan="8" class="text-muted text-center py-4">No check-ins in this department.</td></tr>';
+      }
+      html += '</tbody></table></div></div>';
+    });
+
+    container.innerHTML = html;
+
+    if (canEdit) {
+      container.querySelectorAll('.assign-upcoming-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          const input = e.target.closest('tr').querySelector('.assign-upcoming-input');
+          if (input) onAssignUpcoming(input);
+        });
+      });
+    }
+  }
+
   function onAssignUpcoming(inputEl) {
     if (!inputEl || typeof inputEl.dataset === 'undefined') return;
     const taskId = inputEl.dataset.taskId;
@@ -2985,6 +3201,7 @@
     saveBoard();
     render();
     renderTasksTab();
+    renderCheckinsTab();
     renderNotifications();
     inputEl.value = '';
   }
@@ -3052,17 +3269,76 @@
     if (managerMenuItem) managerMenuItem.classList.toggle('d-none', !isManager());
     const tasksMenuItem = document.querySelector('.menu-item[data-tab="tasks"]');
     if (tasksMenuItem) tasksMenuItem.classList.toggle('d-none', !(isManager() || canCreateAndAssign()));
+    const checkinsMenuItem = document.querySelector('.menu-item[data-tab="check-ins"]');
+    if (checkinsMenuItem) checkinsMenuItem.classList.toggle('d-none', !(isManager() || canCreateAndAssign()));
     const btnChangePw = document.getElementById('btn-change-password');
     if (btnChangePw) btnChangePw.classList.toggle('d-none', !isManager());
     updateAccuracyUI();
   }
 
+  function getActiveTabId() {
+    const activePane = document.querySelector('.tab-pane.active');
+    if (!activePane || !activePane.id) return 'kanban';
+    const m = activePane.id.match(/^(.+)-view$/);
+    return m ? m[1] : 'kanban';
+  }
+
+  function filterActiveView() {
+    const tabId = getActiveTabId();
+    if (tabId === 'kanban') render();
+    else if (tabId === 'tasks') {
+      tasksTabSearchQuery = searchQuery;
+      const tasksInput = document.getElementById('tasks-tab-search');
+      if (tasksInput && tasksInput.value !== searchQuery) tasksInput.value = searchQuery;
+      renderTasksTab();
+    } else if (tabId === 'check-ins') {
+      checkinsTabSearchQuery = searchQuery;
+      const checkinsInput = document.getElementById('checkins-tab-search');
+      if (checkinsInput && checkinsInput.value !== searchQuery) checkinsInput.value = searchQuery;
+      renderCheckinsTab();
+    } else if (tabId === 'stored-data') {
+      filterStoredDataByQuery(searchQuery);
+    }
+  }
+
+  function filterStoredDataByQuery(q) {
+    const tasksTable = document.getElementById('stored-tasks-table');
+    const upcomingTable = document.getElementById('stored-upcoming-table');
+    const query = (q || '').trim().toLowerCase();
+    [tasksTable, upcomingTable].forEach(table => {
+      if (!table) return;
+      table.querySelectorAll('tbody tr').forEach(tr => {
+        const search = tr.dataset.search;
+        if (search === undefined) return;
+        tr.style.display = !query || search.indexOf(query) !== -1 ? '' : 'none';
+      });
+    });
+    const tasksInput = document.getElementById('stored-search-tasks');
+    const upcomingInput = document.getElementById('stored-search-upcoming');
+    if (tasksInput && tasksInput.value !== q) tasksInput.value = q || '';
+    if (upcomingInput && upcomingInput.value !== q) upcomingInput.value = q || '';
+  }
+
   function switchTab(tabId) {
     if (tabId === 'stored-data' || tabId === 'manager') {
       if (!isManager()) tabId = 'kanban';
-    } else if (tabId === 'tasks') {
+    } else if (tabId === 'tasks' || tabId === 'check-ins') {
       if (!isManager() && !canCreateAndAssign()) tabId = 'kanban';
     }
+    searchQuery = '';
+    tasksTabSearchQuery = '';
+    checkinsTabSearchQuery = '';
+    const globalInput = document.getElementById('global-search-input');
+    if (globalInput) globalInput.value = '';
+    const tasksInput = document.getElementById('tasks-tab-search');
+    if (tasksInput) tasksInput.value = '';
+    const checkinsInput = document.getElementById('checkins-tab-search');
+    if (checkinsInput) checkinsInput.value = '';
+    const storedTasksInput = document.getElementById('stored-search-tasks');
+    if (storedTasksInput) storedTasksInput.value = '';
+    const storedUpcomingInput = document.getElementById('stored-search-upcoming');
+    if (storedUpcomingInput) storedUpcomingInput.value = '';
+
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
     const pane = document.getElementById(tabId + '-view');
@@ -3072,13 +3348,22 @@
     const title = document.getElementById('page-title');
     if (title) {
       if (tabId === 'tasks') title.textContent = 'Tasks (Upcoming)';
+      else if (tabId === 'check-ins') title.textContent = "Check_in's";
       else if (tabId === 'stored-data') title.textContent = 'Stored data';
       else if (tabId === 'manager') title.textContent = 'Manager';
       else title.textContent = 'Kanban Board';
     }
-    if (tabId === 'stored-data') renderStoredDataView();
-    if (tabId === 'manager') renderManagerTab();
-    if (tabId === 'tasks') renderTasksTab();
+    if (tabId === 'stored-data') {
+      renderStoredDataView();
+    } else if (tabId === 'manager') {
+      renderManagerTab();
+    } else if (tabId === 'tasks') {
+      renderTasksTab();
+    } else if (tabId === 'check-ins') {
+      renderCheckinsTab();
+    } else {
+      render();
+    }
   }
 
   function renderStoredDataView() {
@@ -3109,7 +3394,19 @@
       html +=
         '<tr data-search="' +
         escapeHtml(
-          (card.title || '') + ' ' + (card.description || '') + ' ' + assigneesStr + ' ' + status
+          (card.title || '') +
+            ' ' +
+            (card.description || '') +
+            ' ' +
+            assigneesStr +
+            ' ' +
+            status +
+            ' ' +
+            (card.department || '') +
+            ' ' +
+            (card.urgency || '') +
+            ' ' +
+            (card.id || '')
         ).toLowerCase() +
         '">';
       html += '<td>' + (idx + 1) + '</td>';
@@ -3165,18 +3462,28 @@
 
     container.innerHTML = html;
 
+    function filterStoredTable(tableId, q) {
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      const query = (q || '').trim().toLowerCase();
+      table.querySelectorAll('tbody tr').forEach(tr => {
+        const search = tr.dataset.search;
+        if (search === undefined) return;
+        tr.style.display = !query || search.indexOf(query) !== -1 ? '' : 'none';
+      });
+    }
     function filterTable(inputId, tableId) {
       const input = document.getElementById(inputId);
       const table = document.getElementById(tableId);
       if (!input || !table) return;
       input.addEventListener('input', () => {
         const q = (input.value || '').trim().toLowerCase();
-        table.querySelectorAll('tbody tr').forEach(tr => {
-          const search = tr.dataset.search;
-          if (search === undefined) return;
-          tr.style.display = !q || search.indexOf(q) !== -1 ? '' : 'none';
-        });
+        filterStoredTable(tableId, q);
       });
+      if (searchQuery) {
+        input.value = searchQuery;
+        filterStoredTable(tableId, searchQuery);
+      }
     }
     filterTable('stored-search-tasks', 'stored-tasks-table');
     filterTable('stored-search-upcoming', 'stored-upcoming-table');
@@ -3627,10 +3934,12 @@
     const taskCommentsSendBtn = document.getElementById('taskCommentsSendBtn');
     const taskCommentsMessageInput = document.getElementById('taskCommentsMessageInput');
     const taskCommentsLinkInput = document.getElementById('taskCommentsLinkInput');
-    const taskCommentsOffcanvas = document.getElementById('taskCommentsOffcanvas');
-    if (taskCommentsSendBtn && taskCommentsOffcanvas) {
+    const taskCommentsPanel = document.getElementById('taskCommentsOffcanvas');
+    const taskCommentsBookClose = document.getElementById('taskCommentsBookClose');
+    const taskCommentsBookBackdrop = document.getElementById('taskCommentsBookBackdrop');
+    if (taskCommentsSendBtn && taskCommentsPanel) {
       taskCommentsSendBtn.addEventListener('click', () => {
-        const cardId = taskCommentsOffcanvas.dataset.cardId;
+        const cardId = taskCommentsPanel.dataset.cardId;
         const text = taskCommentsMessageInput ? taskCommentsMessageInput.value : '';
         const link = taskCommentsLinkInput ? taskCommentsLinkInput.value : '';
         if (!cardId) return;
@@ -3640,6 +3949,14 @@
         if (taskCommentsLinkInput) taskCommentsLinkInput.value = '';
       });
     }
+    if (taskCommentsBookClose) taskCommentsBookClose.addEventListener('click', closeTaskCommentsPanel);
+    if (taskCommentsBookBackdrop) taskCommentsBookBackdrop.addEventListener('click', closeTaskCommentsPanel);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const wrap = document.getElementById('taskCommentsBookWrap');
+        if (wrap && wrap.classList.contains('active')) closeTaskCommentsPanel();
+      }
+    });
 
     const profileForm = document.getElementById('employeeProfileForm');
     if (profileForm) {
@@ -3705,22 +4022,45 @@
     if (globalSearchInput) {
       globalSearchInput.addEventListener('input', e => {
         searchQuery = e.target.value.trim();
-        render();
+        filterActiveView();
       });
     }
     if (globalSearchClear) {
       globalSearchClear.addEventListener('click', () => {
         searchQuery = '';
+        tasksTabSearchQuery = '';
+        checkinsTabSearchQuery = '';
         if (globalSearchInput) globalSearchInput.value = '';
-        render();
+        const tasksInput = document.getElementById('tasks-tab-search');
+        if (tasksInput) tasksInput.value = '';
+        const checkinsInput = document.getElementById('checkins-tab-search');
+        if (checkinsInput) checkinsInput.value = '';
+        const storedTasksInput = document.getElementById('stored-search-tasks');
+        const storedUpcomingInput = document.getElementById('stored-search-upcoming');
+        if (storedTasksInput) storedTasksInput.value = '';
+        if (storedUpcomingInput) storedUpcomingInput.value = '';
+        filterActiveView();
       });
     }
 
     const tasksTabSearch = document.getElementById('tasks-tab-search');
     if (tasksTabSearch) {
       tasksTabSearch.addEventListener('input', e => {
-        tasksTabSearchQuery = e.target.value.trim();
+        const q = e.target.value.trim();
+        tasksTabSearchQuery = q;
+        searchQuery = q;
+        if (globalSearchInput && globalSearchInput.value !== q) globalSearchInput.value = q;
         renderTasksTab();
+      });
+    }
+    const checkinsTabSearch = document.getElementById('checkins-tab-search');
+    if (checkinsTabSearch) {
+      checkinsTabSearch.addEventListener('input', e => {
+        const q = e.target.value.trim();
+        checkinsTabSearchQuery = q;
+        searchQuery = q;
+        if (globalSearchInput && globalSearchInput.value !== q) globalSearchInput.value = q;
+        renderCheckinsTab();
       });
     }
 
