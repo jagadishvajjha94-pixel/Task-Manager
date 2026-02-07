@@ -204,6 +204,48 @@
       : defaultDepartments.slice();
   }
 
+  function renameDepartment(oldName, newName) {
+    const trimmed = (newName || '').trim();
+    if (!trimmed || trimmed === oldName) return;
+    if (!Array.isArray(board.departments)) board.departments = defaultDepartments.slice();
+    const idx = board.departments.indexOf(oldName);
+    if (idx === -1) return;
+    board.departments[idx] = trimmed;
+    (board.upcomingTasks || []).forEach(t => {
+      if ((t.department || '').trim() === oldName) t.department = trimmed;
+    });
+    (board.columns || []).forEach(col => {
+      (col.cards || []).forEach(card => {
+        if ((card.department || '').trim() === oldName) card.department = trimmed;
+      });
+    });
+    (board.recurringTasks || []).forEach(rt => {
+      if ((rt.department || '').trim() === oldName) rt.department = trimmed;
+    });
+    saveBoard();
+  }
+
+  function removeDepartment(name) {
+    if (!name || name === 'Other') return;
+    if (!Array.isArray(board.departments)) board.departments = defaultDepartments.slice();
+    const idx = board.departments.indexOf(name);
+    if (idx === -1) return;
+    board.departments.splice(idx, 1);
+    const otherLabel = 'Other';
+    (board.upcomingTasks || []).forEach(t => {
+      if ((t.department || '').trim() === name) t.department = otherLabel;
+    });
+    (board.columns || []).forEach(col => {
+      (col.cards || []).forEach(card => {
+        if ((card.department || '').trim() === name) card.department = otherLabel;
+      });
+    });
+    (board.recurringTasks || []).forEach(rt => {
+      if ((rt.department || '').trim() === name) rt.department = otherLabel;
+    });
+    saveBoard();
+  }
+
   function renderEmployeeAccuracyTable() {
     const accuracyTbody = document.getElementById('manager-accuracy-tbody');
     if (!accuracyTbody) return;
@@ -336,11 +378,49 @@
   }
 
   function renderManagerTab() {
-    const deptsList = document.getElementById('manager-depts-list');
+    const deptsTbody = document.getElementById('manager-depts-tbody');
+    const deptsEmpty = document.getElementById('manager-depts-empty');
     const recurringList = document.getElementById('recurring-tasks-list');
-    if (!deptsList) return;
-    const depts = getDepartments();
-    deptsList.innerHTML = depts.map(d => `<li class="list-group-item">${escapeHtml(d)}</li>`).join('');
+    if (deptsTbody) {
+      const depts = getDepartments();
+      if (depts.length === 0) {
+        deptsTbody.innerHTML = '';
+        if (deptsEmpty) { deptsEmpty.classList.remove('d-none'); deptsEmpty.textContent = 'No departments yet. Create one below.'; }
+      } else {
+        if (deptsEmpty) deptsEmpty.classList.add('d-none');
+        deptsTbody.innerHTML = depts
+          .map(
+            d =>
+              `<tr data-dept="${escapeHtml(d)}"><td>${escapeHtml(d)}</td><td><button type="button" class="btn btn-sm btn-outline-primary manager-dept-edit-btn me-1" data-dept="${escapeHtml(d)}" title="Edit department name"><i class="bx bx-edit"></i> Edit</button><button type="button" class="btn btn-sm btn-outline-danger manager-dept-remove-btn" data-dept="${escapeHtml(d)}" title="Remove department (tasks move to Other)">Remove</button></td></tr>`
+          )
+          .join('');
+        deptsTbody.querySelectorAll('.manager-dept-edit-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const dept = btn.dataset.dept;
+            if (!dept) return;
+            const newName = (prompt('Edit department name:', dept) || '').trim();
+            if (!newName || newName === dept) return;
+            renameDepartment(dept, newName);
+            render();
+            renderManagerTab();
+            renderTasksTab();
+            renderCheckinsTab();
+          });
+        });
+        deptsTbody.querySelectorAll('.manager-dept-remove-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const dept = btn.dataset.dept;
+            if (!dept) return;
+            if (!confirm('Remove department "' + dept + '"? Tasks in this department will move to Other.')) return;
+            removeDepartment(dept);
+            render();
+            renderManagerTab();
+            renderTasksTab();
+            renderCheckinsTab();
+          });
+        });
+      }
+    }
     renderEmployeeAccuracyTable();
     if (isManager()) loadAndRenderEmployeeLogins();
     if (recurringList) {
@@ -3251,6 +3331,7 @@
         checkinsFocusTaskIdAfterRender = null;
       }
     }
+
   }
 
   function onAssignUpcoming(inputEl) {
