@@ -120,7 +120,7 @@ app.use(express.static(path.join(__dirname, 'html')));
 app.post('/api/auth/manager/login', (req, res) => {
   const body = req.body || {};
   const email = typeof body.email === 'string' ? body.email.trim() : '';
-  const password = body.password != null ? String(body.password) : '';
+  const password = (body.password != null ? String(body.password) : '').trim();
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' });
   }

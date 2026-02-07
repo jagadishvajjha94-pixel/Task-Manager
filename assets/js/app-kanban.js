@@ -1675,6 +1675,18 @@
     const hintsWrap = document.getElementById('kanban-calendar-hints');
     if (!grid) return;
     const byDate = getTasksByDateKey();
+    if (!canCreateAndAssign()) {
+      const u = getCurrentUser();
+      const myName = (u && (u.name || u.email)) ? String(u.name || u.email).trim() : '';
+      const myLower = myName ? myName.toLowerCase() : '';
+      Object.keys(byDate).forEach(dateKey => {
+        byDate[dateKey] = (byDate[dateKey] || []).filter(card => {
+          if (!myLower) return false;
+          const assignees = getAssigneesList(card);
+          return assignees.some(name => (name || '').trim().toLowerCase() === myLower);
+        });
+      });
+    }
     const todayKey = getTodayDateKey();
     const year = kanbanCalendarMonth.getFullYear();
     const month = kanbanCalendarMonth.getMonth();
@@ -1850,6 +1862,19 @@
     const groupsToRender = [];
     dateGroups.forEach(group => {
       let filteredCards = group.cards;
+      if (!canCreateAndAssign()) {
+        const u = getCurrentUser();
+        const myName = (u && (u.name || u.email)) ? String(u.name || u.email).trim() : '';
+        if (myName) {
+          const myLower = myName.toLowerCase();
+          filteredCards = filteredCards.filter(card => {
+            const assignees = getAssigneesList(card);
+            return assignees.some(name => (name || '').trim().toLowerCase() === myLower);
+          });
+        } else {
+          filteredCards = [];
+        }
+      }
       if (searchQuery) {
         const lowerQuery = searchQuery.toLowerCase();
         filteredCards = filteredCards.filter(card => {
@@ -3896,7 +3921,7 @@
       loginForm.addEventListener('submit', e => {
         e.preventDefault();
         const email = (document.getElementById('login-email')?.value || '').trim();
-        const password = document.getElementById('login-password')?.value || '';
+        const password = (document.getElementById('login-password')?.value || '').trim();
         const roleEl = document.querySelector('input[name="login-role"]:checked');
         const role = roleEl?.value || 'dean';
         if (!email || !password) {
