@@ -289,84 +289,97 @@
     });
   }
 
+  function renderEmployeeLoginsTable() {
+    const tbody = document.getElementById('employee-logins-tbody');
+    const emptyEl = document.getElementById('employee-logins-empty');
+    if (!tbody) return;
+    if (!cachedEmployeeLogins || cachedEmployeeLogins.length === 0) {
+      tbody.innerHTML = '';
+      if (emptyEl) {
+        emptyEl.style.display = 'block';
+        emptyEl.textContent = 'No employee logins yet. Create one above.';
+      }
+      renderEmployeeAccuracyTable();
+      return;
+    }
+    if (emptyEl) emptyEl.style.display = 'none';
+    tbody.innerHTML = cachedEmployeeLogins
+      .map(
+        e =>
+          `<tr data-employee-id="${escapeHtml(e.id)}"><td>${escapeHtml(e.email || '')}</td><td>${escapeHtml(e.name || '')}</td><td><div class="form-check form-switch mb-0 d-inline-block"><input class="form-check-input emp-can-create-assign-toggle" type="checkbox" data-employee-id="${escapeHtml(e.id)}" title="Can create & assign tasks (applies to this employee only)" ${e.canCreateAndAssign ? ' checked' : ''} /><label class="form-check-label small ms-1" for="">${e.canCreateAndAssign ? 'Can create & assign' : 'View & update only'}</label></div></td><td><button type="button" class="btn btn-sm btn-outline-primary edit-employee-login-btn me-1" data-employee-id="${escapeHtml(e.id)}" title="Edit this login"><i class="bx bx-edit"></i> Edit</button><button type="button" class="btn btn-sm btn-outline-danger remove-employee-login-btn" data-employee-id="${escapeHtml(e.id)}" title="Remove this login">Remove</button></td></tr>`
+      )
+      .join('');
+    tbody.querySelectorAll('.emp-can-create-assign-toggle').forEach(toggle => {
+      toggle.addEventListener('change', () => {
+        const id = toggle.getAttribute('data-employee-id');
+        if (!id) return;
+        const canCreateAndAssign = !!toggle.checked;
+        fetch(API_BASE + '/api/auth/manager/update-employee-login', {
+          method: 'PUT',
+          headers: apiHeaders(),
+          body: JSON.stringify({ id, canCreateAndAssign })
+        })
+          .then(res => (res.ok ? res.json() : res.json().then(d => Promise.reject(d))))
+          .then(() => loadAndRenderEmployeeLogins())
+          .catch(err => alert(err && err.error ? err.error : 'Failed to update.'));
+      });
+    });
+    tbody.querySelectorAll('.edit-employee-login-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-employee-id');
+        if (!id) return;
+        const emp = cachedEmployeeLogins.find(e => e.id === id);
+        if (!emp) return;
+        const modal = document.getElementById('edit-employee-login-modal');
+        const idEl = document.getElementById('edit-emp-id');
+        const emailEl = document.getElementById('edit-emp-email');
+        const nameEl = document.getElementById('edit-emp-name');
+        const passwordEl = document.getElementById('edit-emp-password');
+        const canEl = document.getElementById('edit-emp-can-create-assign');
+        if (idEl) idEl.value = emp.id;
+        if (emailEl) emailEl.value = emp.email || '';
+        if (nameEl) nameEl.value = emp.name || '';
+        if (passwordEl) passwordEl.value = '';
+        if (canEl) canEl.checked = !!emp.canCreateAndAssign;
+        if (modal && typeof bootstrap !== 'undefined') {
+          const bsModal = new bootstrap.Modal(modal);
+          bsModal.show();
+        }
+      });
+    });
+    tbody.querySelectorAll('.remove-employee-login-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-employee-id');
+        if (!id) return;
+        if (!confirm('Remove this employee login? They will no longer be able to sign in.')) return;
+        fetch(API_BASE + '/api/auth/manager/remove-employee-login', {
+          method: 'POST',
+          headers: apiHeaders(),
+          body: JSON.stringify({ id })
+        })
+          .then(res => (res.ok ? Promise.resolve() : res.json().then(d => Promise.reject(d))))
+          .then(() => loadAndRenderEmployeeLogins())
+          .catch(err => alert(err && err.error ? err.error : 'Failed to remove employee login.'));
+      });
+    });
+    renderEmployeeAccuracyTable();
+  }
+
   function loadAndRenderEmployeeLogins() {
     const tbody = document.getElementById('employee-logins-tbody');
     const emptyEl = document.getElementById('employee-logins-empty');
     if (!tbody) return;
-    fetch(API_BASE + '/api/auth/employees', { headers: apiHeaders() })
+    const cacheBust = '?_t=' + Date.now();
+    fetch(API_BASE + '/api/auth/employees' + cacheBust, { headers: apiHeaders(), cache: 'no-store' })
       .then(res => (res.ok ? res.json() : []))
       .then(employees => {
-        cachedEmployeeLogins = Array.isArray(employees) ? employees : [];
-        if (cachedEmployeeLogins.length === 0) {
-          tbody.innerHTML = '';
-          if (emptyEl) {
-            emptyEl.style.display = 'block';
-            emptyEl.textContent = 'No employee logins yet. Create one above.';
-          }
-          renderEmployeeAccuracyTable();
-          return;
+        const list = Array.isArray(employees) ? employees : [];
+        if (list.length === 0 && cachedEmployeeLogins.length > 0) {
+          cachedEmployeeLogins = cachedEmployeeLogins;
+        } else {
+          cachedEmployeeLogins = list;
         }
-        if (emptyEl) emptyEl.style.display = 'none';
-        tbody.innerHTML = cachedEmployeeLogins
-          .map(
-            e =>
-              `<tr data-employee-id="${escapeHtml(e.id)}"><td>${escapeHtml(e.email || '')}</td><td>${escapeHtml(e.name || '')}</td><td><div class="form-check form-switch mb-0 d-inline-block"><input class="form-check-input emp-can-create-assign-toggle" type="checkbox" data-employee-id="${escapeHtml(e.id)}" title="Can create & assign tasks (applies to this employee only)" ${e.canCreateAndAssign ? ' checked' : ''} /><label class="form-check-label small ms-1" for="">${e.canCreateAndAssign ? 'Can create & assign' : 'View & update only'}</label></div></td><td><button type="button" class="btn btn-sm btn-outline-primary edit-employee-login-btn me-1" data-employee-id="${escapeHtml(e.id)}" title="Edit this login"><i class="bx bx-edit"></i> Edit</button><button type="button" class="btn btn-sm btn-outline-danger remove-employee-login-btn" data-employee-id="${escapeHtml(e.id)}" title="Remove this login">Remove</button></td></tr>`
-          )
-          .join('');
-        tbody.querySelectorAll('.emp-can-create-assign-toggle').forEach(toggle => {
-          toggle.addEventListener('change', () => {
-            const id = toggle.getAttribute('data-employee-id');
-            if (!id) return;
-            const canCreateAndAssign = !!toggle.checked;
-            fetch(API_BASE + '/api/auth/manager/update-employee-login', {
-              method: 'PUT',
-              headers: apiHeaders(),
-              body: JSON.stringify({ id, canCreateAndAssign })
-            })
-              .then(res => (res.ok ? res.json() : res.json().then(d => Promise.reject(d))))
-              .then(() => loadAndRenderEmployeeLogins())
-              .catch(err => alert(err && err.error ? err.error : 'Failed to update.'));
-          });
-        });
-        tbody.querySelectorAll('.edit-employee-login-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const id = btn.getAttribute('data-employee-id');
-            if (!id) return;
-            const emp = cachedEmployeeLogins.find(e => e.id === id);
-            if (!emp) return;
-            const modal = document.getElementById('edit-employee-login-modal');
-            const idEl = document.getElementById('edit-emp-id');
-            const emailEl = document.getElementById('edit-emp-email');
-            const nameEl = document.getElementById('edit-emp-name');
-            const passwordEl = document.getElementById('edit-emp-password');
-            const canEl = document.getElementById('edit-emp-can-create-assign');
-            if (idEl) idEl.value = emp.id;
-            if (emailEl) emailEl.value = emp.email || '';
-            if (nameEl) nameEl.value = emp.name || '';
-            if (passwordEl) passwordEl.value = '';
-            if (canEl) canEl.checked = !!emp.canCreateAndAssign;
-            if (modal && typeof bootstrap !== 'undefined') {
-              const bsModal = new bootstrap.Modal(modal);
-              bsModal.show();
-            }
-          });
-        });
-        tbody.querySelectorAll('.remove-employee-login-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const id = btn.getAttribute('data-employee-id');
-            if (!id) return;
-            if (!confirm('Remove this employee login? They will no longer be able to sign in.')) return;
-            fetch(API_BASE + '/api/auth/manager/remove-employee-login', {
-              method: 'POST',
-              headers: apiHeaders(),
-              body: JSON.stringify({ id })
-            })
-              .then(res => (res.ok ? Promise.resolve() : res.json().then(d => Promise.reject(d))))
-              .then(() => loadAndRenderEmployeeLogins())
-              .catch(err => alert(err && err.error ? err.error : 'Failed to remove employee login.'));
-          });
-        });
-        renderEmployeeAccuracyTable();
+        renderEmployeeLoginsTable();
       })
       .catch(() => {
         tbody.innerHTML = '';
@@ -4594,6 +4607,19 @@
               document.getElementById('emp-login-password').value = '';
               document.getElementById('emp-login-name').value = '';
               document.getElementById('emp-login-can-create-assign').checked = false;
+              var newEmp = data.employee;
+              if (newEmp && newEmp.id) {
+                cachedEmployeeLogins = (cachedEmployeeLogins || []).slice();
+                if (!cachedEmployeeLogins.some(function (e) { return e.id === newEmp.id; })) {
+                  cachedEmployeeLogins.push({
+                    id: newEmp.id,
+                    email: newEmp.email || '',
+                    name: newEmp.name || '',
+                    canCreateAndAssign: !!newEmp.canCreateAndAssign
+                  });
+                }
+                renderEmployeeLoginsTable();
+              }
               loadAndRenderEmployeeLogins();
               alert('Employee login created. Share the email and password with the employee.');
             } else {
