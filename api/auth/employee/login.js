@@ -48,7 +48,18 @@ module.exports = async (req, res) => {
 
   const employees = await store.getEmployees();
   const emp = employees.find(e => (e.email || '').toLowerCase() === email.toLowerCase());
-  if (!emp || emp.passwordHash !== hashPassword(password)) {
+  if (!emp) {
+    const backend = store.getStoreBackend();
+    const hint =
+      backend === 'file' && process.env.VERCEL
+        ? ' Employee logins require shared storage. Connect Upstash Redis to this Vercel project (Storage → Create Database) and redeploy.'
+        : '';
+    return res.status(401).json({
+      error: 'Invalid email or password' + (hint ? '. ' + hint : '')
+    });
+  }
+  const inputHash = hashPassword(password);
+  if (emp.passwordHash !== inputHash) {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
 

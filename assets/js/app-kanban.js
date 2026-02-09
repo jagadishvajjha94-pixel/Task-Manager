@@ -4528,16 +4528,14 @@
           .then(async res => {
             if (res === undefined) return;
             if (!res.ok) {
+              let data = {};
+              try {
+                const text = await res.text();
+                if (text) data = JSON.parse(text);
+              } catch (_) {}
               if (res.status === 401) {
-                alert(
-                  'Invalid email or password. If you are an employee without task assignment rights, please select "Employee" and log in from the Employee page.'
-                );
+                alert(data.error || 'Invalid email or password. If you are an employee, select "Employee" and log in from the Employee page.');
               } else {
-                let data = {};
-                try {
-                  const text = await res.text();
-                  if (text) data = JSON.parse(text);
-                } catch (_) {}
                 alert(data.error || 'Login failed.');
               }
               document.getElementById('login-email').value = '';

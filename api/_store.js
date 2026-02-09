@@ -32,17 +32,35 @@ function getEnv(name) {
 }
 
 const redisUrl = process.env.REDIS_URL;
-const upstashUrl = getEnv('UPSTASH_REDIS_REST_URL') || getEnv('KV_REST_API_URL');
-const upstashToken = getEnv('UPSTASH_REDIS_REST_TOKEN') || getEnv('KV_REST_API_TOKEN');
 
-if (upstashUrl && upstashToken) {
-  try {
-    const { Redis } = require('@upstash/redis');
-    upstashRedis = new Redis({ url: upstashUrl, token: upstashToken });
-  } catch (e) {
-    upstashRedis = null;
+function ensureUpstash() {
+  if (upstashRedis) return upstashRedis;
+  const url = getEnv('UPSTASH_REDIS_REST_URL') || getEnv('KV_REST_API_URL');
+  const token = getEnv('UPSTASH_REDIS_REST_TOKEN') || getEnv('KV_REST_API_TOKEN');
+  if (url && token) {
+    try {
+      const { Redis } = require('@upstash/redis');
+      upstashRedis = new Redis({ url, token });
+      return upstashRedis;
+    } catch (e) {
+      upstashRedis = null;
+    }
   }
+  return null;
 }
+
+(function initUpstash() {
+  const url = getEnv('UPSTASH_REDIS_REST_URL') || getEnv('KV_REST_API_URL');
+  const token = getEnv('UPSTASH_REDIS_REST_TOKEN') || getEnv('KV_REST_API_TOKEN');
+  if (url && token) {
+    try {
+      const { Redis } = require('@upstash/redis');
+      upstashRedis = new Redis({ url, token });
+    } catch (e) {
+      upstashRedis = null;
+    }
+  }
+})();
 
 async function getNodeRedisClient() {
   if (nodeRedisClient) {
@@ -65,8 +83,9 @@ async function getNodeRedisClient() {
 }
 
 async function redisGet(key) {
-  if (upstashRedis) {
-    const raw = await upstashRedis.get(key);
+  const redis = upstashRedis || ensureUpstash();
+  if (redis) {
+    const raw = await redis.get(key);
     return raw == null ? null : typeof raw === 'string' ? raw : JSON.stringify(raw);
   }
   const client = await getNodeRedisClient();
@@ -79,8 +98,9 @@ async function redisGet(key) {
 
 async function redisSet(key, value) {
   const str = typeof value === 'string' ? value : JSON.stringify(value);
-  if (upstashRedis) {
-    await upstashRedis.set(key, str);
+  const redis = upstashRedis || ensureUpstash();
+  if (redis) {
+    await redis.set(key, str);
     return;
   }
   const client = await getNodeRedisClient();
@@ -117,7 +137,7 @@ async function getEmployees() {
 }
 
 async function setEmployees(arr) {
-  if (upstashRedis || redisUrl) {
+  if (upstashRedis || ensureUpstash() || redisUrl) {
     await redisSet(KEYS.employees, arr || []);
     return;
   }
@@ -186,7 +206,7 @@ async function setBoard(data) {
 }
 
 function getStoreBackend() {
-  if (upstashRedis) return 'upstash';
+  if (upstashRedis || ensureUpstash()) return 'upstash';
   if (redisUrl) return 'redis';
   return 'file';
 }
