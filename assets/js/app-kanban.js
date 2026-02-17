@@ -374,11 +374,7 @@
       .then(res => (res.ok ? res.json() : []))
       .then(employees => {
         const list = Array.isArray(employees) ? employees : [];
-        if (list.length === 0 && cachedEmployeeLogins.length > 0) {
-          cachedEmployeeLogins = cachedEmployeeLogins;
-        } else {
-          cachedEmployeeLogins = list;
-        }
+        if (list.length > 0) cachedEmployeeLogins = list;
         renderEmployeeLoginsTable();
       })
       .catch(() => {
@@ -2920,7 +2916,9 @@
       }
       html += '</div>';
       html +=
-        '<div class="table-responsive rounded border"><table class="table table-hover table-align-middle mb-0 tasks-dept-table"><thead><tr><th class="tasks-sno">S.No</th><th>Task</th><th>Description</th><th class="tasks-urgency">Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th class="tasks-assign-col">Assign to</th></tr></thead><tbody>';
+        '<div class="table-responsive rounded border"><table class="table table-hover table-align-middle mb-0 tasks-dept-table"><thead><tr><th class="tasks-sno">S.No</th><th>Task</th><th>Description</th><th class="tasks-urgency">Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th class="tasks-assign-col">Assign to</th>' +
+        (canEdit ? '<th class="tasks-actions-col text-end">Actions</th>' : '') +
+        '</tr></thead><tbody>';
       deptTasks.forEach((task, idx) => {
         const isCompleted = task.id && completedTaskIds.has(task.id);
         const rowClass = isCompleted ? 'tasks-row-completed' : '';
@@ -2933,6 +2931,9 @@
         const recurringBadge = (task.recurringTemplateId || task.isRecurringTask)
           ? ' <span class="badge bg-label-info ms-1">Recurring</span>' : '';
         const completedBadge = isCompleted ? ' <span class="task-completed-badge-inline"><i class="bx bx-like"></i> Completed</span>' : '';
+        const actionsCell = canEdit
+          ? `<td class="tasks-actions-col text-end"><button type="button" class="btn btn-sm btn-outline-danger task-row-delete-btn" data-task-id="${task.id}" title="Delete task"><i class="bx bx-trash"></i> Delete</button></td>`
+          : '';
         html += `<tr data-task-id="${task.id}" data-task-source="${task._source || 'upcoming'}"${task._columnId ? ' data-column-id="' + escapeHtml(task._columnId) + '"' : ''} class="${rowClass}">
         <td class="tasks-sno">${idx + 1}</td>
         <td class="tasks-title">${escapeHtml(task.title)}${recurringBadge}${completedBadge}</td>
@@ -2942,11 +2943,13 @@
         <td class="tasks-deadline small">${escapeHtml(deadlineStr)}</td>
         <td class="tasks-assignees">${escapeHtml(assigneesStr)}</td>
         <td class="tasks-assign-col">${assignInput}</td>
+        ${actionsCell}
       </tr>`;
       });
       if (deptTasks.length === 0) {
+        const colCount = canEdit ? 9 : 8;
         html +=
-          '<tr><td colspan="8" class="text-muted text-center py-4">No tasks in this department. Click <strong>Add task</strong> above to add one.</td></tr>';
+          '<tr><td colspan="' + colCount + '" class="text-muted text-center py-4">No tasks in this department. Click <strong>Add task</strong> above to add one.</td></tr>';
       }
       html += '</tbody></table></div></div>';
     });
@@ -2974,6 +2977,26 @@
         btn.addEventListener('click', e => {
           const dept = e.currentTarget.dataset.dept;
           openUpcomingTaskModal(dept);
+        });
+      });
+
+      container.querySelectorAll('.task-row-delete-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!canCreateAndAssign()) return;
+          const taskId = e.currentTarget.dataset.taskId;
+          if (!taskId || !confirm('Delete this task? This cannot be undone.')) return;
+          const col = board.columns.find(c => (c.cards || []).some(card => card.id === taskId));
+          if (col) col.cards = col.cards.filter(c => c.id !== taskId);
+          if (board.upcomingTasks) board.upcomingTasks = board.upcomingTasks.filter(t => t.id !== taskId);
+          saveBoard();
+          render();
+          renderManagerTab();
+          renderTasksTab();
+          renderNotifications();
+          if (typeof renderStoredDataView === 'function') renderStoredDataView();
+          if (typeof updateAccuracyUI === 'function') updateAccuracyUI();
         });
       });
 
@@ -3469,6 +3492,8 @@
     if (checkinsMenuItem) checkinsMenuItem.classList.toggle('d-none', !hasCheckinTasksAssignedToMe());
     const btnChangePw = document.getElementById('btn-change-password');
     if (btnChangePw) btnChangePw.classList.toggle('d-none', !isManager());
+    const clearTaskDbBtn = document.getElementById('clear-task-database-btn');
+    if (clearTaskDbBtn) clearTaskDbBtn.closest('.card')?.classList.toggle('d-none', !isManager());
     updateAccuracyUI();
   }
 
@@ -3750,6 +3775,24 @@
       appEl.classList.remove('logged-in');
     }
     stopSync();
+    checkStorageSetup();
+  }
+
+  function checkStorageSetup() {
+    const banner = document.getElementById('storage-setup-banner');
+    if (!banner) return;
+    const base = API_BASE || window.location.origin || '';
+    if (!base || base === 'file://') return;
+    fetch(base + '/api/store-status', { cache: 'no-store' })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.backend === 'file') {
+          banner.classList.remove('d-none');
+        } else {
+          banner.classList.add('d-none');
+        }
+      })
+      .catch(() => banner.classList.add('d-none'));
   }
 
   function showAppPage() {
@@ -4106,6 +4149,52 @@
       refreshStored.addEventListener('click', () => {
         loadBoard().then(() => renderStoredDataView());
       });
+
+    const clearTaskDbBtn = document.getElementById('clear-task-database-btn');
+    if (clearTaskDbBtn) {
+      clearTaskDbBtn.addEventListener('click', () => {
+        if (!isManager()) {
+          alert('Only the manager can clear the task database.');
+          return;
+        }
+        const msg =
+          'Clear all tasks, comments, task links, assignment history, and recurring task templates?\n\n' +
+          'Logins (manager and employees), departments, and employee accuracy will be kept.\n\nThis cannot be undone.';
+        if (!confirm(msg)) return;
+        clearTaskDbBtn.disabled = true;
+        fetch(API_BASE + '/api/board/clear-tasks', {
+          method: 'POST',
+          headers: apiHeaders()
+        })
+          .then(res => {
+            if (res.status === 403) {
+              alert('Only the manager can clear the task database.');
+              return;
+            }
+            if (!res.ok) throw new Error('Clear failed: ' + res.status);
+            return res.json();
+          })
+          .then(() => {
+            return loadBoard();
+          })
+          .then(() => {
+            render();
+            renderManagerTab();
+            renderTasksTab();
+            if (typeof renderCheckinsTab === 'function') renderCheckinsTab();
+            if (typeof renderStoredDataView === 'function') renderStoredDataView();
+            if (typeof renderNotifications === 'function') renderNotifications();
+            if (typeof updateAccuracyUI === 'function') updateAccuracyUI();
+          })
+          .catch(err => {
+            console.error(err);
+            alert('Failed to clear task database. Check console.');
+          })
+          .finally(() => {
+            clearTaskDbBtn.disabled = false;
+          });
+      });
+    }
 
     document.getElementById('employee-edit-profile-btn')?.addEventListener('click', () => {
       const nameEl = document.getElementById('employee-modal-name');

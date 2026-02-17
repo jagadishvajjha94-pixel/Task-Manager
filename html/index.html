@@ -151,6 +151,7 @@
       #login-page {
         min-height: 100vh;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         padding: 2rem 1rem;
@@ -176,6 +177,23 @@
         pointer-events: none;
         opacity: 0.5;
       }
+      .storage-setup-banner {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        max-width: 480px;
+        margin-bottom: 1.5rem;
+        padding: 1rem 1.25rem;
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        border-radius: 12px;
+        color: #fca5a5;
+        font-size: 0.9rem;
+      }
+      .storage-setup-banner i { font-size: 1.5rem; flex-shrink: 0; }
+      .storage-setup-content { display: flex; align-items: flex-start; gap: 0.75rem; }
+      .storage-setup-banner a { color: #93c5fd; text-decoration: underline; }
+      .storage-setup-banner a:hover { color: #bfdbfe; }
       #login-page .login-page-content {
         position: relative;
         z-index: 1;
@@ -622,6 +640,15 @@
   </head>
   <body>
     <div id="login-page">
+      <div id="storage-setup-banner" class="storage-setup-banner d-none" role="alert">
+        <div class="storage-setup-content">
+          <i class="bx bx-error-circle"></i>
+          <div>
+            <strong>Storage not configured</strong> – Employee logins will not work until you connect Upstash Redis.
+            <a href="https://vercel.com/integrations/upstash" target="_blank" rel="noopener noreferrer">Connect Redis (Storage → Create Database → Upstash Redis)</a> (Create Database → Upstash Redis), then redeploy.
+          </div>
+        </div>
+      </div>
       <div class="login-page-content">
         <div class="login-brand">
           <h1 class="login-title">Task Manager</h1>
@@ -910,6 +937,19 @@
                       <div class="card-body">
                         <p class="text-muted small mb-3">Tasks auto-generate daily, weekly, or monthly for assigned employees. Toggle to activate/deactivate.</p>
                         <div id="recurring-tasks-list"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="card border-danger">
+                      <div class="card-header bg-danger bg-opacity-10">
+                        <h5 class="mb-0 text-danger"><i class="bx bx-trash me-2"></i>Clear task database</h5>
+                      </div>
+                      <div class="card-body">
+                        <p class="text-muted small mb-3">Remove all tasks, task comments, uploaded task links/documents, assignment history (notifications), and recurring task templates. <strong>Logins (manager and employees), departments, and employee accuracy are kept.</strong> Use this when you want to start fresh with new tasks only.</p>
+                        <button type="button" class="btn btn-danger" id="clear-task-database-btn" title="Clear all task-related data (manager only)">
+                          <i class="bx bx-trash me-1"></i> Clear task database
+                        </button>
                       </div>
                     </div>
                   </div>

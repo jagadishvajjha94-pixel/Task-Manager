@@ -19,8 +19,9 @@
 ## UI Restrictions
 
 - **Mark done**: Only managers see the mark-done control; employees view status only.
-- **Edit task**: Only managers can open the card edit modal and save; employees only view task details.
-- **Upcoming Tasks**: Shown only to managers (Tasks tab and content hidden for employees).
+- **Edit task**: Only managers and employees with create/assign rights can open the card edit modal and save; other employees only view task details.
+- **Delete task**: Managers and employees with create/assign rights can delete tasks (assigned or uploaded) from the Tasks tab (Actions → Delete) or from the task edit modal. Other employees cannot delete.
+- **Upcoming Tasks**: Shown to managers and employees with create/assign rights (Tasks tab); hidden for other employees.
 - **Notifications**: Employees see last 5 (essential); managers see last 20.
 
 ## Due Time

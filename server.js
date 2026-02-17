@@ -11,7 +11,7 @@ const DATA_DIR = process.env.VERCEL ? path.join(os.tmpdir(), 'taskmanager-data')
 const BOARD_FILE = path.join(DATA_DIR, 'board.json');
 const MANAGER_FILE = path.join(DATA_DIR, 'manager.json');
 const EMPLOYEES_FILE = path.join(DATA_DIR, 'employees.json');
-const SALT = 'taskmanager-salt-v1';
+const SALT = process.env.PASSWORD_SALT || 'taskmanager-salt-v1';
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -105,7 +105,8 @@ function broadcastSync(event) {
 
 app.use(express.json({ limit: '1mb' }));
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  const allowedOrigin = process.env.CORS_ORIGIN || req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Role, X-User-Id, X-Can-Edit-Board');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
@@ -142,6 +143,10 @@ app.post('/api/auth/manager/login', (req, res) => {
 
 // Manager creates employee login (email + password + permission)
 app.post('/api/auth/manager/create-employee-login', (req, res) => {
+  const role = (req.headers['x-user-role'] || '').toLowerCase();
+  if (role !== 'manager') {
+    return res.status(403).json({ error: 'Only managers can create employee logins.' });
+  }
   const { email, password, name, canCreateAndAssign } = req.body || {};
   const emailStr = typeof email === 'string' ? email.trim() : '';
   const passwordStr = password != null ? String(password) : '';
@@ -215,6 +220,10 @@ app.put('/api/auth/manager/update-employee-login', (req, res) => {
 
 // Manager removes an employee login
 app.post('/api/auth/manager/remove-employee-login', (req, res) => {
+  const role = (req.headers['x-user-role'] || '').toLowerCase();
+  if (role !== 'manager') {
+    return res.status(403).json({ error: 'Only managers can remove employee logins.' });
+  }
   const id = typeof (req.body && req.body.id) === 'string' ? req.body.id.trim() : '';
   if (!id) {
     return res.status(400).json({ error: 'Employee id required' });
@@ -284,22 +293,26 @@ app.post('/api/auth/employee/login', (req, res) => {
 });
 
 app.post('/api/auth/manager/change-password', (req, res) => {
+  const role = (req.headers['x-user-role'] || '').toLowerCase();
+  if (role !== 'manager') {
+    return res.status(403).json({ error: 'Only managers can change manager password.' });
+  }
   const { email, currentPassword, newPassword } = req.body || {};
   if (!email || !currentPassword || !newPassword) {
     return res.status(400).json({ error: 'Email, current password, and new password required' });
   }
   const m = readManager();
   if (!m) return res.status(500).json({ error: 'Manager not configured' });
-  if (m.email.toLowerCase() !== email.toLowerCase().trim()) {
+  if (m.email.toLowerCase() !== String(email).trim().toLowerCase()) {
     return res.status(401).json({ error: 'Invalid email' });
   }
   if (m.passwordHash !== hashPassword(currentPassword)) {
     return res.status(401).json({ error: 'Current password is incorrect' });
   }
-  if (newPassword.length < 6) {
+  if (String(newPassword).length < 6) {
     return res.status(400).json({ error: 'New password must be at least 6 characters' });
   }
-  m.passwordHash = hashPassword(newPassword);
+  m.passwordHash = hashPassword(String(newPassword));
   if (req.body.name) m.name = req.body.name;
   writeManager(m);
   broadcastSync('employees-updated');
@@ -334,8 +347,12 @@ app.post('/api/auth/google', (req, res) => {
   if (!credential) {
     return res.status(400).json({ error: 'Google credential required' });
   }
-  verifyGoogleToken(credential)
+      verifyGoogleToken(credential)
     .then(payload => {
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      if (clientId && payload.aud !== clientId) {
+        return res.status(401).json({ error: 'Invalid Google sign-in' });
+      }
       const name = payload.name || payload.email?.split('@')[0] || 'Employee';
       const email = payload.email || '';
       res.json({
@@ -398,6 +415,40 @@ app.get('/api/sync/events', (req, res) => {
     clearInterval(heartbeat);
     syncClients.delete(res);
   });
+});
+
+// Clear task database: manager only. Removes all tasks, comments, notifications, recurring templates.
+// Keeps: logins (manager.json, employees.json), departments, users, employeeProfiles (accuracy).
+app.post('/api/board/clear-tasks', (req, res) => {
+  const role = (req.headers['x-user-role'] || '').toLowerCase();
+  if (role !== 'manager') {
+    return res.status(403).json({ error: 'Only managers can clear the task database.' });
+  }
+  const data = readBoard();
+  const board = data || { columns: [], departments: [], notifications: [], users: [], upcomingTasks: [], recurringTasks: [], employeeProfiles: {} };
+  if (!Array.isArray(board.columns)) board.columns = [];
+  if (!Array.isArray(board.departments)) board.departments = [];
+  if (typeof board.employeeProfiles !== 'object') board.employeeProfiles = {};
+  if (!Array.isArray(board.users)) board.users = [];
+  // Keep column structure; empty cards (tasks + comments go with cards)
+  board.columns = board.columns.map(col => ({
+    id: col.id || col.title?.toLowerCase().replace(/\s+/g, '-') || 'col',
+    title: col.title || 'Column',
+    cards: []
+  }));
+  if (board.columns.length === 0) {
+    board.columns = [
+      { id: 'todo', title: 'To Do', cards: [] },
+      { id: 'progress', title: 'In Progress', cards: [] },
+      { id: 'done', title: 'Done', cards: [] }
+    ];
+  }
+  board.upcomingTasks = [];
+  board.notifications = [];
+  board.recurringTasks = [];
+  writeBoard(board);
+  broadcastSync('board-updated');
+  res.json({ ok: true });
 });
 
 // Managers and employees with "can create & assign" can update the board.
