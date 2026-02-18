@@ -32,6 +32,7 @@ module.exports = async (req, res) => {
   if (!Array.isArray(data.columns)) data.columns = [];
   if (!Array.isArray(data.departments)) data.departments = [];
   if (typeof data.employeeProfiles !== 'object') data.employeeProfiles = {};
+  if (typeof data.employeeAccuracyHistory !== 'object') data.employeeAccuracyHistory = {};
   if (!Array.isArray(data.users)) data.users = [];
 
   data.columns = data.columns.map(col => ({

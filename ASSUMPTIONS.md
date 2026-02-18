@@ -15,6 +15,7 @@
 ## Accuracy & Recalculation
 
 - Task accuracy and performance metrics use a single source: `computeEmployeeStats()` (from board columns + `completedAt`). No duplicate recalculation; redeploy/recalc is consistent.
+- **Deleted tasks and accuracy**: When a completed task is deleted, the employee’s accuracy is preserved. The app stores completion history in `board.employeeAccuracyHistory`. Accuracy remains visible and is not removed when tasks are deleted.
 
 ## UI Restrictions
 

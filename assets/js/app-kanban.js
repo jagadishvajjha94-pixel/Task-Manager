@@ -31,7 +31,8 @@
       notifications: [],
       users: [],
       recurringTasks: [],
-      employeeProfiles: {}
+      employeeProfiles: {},
+      employeeAccuracyHistory: {}
     };
   }
 
@@ -44,7 +45,8 @@
     notifications: [],
     users: [],
     recurringTasks: [],
-    employeeProfiles: {}
+    employeeProfiles: {},
+    employeeAccuracyHistory: {}
   };
   let searchQuery = '';
   let tasksTabSearchQuery = '';
@@ -135,6 +137,7 @@
         if (!Array.isArray(board.users)) board.users = [];
         if (!Array.isArray(board.recurringTasks)) board.recurringTasks = [];
         if (typeof board.employeeProfiles !== 'object') board.employeeProfiles = {};
+        if (typeof board.employeeAccuracyHistory !== 'object') board.employeeAccuracyHistory = {};
         board.columns.forEach(col => {
           (col.cards || []).forEach(card => {
             if (!card.urgency) card.urgency = 'medium';
@@ -157,6 +160,7 @@
           if (!Array.isArray(board.users)) board.users = [];
           if (!Array.isArray(board.recurringTasks)) board.recurringTasks = [];
           if (typeof board.employeeProfiles !== 'object') board.employeeProfiles = {};
+          if (typeof board.employeeAccuracyHistory !== 'object') board.employeeAccuracyHistory = {};
           (board.columns || []).forEach(col => {
             (col.cards || []).forEach(card => {
               if (!card.urgency) card.urgency = 'medium';
@@ -863,7 +867,30 @@
     return !!(card && card.completedAt);
   }
 
-  /** Single source for task accuracy / performance metrics. Used by Manager tab, accuracy widget, and employee modal. No duplicate recalculation. */
+  /**
+   * Record accuracy for a completed task before it is deleted.
+   * Preserves employee completion stats so accuracy remains visible even after task deletion.
+   * Key: employeeAccuracyHistory is kept when tasks are deleted; accuracy should not be lost.
+   */
+  function recordCompletedTaskAccuracyBeforeDelete(card) {
+    if (!card || !card.completedAt) return;
+    const names = getAssigneesList(card);
+    if (names.length === 0) return;
+    if (!board.employeeAccuracyHistory) board.employeeAccuracyHistory = {};
+    const onTime = !!(card.deadline && card.completedAt && new Date(card.completedAt) <= new Date(card.deadline));
+    names.forEach(name => {
+      const n = (name || '').trim();
+      if (!n) return;
+      const key = n.toLowerCase();
+      if (!board.employeeAccuracyHistory[key]) board.employeeAccuracyHistory[key] = { assigned: 0, completed: 0, onTime: 0 };
+      board.employeeAccuracyHistory[key].assigned += 1;
+      board.employeeAccuracyHistory[key].completed += 1;
+      if (onTime) board.employeeAccuracyHistory[key].onTime += 1;
+    });
+  }
+
+  /** Single source for task accuracy / performance metrics. Used by Manager tab, accuracy widget, and employee modal.
+   * Merges live board stats with employeeAccuracyHistory (from deleted completed tasks) so accuracy is preserved. */
   function computeEmployeeStats() {
     const stats = {};
     (board.columns || []).forEach(col => {
@@ -882,6 +909,19 @@
           }
         });
       });
+    });
+    // Merge employeeAccuracyHistory (from deleted completed tasks) – accuracy remains visible
+    const hist = board.employeeAccuracyHistory || {};
+    Object.keys(hist).forEach(key => {
+      const h = hist[key];
+      if (!h || (h.assigned === 0 && h.completed === 0)) return;
+      const displayName =
+        Object.keys(stats).find(n => (n || '').trim().toLowerCase() === key) ||
+        key.replace(/\b\w/g, c => c.toUpperCase());
+      if (!stats[displayName]) stats[displayName] = { assigned: 0, completed: 0, onTime: 0 };
+      stats[displayName].assigned += (h.assigned || 0);
+      stats[displayName].completed += (h.completed || 0);
+      stats[displayName].onTime += (h.onTime || 0);
     });
     return stats;
   }
@@ -2281,6 +2321,8 @@
     const cardId = e.target.closest('[data-card-id]').dataset.cardId;
     const col = board.columns.find(c => (c.cards || []).some(card => card.id === cardId));
     if (col && confirm('Delete this card?')) {
+      const card = col.cards.find(c => c.id === cardId);
+      if (card) recordCompletedTaskAccuracyBeforeDelete(card);
       col.cards = col.cards.filter(c => c.id !== cardId);
       saveBoard();
       render();
@@ -2999,7 +3041,17 @@
           if (!canCreateAndAssign()) return;
           const taskId = e.currentTarget.dataset.taskId;
           if (!taskId || !confirm('Delete this task? This cannot be undone.')) return;
-          const col = board.columns.find(c => (c.cards || []).some(card => card.id === taskId));
+          let task = null;
+          const col = board.columns.find(c => {
+            const card = (c.cards || []).find(card => card.id === taskId);
+            if (card) { task = card; return true; }
+            return false;
+          });
+          if (task) recordCompletedTaskAccuracyBeforeDelete(task);
+          if (!task) {
+            const up = (board.upcomingTasks || []).find(t => t.id === taskId);
+            if (up) recordCompletedTaskAccuracyBeforeDelete(up);
+          }
           if (col) col.cards = col.cards.filter(c => c.id !== taskId);
           if (board.upcomingTasks) board.upcomingTasks = board.upcomingTasks.filter(t => t.id !== taskId);
           saveBoard();
@@ -3933,6 +3985,8 @@
       if (!cardId || !confirm('Delete this task?')) return;
       const col = board.columns.find(c => (c.cards || []).some(card => card.id === cardId));
       if (col) {
+        const card = col.cards.find(c => c.id === cardId);
+        if (card) recordCompletedTaskAccuracyBeforeDelete(card);
         col.cards = col.cards.filter(c => c.id !== cardId);
         if (board.upcomingTasks) board.upcomingTasks = board.upcomingTasks.filter(t => t.id !== cardId);
         saveBoard();
