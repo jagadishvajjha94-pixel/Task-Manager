@@ -3,7 +3,7 @@ const store = require('./_store');
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Role, X-User-Id, X-Can-Edit-Board');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -20,6 +20,12 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'PUT') {
+    const role = (req.headers['x-user-role'] || '').toLowerCase();
+    const canEditBoard = (req.headers['x-can-edit-board'] || '').toLowerCase() === 'true';
+    const allowed = role === 'manager' || (role === 'employee' && canEditBoard);
+    if (!allowed) {
+      return res.status(403).json({ error: 'Only managers or employees with create & assign rights can update the board.' });
+    }
     let board = req.body;
     if (!board && typeof req.on === 'function') {
       board = await new Promise((resolve, reject) => {

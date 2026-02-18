@@ -2671,6 +2671,11 @@
         link: linkUrl || undefined,
         linkType: linkType || undefined
       };
+      if (isRecurring) {
+        task.isRecurringTask = true;
+        const freqSelect = document.getElementById('cardRecurringFrequency');
+        task.recurringFrequency = (freqSelect?.value || 'daily').toLowerCase();
+      }
       if (assigneeNames.length > 0) {
         task.assignees = assigneeNames.slice();
         task.assigneeName = assigneeNames[0];
@@ -2692,7 +2697,9 @@
       bootstrap.Modal.getInstance(document.getElementById('cardModal')).hide();
       await saveBoard();
       render();
+      renderManagerTab();
       renderTasksTab();
+      renderCheckinsTab();
       renderNotifications();
       updateAccuracyUI();
       return;
@@ -2757,6 +2764,11 @@
         linkType: linkType || undefined,
         comments: []
       };
+      if (isRecurring) {
+        card.isRecurringTask = true;
+        const freqSelect = document.getElementById('cardRecurringFrequency');
+        card.recurringFrequency = (freqSelect?.value || 'daily').toLowerCase();
+      }
       card.assignees = assigneeNames.length > 0 ? assigneeNames.slice() : undefined;
       card.assigneeName = assigneeNames[0] || undefined;
       card.assignedAt = new Date().toISOString();

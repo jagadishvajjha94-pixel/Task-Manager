@@ -10,7 +10,7 @@ function hashPassword(password) {
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Role, X-User-Id');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -38,6 +38,11 @@ module.exports = async (req, res) => {
     });
   }
   body = body || {};
+
+  const role = (req.headers['x-user-role'] || '').toLowerCase();
+  if (role !== 'manager') {
+    return res.status(403).json({ error: 'Only managers can create employee logins.' });
+  }
 
   const emailStr = typeof body.email === 'string' ? body.email.trim() : '';
   const passwordStr = body.password != null ? String(body.password) : '';
