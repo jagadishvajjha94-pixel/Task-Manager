@@ -2970,7 +2970,7 @@
       }
       html += '</div>';
       html +=
-        '<div class="table-responsive rounded border"><table class="table table-hover table-align-middle mb-0 tasks-dept-table"><thead><tr><th class="tasks-sno">S.No</th><th>Task</th><th>Description</th><th class="tasks-urgency">Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th class="tasks-assign-col">Assign to</th>' +
+        '<div class="table-responsive rounded border"><table class="table table-hover table-align-middle mb-0 tasks-dept-table"><thead><tr><th class="tasks-sno">S.No</th><th>Task</th><th>Description</th><th class="tasks-urgency">Urgency</th><th>Department</th><th>Deadline</th><th>Assigned to</th><th class="tasks-submit-col">Submit</th><th class="tasks-assign-col">Assign to</th>' +
         (canEdit ? '<th class="tasks-actions-col text-end">Actions</th>' : '') +
         '</tr></thead><tbody>';
       deptTasks.forEach((task, idx) => {
@@ -2985,6 +2985,16 @@
         const recurringBadge = (task.recurringTemplateId || task.isRecurringTask)
           ? ' <span class="badge bg-label-info ms-1">Recurring</span>' : '';
         const completedBadge = isCompleted ? ' <span class="task-completed-badge-inline"><i class="bx bx-like"></i> Completed</span>' : '';
+        const canSubmit = canEdit || (task.assignees && task.assignees.length && (() => {
+          const u = getCurrentUser();
+          const myName = (u && (u.name || u.email)) ? String(u.name || u.email).trim().toLowerCase() : '';
+          return getAssigneesList(task).some(n => (n || '').trim().toLowerCase() === myName);
+        })());
+        const submitBtn = canSubmit
+          ? (isCompleted
+            ? `<button type="button" class="btn btn-sm btn-success task-row-submit-btn" data-task-id="${task.id}" title="Undo (mark not submitted)"><i class="bx bx-check"></i> Done</button>`
+            : `<button type="button" class="btn btn-sm btn-outline-success task-row-submit-btn" data-task-id="${task.id}" title="Submit task (mark as done)"><i class="bx bx-check me-1"></i> Submit</button>`)
+          : '<span class="text-muted">—</span>';
         const actionsCell = canEdit
           ? `<td class="tasks-actions-col text-end"><button type="button" class="btn btn-sm btn-outline-danger task-row-delete-btn" data-task-id="${task.id}" title="Delete task"><i class="bx bx-trash"></i> Delete</button></td>`
           : '';
@@ -2996,12 +3006,13 @@
         <td class="tasks-dept">${escapeHtml(task.department || '—')}</td>
         <td class="tasks-deadline small">${escapeHtml(deadlineStr)}</td>
         <td class="tasks-assignees">${escapeHtml(assigneesStr)}</td>
+        <td class="tasks-submit-col">${submitBtn}</td>
         <td class="tasks-assign-col">${assignInput}</td>
         ${actionsCell}
       </tr>`;
       });
       if (deptTasks.length === 0) {
-        const colCount = canEdit ? 9 : 8;
+        const colCount = canEdit ? 10 : 9;
         html +=
           '<tr><td colspan="' + colCount + '" class="text-muted text-center py-4">No tasks in this department. Click <strong>Add task</strong> above to add one.</td></tr>';
       }
@@ -3031,6 +3042,40 @@
         btn.addEventListener('click', e => {
           const dept = e.currentTarget.dataset.dept;
           openUpcomingTaskModal(dept);
+        });
+      });
+
+      container.querySelectorAll('.task-row-submit-btn').forEach(btn => {
+        btn.addEventListener('click', async e => {
+          e.preventDefault();
+          e.stopPropagation();
+          const taskId = e.currentTarget.dataset.taskId;
+          if (!taskId) return;
+          let card = null;
+          (board.columns || []).some(c => {
+            const found = (c.cards || []).find(c => c.id === taskId);
+            if (found) { card = found; return true; }
+            return false;
+          });
+          if (!card && board.upcomingTasks) {
+            card = board.upcomingTasks.find(t => t.id === taskId);
+          }
+          if (!card) return;
+          const canToggle = canCreateAndAssign() || (() => {
+            const u = getCurrentUser();
+            const myName = (u && (u.name || u.email)) ? String(u.name || u.email).trim().toLowerCase() : '';
+            return getAssigneesList(card).some(n => (n || '').trim().toLowerCase() === myName);
+          })();
+          if (!canToggle) return;
+          const currentlyDone = !!(card.completedAt);
+          if (currentlyDone) card.completedAt = undefined;
+          else card.completedAt = new Date().toISOString();
+          await saveBoard();
+          renderTasksTab();
+          render();
+          updateAccuracyUI();
+          renderManagerTab();
+          if (typeof renderStoredDataView === 'function') renderStoredDataView();
         });
       });
 
@@ -3554,11 +3599,14 @@
     if (tasksMenuItem) tasksMenuItem.classList.toggle('d-none', !(isManager() || canCreateAndAssign()));
     const checkinsMenuItem = document.querySelector('.menu-item[data-tab="check-ins"]');
     if (checkinsMenuItem) checkinsMenuItem.classList.toggle('d-none', !hasCheckinTasksAssignedToMe());
+    const kanbanMenuItem = document.querySelector('.menu-item[data-tab="kanban"]');
+    if (kanbanMenuItem) kanbanMenuItem.classList.toggle('d-none', isManager());
     const btnChangePw = document.getElementById('btn-change-password');
     if (btnChangePw) btnChangePw.classList.toggle('d-none', !isManager());
     const clearTaskDbBtn = document.getElementById('clear-task-database-btn');
     if (clearTaskDbBtn) clearTaskDbBtn.closest('.card')?.classList.toggle('d-none', !isManager());
     updateAccuracyUI();
+    if (isManager() && getActiveTabId() === 'kanban') switchTab('tasks');
   }
 
   function getActiveTabId() {
@@ -4362,6 +4410,14 @@
     const openCalBtn = document.getElementById('open-kanban-calendar-btn');
     if (openCalBtn) {
       openCalBtn.addEventListener('click', () => {
+        renderKanbanCalendar();
+        const calModal = document.getElementById('kanbanCalendarModal');
+        if (calModal) new bootstrap.Modal(calModal).show();
+      });
+    }
+    const tasksTabCalendarBtn = document.getElementById('tasks-tab-calendar-btn');
+    if (tasksTabCalendarBtn) {
+      tasksTabCalendarBtn.addEventListener('click', () => {
         renderKanbanCalendar();
         const calModal = document.getElementById('kanbanCalendarModal');
         if (calModal) new bootstrap.Modal(calModal).show();

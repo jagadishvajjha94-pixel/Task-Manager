@@ -141,7 +141,9 @@
       .tasks-row-completed td { text-decoration: line-through; color: #047857 !important; opacity: 0.9; }
       .tasks-row-completed .tasks-title, .tasks-row-completed .tasks-desc { text-decoration: line-through; color: #047857 !important; }
       .tasks-row-completed .badge { opacity: 0.85; }
+      .tasks-row-completed { border-top: 1px solid rgba(5,150,105,.25); }
       .task-completed-badge-inline { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 700; color: #047857; margin-left: 0.35rem; }
+      .tasks-submit-col { min-width: 100px; white-space: nowrap; }
       .tasks-draggable-row { cursor: grab; }
       .tasks-draggable-row:active { cursor: grabbing; }
       .tasks-dragging { opacity: 0.6; }
@@ -960,6 +962,9 @@
                   <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">Tasks by department (assign to employees)</h5>
                     <div class="d-flex gap-2 align-items-center">
+                      <button type="button" class="btn btn-outline-primary btn-sm" id="tasks-tab-calendar-btn" title="View day-wise tasks calendar">
+                        <i class="bx bx-calendar me-1"></i> Calendar
+                      </button>
                       <button type="button" class="btn btn-outline-primary btn-sm d-none" id="add-dept-tasks-btn" title="Create department">
                         <i class="bx bx-building-house me-1"></i> Create dept
                       </button>
