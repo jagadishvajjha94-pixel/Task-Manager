@@ -234,19 +234,19 @@
     if (!Array.isArray(board.departments)) board.departments = defaultDepartments.slice();
     const idx = board.departments.indexOf(name);
     if (idx === -1) return;
-    board.departments.splice(idx, 1);
-    const otherLabel = 'Other';
-    (board.upcomingTasks || []).forEach(t => {
-      if ((t.department || '').trim() === name) t.department = otherLabel;
-    });
+    const trimmedName = (name || '').trim();
     (board.columns || []).forEach(col => {
       (col.cards || []).forEach(card => {
-        if ((card.department || '').trim() === name) card.department = otherLabel;
+        if ((card.department || '').trim() === trimmedName) recordCompletedTaskAccuracyBeforeDelete(card);
       });
+      if (col.cards) col.cards = col.cards.filter(card => (card.department || '').trim() !== trimmedName);
     });
-    (board.recurringTasks || []).forEach(rt => {
-      if ((rt.department || '').trim() === name) rt.department = otherLabel;
+    (board.upcomingTasks || []).forEach(t => {
+      if ((t.department || '').trim() === trimmedName) recordCompletedTaskAccuracyBeforeDelete(t);
     });
+    if (board.upcomingTasks) board.upcomingTasks = board.upcomingTasks.filter(t => (t.department || '').trim() !== trimmedName);
+    if (board.recurringTasks) board.recurringTasks = board.recurringTasks.filter(rt => (rt.department || '').trim() !== trimmedName);
+    board.departments.splice(idx, 1);
     saveBoard();
   }
 
@@ -404,7 +404,7 @@
         deptsTbody.innerHTML = depts
           .map(
             d =>
-              `<tr data-dept="${escapeHtml(d)}"><td>${escapeHtml(d)}</td><td><button type="button" class="btn btn-sm btn-outline-primary manager-dept-edit-btn me-1" data-dept="${escapeHtml(d)}" title="Edit department name"><i class="bx bx-edit"></i> Edit</button><button type="button" class="btn btn-sm btn-outline-danger manager-dept-remove-btn" data-dept="${escapeHtml(d)}" title="Remove department (tasks move to Other)">Remove</button></td></tr>`
+              `<tr data-dept="${escapeHtml(d)}"><td>${escapeHtml(d)}</td><td><button type="button" class="btn btn-sm btn-outline-primary manager-dept-edit-btn me-1" data-dept="${escapeHtml(d)}" title="Edit department name"><i class="bx bx-edit"></i> Edit</button><button type="button" class="btn btn-sm btn-outline-danger manager-dept-remove-btn" data-dept="${escapeHtml(d)}" title="Remove department and delete all its tasks">Remove</button></td></tr>`
           )
           .join('');
         deptsTbody.querySelectorAll('.manager-dept-edit-btn').forEach(btn => {
@@ -424,7 +424,7 @@
           btn.addEventListener('click', () => {
             const dept = btn.dataset.dept;
             if (!dept) return;
-            if (!confirm('Remove department "' + dept + '"? Tasks in this department will move to Other.')) return;
+            if (!confirm('Remove department "' + dept + '"? All tasks in this department will be permanently deleted.')) return;
             removeDepartment(dept);
             render();
             renderManagerTab();
