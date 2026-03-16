@@ -3109,6 +3109,42 @@
         });
       });
 
+      // Row click: open edit popup for managers (same popup used for assigning tasks).
+      container.querySelectorAll('.tasks-dept-table tbody tr[data-task-id]').forEach(row => {
+        row.addEventListener('click', e => {
+          if (!canCreateAndAssign()) return;
+          if (
+            e.target.closest('.assign-upcoming-input') ||
+            e.target.closest('.assign-upcoming-btn') ||
+            e.target.closest('.task-row-submit-btn') ||
+            e.target.closest('.task-row-delete-btn')
+          ) {
+            return;
+          }
+          const taskId = row.dataset.taskId;
+          const source = row.dataset.taskSource || 'upcoming';
+          if (!taskId) return;
+          if (source === 'card') {
+            const colId = row.dataset.columnId;
+            let col = null;
+            if (colId) {
+              col = (board.columns || []).find(c => c.id === colId);
+            }
+            if (!col) {
+              col = (board.columns || []).find(c => (c.cards || []).some(card => card.id === taskId));
+            }
+            if (!col) return;
+            const card = (col.cards || []).find(c => c.id === taskId);
+            if (!card) return;
+            openCardModal(card, col.id);
+          } else {
+            const task = (board.upcomingTasks || []).find(t => t && t.id === taskId);
+            if (!task) return;
+            openUpcomingTaskEditModal(task);
+          }
+        });
+      });
+
       // Drag & drop: reorder within a dept or move task from one dept table to another (for anyone with Tasks tab rights).
       if (canEdit && !tasksTabSearchQuery) {
         let dragSrcRow = null;
@@ -3874,6 +3910,89 @@
     form.dataset.isUpcoming = '1';
     if (predefinedDept) form.dataset.predefinedDept = predefinedDept;
     else delete form.dataset.predefinedDept;
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+  }
+
+  function openUpcomingTaskEditModal(task) {
+    if (!task || !task.id) return;
+    const modal = document.getElementById('cardModal');
+    const titleInput = document.getElementById('cardTitle');
+    const descInput = document.getElementById('cardDescription');
+    const urgencySelect = document.getElementById('cardUrgency');
+    const departmentSelect = document.getElementById('cardDepartment');
+    const departmentGroup = document.getElementById('department-group');
+    const assigneeGroup = document.getElementById('assignee-group');
+    const assigneeNameGroup = document.getElementById('assignee-name-group');
+    const deadlineGroup = document.getElementById('deadline-group');
+    const deadlineInput = document.getElementById('cardDeadline');
+    const assigneesChips = document.getElementById('card-assignees-chips');
+    const assignedByInfo = document.getElementById('assigned-by-info');
+    const assignedByNameEl = document.getElementById('assigned-by-name');
+    const recurringCheckbox = document.getElementById('cardRecurring');
+    const recurringGroup = document.getElementById('recurring-task-group');
+    const form = document.getElementById('cardForm');
+    if (!form || !modal || !titleInput) return;
+    const canEdit = canCreateAndAssign();
+
+    fillDepartmentSelect(departmentSelect);
+
+    if (departmentGroup) departmentGroup.style.display = canEdit ? 'block' : 'none';
+    if (assigneeGroup) assigneeGroup.style.display = 'block';
+    if (assigneeNameGroup) assigneeNameGroup.style.display = canEdit ? 'block' : 'none';
+    if (deadlineGroup) deadlineGroup.style.display = 'block';
+
+    titleInput.value = task.title || '';
+    descInput.value = task.description || '';
+    if (urgencySelect) urgencySelect.value = task.urgency || 'medium';
+    if (departmentSelect) departmentSelect.value = task.department || '';
+
+    if (deadlineInput && task.deadline) {
+      try {
+        const d = new Date(task.deadline);
+        deadlineInput.value = d.toISOString().slice(0, 16);
+      } catch (_) {
+        deadlineInput.value = '';
+      }
+    } else if (deadlineInput) {
+      deadlineInput.value = '';
+    }
+    updateDeadlineDisplay();
+
+    const linkTypeEl = document.getElementById('cardLinkType');
+    const linkUrlEl = document.getElementById('cardLink');
+    if (linkTypeEl) linkTypeEl.value = task.linkType || '';
+    if (linkUrlEl) linkUrlEl.value = task.link || '';
+
+    const assigneeNames = getAssigneesList(task);
+    const onlyManagerCanRemove = canCreateAndAssign();
+    function removeAssignee(name) {
+      const list = getAssigneesFromChips().filter(n => n !== name);
+      renderAssigneesChips(assigneesChips, list, removeAssignee, onlyManagerCanRemove);
+    }
+    if (assigneesChips) {
+      renderAssigneesChips(assigneesChips, assigneeNames, removeAssignee, onlyManagerCanRemove);
+    }
+
+    if (assignedByInfo && assignedByNameEl && task.assignedByName) {
+      assignedByNameEl.textContent = task.assignedByName;
+      assignedByInfo.style.display = 'block';
+    } else if (assignedByInfo) {
+      assignedByInfo.style.display = 'none';
+    }
+
+    if (recurringGroup) recurringGroup.style.display = canEdit ? 'block' : 'none';
+    if (recurringCheckbox) recurringCheckbox.checked = !!task.isRecurringTask;
+    const freqWrap = document.getElementById('recurring-frequency-wrap');
+    const freqSelect = document.getElementById('cardRecurringFrequency');
+    if (freqSelect) freqSelect.value = (task.recurringFrequency || 'daily').toLowerCase();
+    if (freqWrap) freqWrap.classList.toggle('d-none', !task.isRecurringTask);
+
+    form.dataset.cardId = task.id;
+    form.dataset.columnId = 'todo';
+    form.dataset.isUpcoming = '1';
+    delete form.dataset.predefinedDept;
+
     const bsModal = new bootstrap.Modal(modal);
     bsModal.show();
   }
