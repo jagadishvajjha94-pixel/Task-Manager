@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const store = require('../../../_store');
 const { parseJsonBody } = require('../../../_parseBody');
+const { blockIfEphemeralVercelStorage } = require('../../../_vercelStorageGuard');
 
 const SALT = process.env.PASSWORD_SALT || 'taskmanager-salt-v1';
 
@@ -21,6 +22,8 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  if (blockIfEphemeralVercelStorage(res)) return;
+
   const body = await parseJsonBody(req);
 
   const role = (req.headers['x-user-role'] || '').toLowerCase();
@@ -29,7 +32,7 @@ module.exports = async (req, res) => {
   }
 
   const emailStr = typeof body.email === 'string' ? body.email.trim() : '';
-  const passwordStr = body.password != null ? String(body.password) : '';
+  const passwordStr = body.password != null ? String(body.password).trim() : '';
   const nameStr = typeof body.name === 'string' ? body.name.trim() : '';
   const canCreateAndAssign = !!body.canCreateAndAssign;
 

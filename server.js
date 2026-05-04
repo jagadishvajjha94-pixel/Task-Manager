@@ -187,7 +187,7 @@ app.post('/api/auth/manager/create-employee-login', (req, res) => {
   }
   const { email, password, name, canCreateAndAssign } = req.body || {};
   const emailStr = typeof email === 'string' ? email.trim() : '';
-  const passwordStr = password != null ? String(password) : '';
+  const passwordStr = password != null ? String(password).trim() : '';
   const nameStr = typeof name === 'string' ? name.trim() : '';
   if (!emailStr) {
     return res.status(400).json({ error: 'Employee email required' });
@@ -244,7 +244,7 @@ app.put('/api/auth/manager/update-employee-login', (req, res) => {
   }
   if (typeof name === 'string') emp.name = name.trim() || (emp.email || '').split('@')[0] || 'Employee';
   if (password != null && String(password).trim().length >= 6) {
-    emp.passwordHash = hashPassword(String(password));
+    emp.passwordHash = hashPassword(String(password).trim());
   }
   if (typeof canCreateAndAssign === 'boolean') emp.canCreateAndAssign = canCreateAndAssign;
   employees[index] = emp;
@@ -309,7 +309,7 @@ app.get('/api/auth/employees', (req, res) => {
 app.post('/api/auth/employee/login', (req, res) => {
   const body = req.body || {};
   const email = typeof body.email === 'string' ? body.email.trim() : '';
-  const password = body.password != null ? String(body.password) : '';
+  const password = body.password != null ? String(body.password).trim() : '';
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' });
   }

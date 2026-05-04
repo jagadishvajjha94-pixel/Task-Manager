@@ -4919,7 +4919,7 @@
       createEmployeeLoginForm.addEventListener('submit', e => {
         e.preventDefault();
         const email = (document.getElementById('emp-login-email')?.value || '').trim();
-        const password = document.getElementById('emp-login-password')?.value || '';
+        const password = (document.getElementById('emp-login-password')?.value || '').trim();
         const name = (document.getElementById('emp-login-name')?.value || '').trim();
         const canCreateAndAssign = !!document.getElementById('emp-login-can-create-assign')?.checked;
         if (!email) {
@@ -4964,9 +4964,11 @@
             } else {
               const msg =
                 data.error ||
-                (res.status === 404
-                  ? 'Create-employee API not found. If deployed on Vercel, ensure api/auth/manager/create-employee-login.js is deployed.'
-                  : 'Failed to create employee login.');
+                (res.status === 503
+                  ? 'Storage is not ready on Vercel (shared Redis required). Connect Upstash in Vercel → Storage, add REST env vars, redeploy, then try again.'
+                  : res.status === 404
+                    ? 'Create-employee API not found. If deployed on Vercel, ensure api/auth/manager/create-employee-login.js is deployed.'
+                    : 'Failed to create employee login.');
               alert(msg);
             }
           })
