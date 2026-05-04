@@ -93,6 +93,8 @@ On Vercel, each API runs in a **separate serverless function** with **no shared 
 
 If `REDIS_URL` is set but the TCP client cannot connect, the API store **falls back to writing manager/employees/board to `/tmp`** for that request so login is not silently broken. For **durable, shared** data across serverless instances, you still need **Upstash REST** (or another shared store)—use `/api/store-status` and confirm `backend` is `"upstash"`.
 
+**504 on `/api/store-status`:** Usually **`REDIS_URL` (TCP Redis)** is set and `connect()` hangs until Vercel’s gateway times out. **Remove `REDIS_URL`** from Vercel env (or use only **Upstash REST** vars). On Vercel deployments the app **skips TCP Redis** unless you set `ALLOW_VERCEL_TCP_REDIS=1`.
+
 ---
 
 ## Step 5: Redeploy

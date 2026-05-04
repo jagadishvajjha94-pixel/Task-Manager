@@ -32,6 +32,9 @@ function getEnv(name) {
 }
 
 const redisUrl = process.env.REDIS_URL;
+/** Vercel + node-redis TCP often hangs on connect() until the gateway returns 504. Use Upstash REST here. */
+const isVercel = !!process.env.VERCEL;
+const allowTcpRedisOnVercel = process.env.ALLOW_VERCEL_TCP_REDIS === '1';
 
 function ensureUpstash() {
   if (upstashRedis) return upstashRedis;
@@ -63,6 +66,9 @@ function ensureUpstash() {
 })();
 
 async function getNodeRedisClient() {
+  if (isVercel && !allowTcpRedisOnVercel) {
+    return null;
+  }
   if (nodeRedisClient) {
     try {
       if (nodeRedisClient.isOpen) return nodeRedisClient;
@@ -218,7 +224,10 @@ async function setBoard(data) {
 
 function getStoreBackend() {
   if (upstashRedis || ensureUpstash()) return 'upstash';
-  if (redisUrl) return 'redis';
+  if (redisUrl) {
+    if (isVercel && !allowTcpRedisOnVercel) return 'file';
+    return 'redis';
+  }
   return 'file';
 }
 
