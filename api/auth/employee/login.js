@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const store = require('../../_store');
+const { parseJsonBody } = require('../../_parseBody');
 
 const SALT = process.env.PASSWORD_SALT || 'taskmanager-salt-v1';
 
@@ -20,24 +21,7 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  let body = req.body;
-  if (!body && typeof req.on === 'function') {
-    body = await new Promise((resolve, reject) => {
-      let data = '';
-      req.on('data', chunk => {
-        data += chunk;
-      });
-      req.on('end', () => {
-        try {
-          resolve(data ? JSON.parse(data) : {});
-        } catch (e) {
-          resolve({});
-        }
-      });
-      req.on('error', reject);
-    });
-  }
-  body = body || {};
+  const body = await parseJsonBody(req);
 
   const email = typeof body.email === 'string' ? body.email.trim() : '';
   const password = body.password != null ? String(body.password) : '';

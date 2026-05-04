@@ -35,8 +35,8 @@ const redisUrl = process.env.REDIS_URL;
 
 function ensureUpstash() {
   if (upstashRedis) return upstashRedis;
-  const url = getEnv('UPSTASH_REDIS_REST_URL') || getEnv('KV_REST_API_URL');
-  const token = getEnv('UPSTASH_REDIS_REST_TOKEN') || getEnv('KV_REST_API_TOKEN');
+  const url = (getEnv('UPSTASH_REDIS_REST_URL') || getEnv('KV_REST_API_URL') || '').trim();
+  const token = (getEnv('UPSTASH_REDIS_REST_TOKEN') || getEnv('KV_REST_API_TOKEN') || '').trim();
   if (url && token) {
     try {
       const { Redis } = require('@upstash/redis');
@@ -50,8 +50,8 @@ function ensureUpstash() {
 }
 
 (function initUpstash() {
-  const url = getEnv('UPSTASH_REDIS_REST_URL') || getEnv('KV_REST_API_URL');
-  const token = getEnv('UPSTASH_REDIS_REST_TOKEN') || getEnv('KV_REST_API_TOKEN');
+  const url = (getEnv('UPSTASH_REDIS_REST_URL') || getEnv('KV_REST_API_URL') || '').trim();
+  const token = (getEnv('UPSTASH_REDIS_REST_TOKEN') || getEnv('KV_REST_API_TOKEN') || '').trim();
   if (url && token) {
     try {
       const { Redis } = require('@upstash/redis');
@@ -85,14 +85,20 @@ async function getNodeRedisClient() {
 async function redisGet(key) {
   const redis = upstashRedis || ensureUpstash();
   if (redis) {
-    const raw = await redis.get(key);
-    return raw == null ? null : typeof raw === 'string' ? raw : JSON.stringify(raw);
+    try {
+      const raw = await redis.get(key);
+      return raw == null ? null : typeof raw === 'string' ? raw : JSON.stringify(raw);
+    } catch (_) {
+      return null;
+    }
   }
-  const client = await getNodeRedisClient();
-  if (client) {
-    const raw = await client.get(key);
-    return raw;
-  }
+  try {
+    const client = await getNodeRedisClient();
+    if (client) {
+      const raw = await client.get(key);
+      return raw;
+    }
+  } catch (_) {}
   return null;
 }
 
@@ -104,14 +110,20 @@ async function writeToRedis(key, value) {
   const str = typeof value === 'string' ? value : JSON.stringify(value);
   const redis = upstashRedis || ensureUpstash();
   if (redis) {
-    await redis.set(key, str);
-    return true;
+    try {
+      await redis.set(key, str);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
-  const client = await getNodeRedisClient();
-  if (client) {
-    await client.set(key, str);
-    return true;
-  }
+  try {
+    const client = await getNodeRedisClient();
+    if (client) {
+      await client.set(key, str);
+      return true;
+    }
+  } catch (_) {}
   return false;
 }
 
