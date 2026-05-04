@@ -646,12 +646,8 @@
         <div class="storage-setup-content">
           <i class="bx bx-error-circle"></i>
           <div>
-            <strong>Shared storage not active</strong> – Employee logins need a shared database on Vercel (each serverless instance has its own disk otherwise).
-            <a href="https://vercel.com/docs/storage/vercel-kv" target="_blank" rel="noopener noreferrer">Vercel KV / Redis</a>
-            ·
-            <a href="https://vercel.com/marketplace/upstash" target="_blank" rel="noopener noreferrer">Upstash (Marketplace)</a>
-            – add <code class="text-white-50">UPSTASH_REDIS_REST_URL</code> and <code class="text-white-50">UPSTASH_REDIS_REST_TOKEN</code> to the project, then <strong>redeploy</strong> (uncheck “Use existing Build Cache” if login still fails). Remove <code class="text-white-50">REDIS_URL</code> if you see timeouts.
-            <p id="storage-setup-api-hint" class="mb-0 small mt-2 text-white-50 d-none" aria-live="polite"></p>
+            <strong>Shared storage not connected</strong> — On Vercel, employee logins need one shared database (Upstash or KV). Use <strong>Storage</strong> in your Vercel project to connect it, add the <code class="text-white-50">UPSTASH_*</code> or <code class="text-white-50">KV_REST_*</code> env vars to <strong>Production</strong>, then <strong>redeploy</strong>. If <code class="text-white-50">/api/store-status</code> still shows <code class="text-white-50">"backend":"file"</code>, remove <code class="text-white-50">REDIS_URL</code> (TCP can hang) and redeploy without build cache.
+            <span class="d-block mt-2"><a href="https://vercel.com/docs/storage/vercel-kv" target="_blank" rel="noopener noreferrer">Vercel Storage docs</a> · <a href="https://vercel.com/marketplace/upstash" target="_blank" rel="noopener noreferrer">Upstash</a></span>
           </div>
         </div>
       </div>

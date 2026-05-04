@@ -4025,37 +4025,16 @@
     if (!banner) return;
     const base = API_BASE || window.location.origin || '';
     if (!base || base === 'file://') return;
-    const hintEl = document.getElementById('storage-setup-api-hint');
     fetch(base + '/api/store-status', { cache: 'no-store' })
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
         if (data && data.backend === 'file') {
           banner.classList.remove('d-none');
-          if (hintEl) {
-            const extra = (data.hint && String(data.hint).trim()) || '';
-            if (extra) {
-              hintEl.textContent = extra;
-              hintEl.classList.remove('d-none');
-            } else {
-              hintEl.textContent = '';
-              hintEl.classList.add('d-none');
-            }
-          }
         } else {
           banner.classList.add('d-none');
-          if (hintEl) {
-            hintEl.textContent = '';
-            hintEl.classList.add('d-none');
-          }
         }
       })
-      .catch(() => {
-        banner.classList.add('d-none');
-        if (hintEl) {
-          hintEl.textContent = '';
-          hintEl.classList.add('d-none');
-        }
-      });
+      .catch(() => banner.classList.add('d-none'));
   }
 
   function showAppPage() {

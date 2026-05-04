@@ -36,10 +36,8 @@ module.exports = async (req, res) => {
       backend: payload.backend,
       hasManager: !!(payload.manager && payload.manager.email),
       employeeCount: Array.isArray(payload.employees) ? payload.employees.length : 0,
-      hint:
-        payload.backend === 'file'
-          ? 'Connect Upstash Redis (REST: UPSTASH_* or KV_REST_*) to this Vercel project. On Vercel, REDIS_URL (TCP) is skipped to avoid gateway timeouts; remove it if you only use Upstash.'
-          : null
+      /** Extra copy only when useful; the login banner already explains the file case. */
+      hint: null
     });
   } catch (e) {
     if (e && e.message === 'timeout') {
