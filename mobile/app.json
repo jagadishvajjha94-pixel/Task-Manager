@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Task Manager",
+    "slug": "rcetask-manager",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1e3a5f"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.rcetask.manager",
+      "backgroundColor": "#1e3a5f",
+      "permissions": ["RECEIVE_BOOT_COMPLETED", "VIBRATE", "android.permission.RECEIVE_BOOT_COMPLETED"],
+      "useNextNotificationsApi": true
+    },
+    "plugins": [
+      ["expo-notifications", { "color": "#1e3a5f" }]
+    ]
+  }
+}

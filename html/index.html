@@ -1,0 +1,1436 @@
+<!doctype html>
+<html lang="en" class="layout-menu-fixed layout-compact" data-assets-path="/assets/" data-template="vertical-menu-template-free">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <title>Task Manager | App</title>
+    <link rel="icon" type="image/x-icon" href="/assets/img/favicon/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/vendor/fonts/iconify-icons.css" />
+    <link rel="stylesheet" href="/assets/vendor/css/core.css" />
+    <link rel="stylesheet" href="/assets/css/demo.css" />
+    <link rel="stylesheet" href="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    <link rel="stylesheet" href="/assets/vendor/libs/apex-charts/apex-charts.css" />
+    <style>
+      :root { --app-font: 'Plus Jakarta Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; --pro-bg: #f0f4f8; --pro-card-bg: #ffffff; --pro-border: #e2e8f0; --pro-accent: #1e3a5f; --pro-text: #1e293b; }
+      html { background: var(--pro-bg); }
+      body { font-family: var(--app-font) !important; background: linear-gradient(165deg, #f0f4f8 0%, #e8eef4 50%, #f5f7fa 100%) !important; min-height: 100vh; color: var(--pro-text); }
+      .layout-wrapper { background: transparent !important; }
+      .content-wrapper { font-family: var(--app-font) !important; background: transparent !important; }
+      .layout-page { background: transparent !important; }
+      .container-xxl { font-family: var(--app-font) !important; }
+      .content-wrapper .container-xxl { padding: 1.5rem; }
+      .card { background: var(--pro-card-bg); border: 1px solid var(--pro-border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+      .card-header { background: linear-gradient(180deg, #fafbfc 0%, #f8fafc 100%); border-bottom: 1px solid var(--pro-border); padding: 1rem 1.25rem; font-weight: 600; border-radius: 12px 12px 0 0; }
+      .layout-navbar { background: #fff !important; border-bottom: 1px solid var(--pro-border); box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+      .layout-menu { background: linear-gradient(180deg, #1e3a5f 0%, #152a47 100%) !important; }
+      .menu-inner .menu-link { color: rgba(255,255,255,.85) !important; }
+      .menu-inner .menu-item.active .menu-link { background: rgba(255,255,255,.12) !important; color: #fff !important; }
+      .menu-inner .menu-link:hover { background: rgba(255,255,255,.08) !important; color: #fff !important; }
+      .app-brand-text.demo { color: #fff !important; font-weight: 700; }
+      .menu-divider { border-color: rgba(255,255,255,.15) !important; }
+      h1,h2,h3,h4,h5,h6,.card-title,.modal-title,.nav-link { font-family: var(--app-font) !important; font-weight: 600; }
+      .table, .table th, .table td, .form-control, .form-label, .btn { font-family: var(--app-font) !important; }
+      .kanban-board { display: flex; gap: 1.25rem; overflow-x: auto; padding: 1.25rem; min-height: 70vh; align-items: flex-start; background: transparent; scrollbar-width: thin; }
+      .kanban-board::-webkit-scrollbar { height: 8px; }
+      .kanban-board::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 4px; }
+      .kanban-board::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+      .tab-pane { background: transparent; }
+      #kanban-view { padding: 0.5rem 0; }
+      #kanban-view .input-group { border-radius: 10px; box-shadow: 0 2px 8px rgba(30,58,95,.06); border: 1px solid #e2e8f0; overflow: hidden; }
+      #kanban-view .input-group .form-control { border: 0; }
+      #kanban-view .input-group-text { background: linear-gradient(180deg,#fafbfc,#f8fafc); border: 0; color: #64748b; }
+      .kanban-column { flex: 0 0 340px; background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 0; box-shadow: 0 4px 20px rgba(30,58,95,.06); overflow: hidden; transition: transform .2s, box-shadow .2s; display: flex; flex-direction: column; }
+      .kanban-column:hover { box-shadow: 0 8px 28px rgba(30,58,95,.1); transform: translateY(-1px); }
+      .kanban-column-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; margin-bottom: 0; background: linear-gradient(135deg,#fafbfc 0%,#f1f5f9 100%); border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+      .kanban-column-header h6 { font-size: 0.95rem; font-weight: 700; color: #1e3a5f; letter-spacing: 0.02em; }
+      .kanban-column-header .badge { background: linear-gradient(135deg,#1e3a5f,#152a47) !important; font-size: 0.7rem; font-weight: 600; padding: 0.35rem 0.6rem; border-radius: 20px; }
+      .kanban-column-cards { min-height: 140px; padding: 1rem; transition: background 0.2s, border-color 0.2s; flex: 1 1 auto; overflow-y: auto; }
+      .kanban-column-cards.kanban-drag-over { background: rgba(30,58,95,.06); border-radius: 12px; border: 2px dashed #1e3a5f; }
+      .kanban-card { margin-bottom: 0.85rem; border-left-width: 5px; user-select: none; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.04); transition: transform .15s, box-shadow .15s, border-color .15s; }
+      .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(30,58,95,.1); border-color: #cbd5e1; }
+      .kanban-card-clickable { cursor: pointer; }
+      .kanban-card-title { font-family: var(--app-font) !important; font-weight: 800 !important; font-size: 1rem !important; letter-spacing: 0.02em; color: #0f172a !important; }
+      .kanban-card-description { font-weight: 700 !important; color: #334155 !important; line-height: 1.45; font-size: 0.9rem !important; }
+      .kanban-card-right { flex-wrap: wrap; justify-content: flex-end; }
+      .kanban-card:active { cursor: grabbing; }
+      .kanban-card.kanban-dragging { opacity: 0.7; cursor: grabbing; transform: scale(1.02); box-shadow: 0 8px 24px rgba(0,0,0,.15); }
+      .kanban-drag-handle { padding: 0.2rem 0.25rem; display: inline-flex; align-items: center; color: var(--bs-secondary); flex-shrink: 0; pointer-events: none; }
+      .kanban-urgency-high { border-left-color: #ef4444 !important; background: linear-gradient(135deg,#fef2f2 0%,#fff5f5 100%); }
+      .kanban-urgency-high:hover { box-shadow: 0 6px 20px rgba(239,68,68,.12); }
+      .kanban-urgency-medium { border-left-color: #f59e0b !important; background: linear-gradient(135deg,#fffbeb 0%,#fffef5 100%); }
+      .kanban-urgency-medium:hover { box-shadow: 0 6px 20px rgba(245,158,11,.12); }
+      .kanban-urgency-low { border-left-color: #10b981 !important; background: linear-gradient(135deg,#ecfdf5 0%,#f5fff5 100%); }
+      .kanban-urgency-low:hover { box-shadow: 0 6px 20px rgba(16,185,129,.12); }
+      .assignee-initial { width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; background: linear-gradient(135deg,#1e3a5f,#2d4a6f); flex-shrink: 0; border: 2px solid #fff; margin-left: -6px; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+      .assignee-initial:first-of-type { margin-left: 0; }
+      .assignee-initial.bg-secondary { background: #6c757d; }
+      .assignee-initials-wrap { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0.25rem; }
+      .assignee-with-name { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; }
+      .assignee-clickable { cursor: pointer; border-radius: 999px; padding: 0.1rem 0.35rem; transition: background 0.2s; }
+      .assignee-clickable:hover { background: rgba(30,58,95,.1); }
+      .card-deadline, .card-countdown-timer { font-size: 0.9rem; font-weight: 700; color: #1e3a5f; }
+      .card-deadline.overdue, .card-countdown-timer.overdue { font-size: 0.95rem; font-weight: 800; color: #c9706b; background: linear-gradient(135deg, rgba(255,245,245,0.95) 0%, rgba(254,235,235,0.5) 100%); padding: 0.3rem 0.55rem; border-radius: 6px; display: inline-block; border: 1px solid #eeb8b4; box-shadow: 0 1px 3px rgba(201,112,107,0.12); }
+      .card-countdown-circle-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+      .card-countdown-circle-svg { position: absolute; left: 0; top: 0; width: 64px; height: 64px; transform: rotate(-90deg); pointer-events: none; }
+      .card-countdown-circle-bg { fill: none; stroke: rgba(30,58,95,.15); stroke-width: 4; }
+      .card-countdown-circle-fill { fill: none; stroke: #1e3a5f; stroke-width: 4; stroke-linecap: round; transition: stroke-dasharray 0.3s ease, stroke 0.2s ease; }
+      .card-countdown-circle-wrap.card-countdown-warning .card-countdown-circle-fill { stroke: #c9706b; }
+      .card-countdown-digital { position: relative; z-index: 1; font-size: 0.75rem; font-weight: 800; line-height: 1.15; color: #0f172a; text-align: center; letter-spacing: 0.03em; }
+      .card-countdown-circle-wrap.card-countdown-warning .card-countdown-digital { color: #b91c1c; font-weight: 800; }
+      .kanban-card-overdue { border-left: 4px solid #e0a5a0 !important; background: linear-gradient(90deg, rgba(238,184,180,0.1) 0%, rgba(254,235,235,0.05) 40%, transparent 100%) !important; box-shadow: 0 0 0 1px rgba(201,112,107,0.15), 0 2px 6px rgba(201,112,107,0.06); }
+      .assignee-chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0.5rem; background: var(--bs-secondary-bg); border-radius: 999px; font-size: 0.8125rem; }
+      .accuracy-circle-wrap { position: relative; width: 32px; height: 32px; flex-shrink: 0; }
+      .accuracy-circle-svg { transform: rotate(-90deg); }
+      .accuracy-circle-bg { fill: none; stroke: rgba(0,0,0,.08); stroke-width: 3; }
+      .accuracy-circle-fill { fill: none; stroke: var(--bs-success); stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 0.3s ease; }
+      .accuracy-circle-text { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 0.65rem; font-weight: 600; color: var(--bs-body-color); }
+      .assignee-name { color: var(--bs-body-color); font-weight: 500; }
+      .kanban-card-done { background: linear-gradient(135deg,#d1fae5 0%,#a7f3d0 50%,#6ee7b7 100%) !important; border-left-color: #059669 !important; box-shadow: 0 2px 12px rgba(5,150,105,.15); }
+      .kanban-card-done:hover { box-shadow: 0 6px 24px rgba(5,150,105,.2); }
+      .kanban-card-done .card-title { text-decoration: line-through; color: #047857; }
+      .kanban-card-done .card-text { text-decoration: line-through; color: #047857; opacity: 0.9; }
+      .kanban-card-done .task-completed-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; color: #047857; margin-top: 0.35rem; }
+      .kanban-date-column { flex: 0 0 340px; }
+      .kanban-part-rollover { border-left: 4px solid #f59e0b !important; background: linear-gradient(135deg,rgba(245,158,11,.08) 0%,rgba(251,191,36,.04) 100%); border-radius: 0 16px 16px 0; box-shadow: 0 4px 24px rgba(245,158,11,.08); }
+      .kanban-part-rollover .kanban-column-header { background: linear-gradient(135deg,#fffbeb 0%,#fef3c7 50%,#fef9c3 100%); border-bottom-color: #fde68a; }
+      .kanban-part-rollover .kanban-column-header h6 { color: #b45309; }
+      .kanban-part-rollover .kanban-column-header .badge { background: linear-gradient(135deg,#f59e0b,#d97706) !important; }
+      .kanban-part-today { border-left: 4px solid #1e3a5f !important; background: linear-gradient(135deg,rgba(30,58,95,.06) 0%,rgba(30,58,95,.02) 100%); border-radius: 0 16px 16px 0; box-shadow: 0 4px 24px rgba(30,58,95,.08); }
+      .kanban-part-today .kanban-column-header { background: linear-gradient(135deg,#e0e7ff 0%,#c7d2fe 50%,#e0e7ff 100%); border-bottom-color: #a5b4fc; }
+      .kanban-part-today .kanban-column-header h6 { color: #1e3a5f; }
+      .kanban-board-rows { display: flex; flex-direction: column; gap: 1.75rem; width: 100%; }
+      .kanban-board-row { display: flex; flex-direction: row; flex-wrap: wrap; gap: 1.25rem; width: 100%; }
+      .kanban-board-row .kanban-date-column { flex: 1 1 320px; }
+      .kanban-add-card-wrap { padding: 0 1rem 1rem; flex-shrink: 0; }
+      .kanban-board .add-card { border-radius: 10px; font-weight: 600; padding: 0.5rem 1rem; margin: 0; border-style: dashed; transition: all .2s; width: 100%; box-sizing: border-box; }
+      .kanban-board .add-card:hover { background: rgba(30,58,95,.06); border-color: #1e3a5f; color: #1e3a5f; }
+      .kanban-done-toggle-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #cbd5e1; background: #fff; color: #64748b; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+      .kanban-done-toggle-btn:hover { border-color: #1e3a5f; color: #1e3a5f; transform: scale(1.08); box-shadow: 0 4px 12px rgba(30,58,95,.2); }
+      .kanban-done-toggle-btn.done { border-color: #059669; background: linear-gradient(135deg,#10b981,#059669); color: #fff; box-shadow: 0 2px 8px rgba(5,150,105,.3); }
+      .kanban-done-toggle-btn.done:hover { transform: scale(1.08); box-shadow: 0 4px 14px rgba(5,150,105,.4); }
+      .kanban-done-toggle-btn i { font-size: 1.3rem; }
+      .rollover-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; color: #b45309; background: linear-gradient(135deg,rgba(245,158,11,.25),rgba(251,191,36,.15)); padding: 0.25rem 0.6rem; border-radius: 8px; margin-bottom: 0.35rem; font-weight: 600; border: 1px solid rgba(245,158,11,.3); }
+      .task-assigned-date { display: block; margin-bottom: 0.35rem; }
+      .kanban-card-rollover { border-left-width: 5px; border-left-color: #f59e0b !important; }
+      .kanban-card .badge.bg-label-info { background: linear-gradient(135deg,#e9d5ff,#ddd6fe) !important; color: #5b21b6 !important; font-weight: 700; border-radius: 6px; border: 1px solid #c4b5fd; }
+      .kanban-card .badge.bg-label-secondary { background: linear-gradient(135deg,#f1f5f9,#e2e8f0) !important; color: #475569; font-weight: 600; border-radius: 6px; }
+      .kanban-column-header h6 { line-height: 1.3; }
+      .tab-pane { display: none; }
+      .tab-pane.active { display: block; }
+      .task-row-assign, .tasks-assign-col { min-width: 180px; }
+      #tasks-tab-content, #checkins-tab-content { padding: 1.25rem; font-family: var(--app-font); }
+      .tasks-dept-section { padding-top: 1rem; margin-bottom: 2rem; }
+      .tasks-dept-section:last-child { border-bottom: 0; padding-bottom: 0; margin-bottom: 0 !important; }
+      .tasks-dept-section .table { font-size: 0.9rem; border-collapse: separate; border-spacing: 0; }
+      .tasks-dept-section .table thead th { background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%); color: #2d3748; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.875rem 1rem; border-bottom: 2px solid #dee2e6; white-space: nowrap; }
+      .tasks-dept-section .table tbody td { padding: 0.875rem 1rem; vertical-align: middle; border-bottom: 1px solid #eee; color: #2d3748; }
+      .tasks-dept-section .table tbody tr:hover { background: #f8fafc; }
+      .tasks-dept-section .table .tasks-sno { width: 48px; text-align: center; font-weight: 600; color: #64748b; }
+      .tasks-dept-section .table .tasks-title { font-weight: 600; color: #1e293b; min-width: 140px; }
+      .tasks-dept-section .table .tasks-desc { max-width: 220px; font-size: 0.85rem; color: #64748b; line-height: 1.4; }
+      .tasks-dept-section .table .tasks-urgency { white-space: nowrap; }
+      .tasks-dept-section .table .tasks-dept { font-weight: 600; color: #5b21b6; }
+      .tasks-dept-section .table .tasks-assignees { font-weight: 500; color: #475569; min-width: 100px; }
+      .tasks-dept-section .table .tasks-assign-col { min-width: 200px; }
+      .tasks-dept-section .table .tasks-deadline { min-width: 140px; font-size: 0.85rem; color: #64748b; }
+      .tasks-dept-section h6 { font-weight: 700; font-size: 1rem; color: #5b21b6; letter-spacing: 0.02em; }
+      .tasks-row-completed { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 40%, #d1fae5 100%) !important; }
+      .tasks-row-completed td { text-decoration: line-through; color: #047857 !important; opacity: 0.9; }
+      .tasks-row-completed .tasks-title, .tasks-row-completed .tasks-desc { text-decoration: line-through; color: #047857 !important; }
+      .tasks-row-completed .badge { opacity: 0.85; }
+      .tasks-row-completed { border-top: 1px solid rgba(5,150,105,.25); }
+      .task-completed-badge-inline { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 700; color: #047857; margin-left: 0.35rem; }
+      .tasks-submit-col { min-width: 100px; white-space: nowrap; }
+      .tasks-draggable-row { cursor: grab; }
+      .tasks-draggable-row:active { cursor: grabbing; }
+      .tasks-dragging { opacity: 0.6; }
+      .tasks-drag-over { background: rgba(30,58,95,.08) !important; }
+      .table-align-middle td { vertical-align: middle; }
+      /* Login page — best-in-class, eye-pleasing design */
+      #login-page {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+        background: linear-gradient(165deg, #0c1222 0%, #1a2744 25%, #1e3a5f 50%, #243b55 75%, #1e293b 100%);
+        position: relative;
+        overflow: hidden;
+      }
+      #login-page::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(ellipse 100% 80% at 50% -30%, rgba(59, 130, 246, 0.18), transparent 50%),
+          radial-gradient(ellipse 70% 50% at 90% 20%, rgba(30, 64, 175, 0.12), transparent 45%),
+          radial-gradient(ellipse 60% 50% at 10% 90%, rgba(30, 58, 95, 0.15), transparent 45%);
+        pointer-events: none;
+      }
+      #login-page::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        pointer-events: none;
+        opacity: 0.5;
+      }
+      .storage-setup-banner {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        max-width: 480px;
+        margin-bottom: 1.5rem;
+        padding: 1rem 1.25rem;
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        border-radius: 12px;
+        color: #fca5a5;
+        font-size: 0.9rem;
+      }
+      .storage-setup-banner i { font-size: 1.5rem; flex-shrink: 0; }
+      .storage-setup-content { display: flex; align-items: flex-start; gap: 0.75rem; }
+      .storage-setup-banner a { color: #93c5fd; text-decoration: underline; }
+      .storage-setup-banner a:hover { color: #bfdbfe; }
+      #login-page .login-page-content {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 420px;
+        animation: loginFadeIn 0.6s ease-out;
+      }
+      @keyframes loginFadeIn {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      #login-page .login-brand {
+        text-align: center;
+        margin-bottom: 2.25rem;
+      }
+      #login-page .login-brand .login-title {
+        font-size: 2.25rem;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.15;
+        color: #fff;
+        margin: 0 0 0.75rem 0;
+        text-shadow: 0 2px 24px rgba(0,0,0,.35);
+      }
+      #login-page .login-brand .login-college {
+        font-size: 1.05rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        color: rgba(255,255,255,0.95);
+        margin: 0 0 0.35rem 0;
+        line-height: 1.4;
+      }
+      #login-page .login-brand .login-dept {
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.6);
+        margin: 0;
+        position: relative;
+        display: inline-block;
+        padding-top: 0.75rem;
+      }
+      #login-page .login-brand .login-dept::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 32px;
+        height: 3px;
+        border-radius: 2px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+      }
+      #login-page .card {
+        border: none;
+        border-radius: 24px;
+        box-shadow:
+          0 0 0 1px rgba(255,255,255,0.08),
+          0 32px 64px -12px rgba(0,0,0,.45),
+          0 20px 40px -16px rgba(0,0,0,.35);
+        overflow: hidden;
+        background: rgba(255,255,255,.99);
+        backdrop-filter: blur(20px);
+        animation: cardFadeIn 0.5s ease-out 0.15s both;
+      }
+      @keyframes cardFadeIn {
+        from { opacity: 0; transform: translateY(12px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      #login-page .card-body {
+        padding: 2.25rem 2rem 2rem;
+      }
+      #login-page .card-body .login-icon-wrap {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 1.25rem;
+        border-radius: 20px;
+        background: linear-gradient(145deg, #1e3a5f 0%, #152a47 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 24px -8px rgba(30,58,95,.4);
+      }
+      #login-page .card-body .login-icon-wrap .bx {
+        font-size: 2rem;
+        color: #fff;
+      }
+      #login-page .card-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+        margin-bottom: 1.5rem;
+      }
+      #login-page .btn-group {
+        border-radius: 14px;
+        padding: 4px;
+        background: #f1f5f9;
+      }
+      #login-page .btn-group .btn {
+        border-radius: 10px;
+        font-weight: 600;
+        border: 2px solid #e2e8f0;
+        color: #64748b;
+        background: #fff;
+        transition: all 0.25s ease;
+      }
+      #login-page .btn-group .btn:hover {
+        border-color: #cbd5e1;
+        color: #475569;
+        background: #f8fafc;
+      }
+      #login-page .btn-group .btn-check:checked + .btn-outline-primary {
+        background: linear-gradient(145deg, #1e3a5f 0%, #152a47 100%) !important;
+        color: #fff !important;
+        border-color: #1e3a5f !important;
+        box-shadow: 0 4px 12px rgba(30,58,95,.35);
+      }
+      #login-page .form-label {
+        font-weight: 600;
+        color: #334155;
+        font-size: 0.9rem;
+      }
+      #login-page .form-control {
+        border-radius: 14px;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid #e2e8f0;
+        font-size: 1rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      #login-page .form-control:hover { border-color: #cbd5e1; }
+      #login-page .form-control:focus {
+        border-color: #1e3a5f;
+        box-shadow: 0 0 0 4px rgba(30,58,95,.12);
+        outline: none;
+      }
+      #login-page .form-control::placeholder { color: #94a3b8; }
+      #login-page .btn-primary {
+        border-radius: 14px;
+        padding: 0.85rem 1.25rem;
+        font-weight: 600;
+        font-size: 1rem;
+        background: linear-gradient(145deg, #1e3a5f 0%, #152a47 100%);
+        border: none;
+        box-shadow: 0 4px 14px -4px rgba(30,58,95,.4);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      }
+      #login-page .btn-primary:hover {
+        background: linear-gradient(145deg, #152a47 0%, #0f2038 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px -8px rgba(30,58,95,.45);
+      }
+      #login-page .btn-primary:active { transform: translateY(0); }
+      #login-page .small.text-muted {
+        font-size: 0.8rem;
+        color: #94a3b8 !important;
+        line-height: 1.5;
+      }
+      #login-page .text-muted { color: #64748b !important; }
+      #app-page { display: none; }
+      #app-page.logged-in { display: block; }
+      .login-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+      .login-card:hover { transform: translateY(-2px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15); }
+      #taskDetailsModal .modal-body { font-size: 1rem; line-height: 1.6; color: #000; background: #fff; }
+      #taskDetailsModal .detail-row { padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0; }
+      #taskDetailsModal .detail-row:last-child { border-bottom: 0; }
+      #taskDetailsModal .detail-label { font-weight: 700; color: #000; font-size: 0.875rem; margin-bottom: 0.25rem; }
+      #taskDetailsModal .detail-value { font-size: 1.0625rem; color: #000; font-weight: 500; }
+      #taskDetailsModal .detail-value#detail-title { font-size: 1.2rem; font-weight: 700; color: #000; }
+      #taskDetailsModal #detail-description { white-space: pre-wrap; color: #000; }
+      .employee-modal-content { border: none; border-radius: 20px; overflow: hidden; box-shadow: 0 32px 64px -12px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.05); animation: empModalIn .35s ease-out; }
+      @keyframes empModalIn { from { opacity: 0; transform: scale(0.94) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+      .employee-modal-header { background: linear-gradient(135deg, #1e3a5f 0%, #152a47 45%, #0f2038 100%); border: none; padding: 1.75rem 2rem; color: #fff; position: relative; overflow: hidden; }
+      .employee-modal-header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 60%; height: 200%; background: radial-gradient(ellipse, rgba(255,255,255,.08) 0%, transparent 70%); pointer-events: none; }
+      .employee-modal-header .modal-title { color: #fff !important; font-weight: 800; font-size: 1.4rem; letter-spacing: 0.02em; text-shadow: 0 1px 2px rgba(0,0,0,.2); }
+      .employee-modal-avatar { width: 64px; height: 64px; border-radius: 16px; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 800; color: #fff; flex-shrink: 0; border: 3px solid rgba(255,255,255,.4); box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+      .employee-modal-header-details { display: inline-block; background: rgba(255,255,255,.95); color: #000; padding: 0.4rem 0.75rem; border-radius: 10px; max-width: 100%; }
+      .employee-modal-header-details #employee-modal-designation, .employee-modal-header-details #employee-modal-contact, .employee-modal-header-details #employee-modal-dept, .employee-modal-header-details #employee-modal-mobile, .employee-modal-header-details #employee-modal-mail { color: #000 !important; font-weight: 800 !important; font-size: 0.95rem !important; }
+      .employee-modal-header-details #employee-modal-contact { font-size: 0.875rem !important; }
+      .employee-modal-edit-btn { background: #fff !important; border: 2px solid rgba(255,255,255,.8) !important; color: #000 !important; font-weight: 800 !important; }
+      .employee-modal-edit-btn:hover { background: #f8fafc !important; color: #000 !important; border-color: #fff !important; }
+      .employee-modal-body { padding: 2rem; background: linear-gradient(180deg, #fafbfc 0%, #fff 100%); color: #000; }
+      .emp-stats-circle-wrap .emp-chart-body { justify-content: center; }
+      .emp-performance-card { border: 2px solid #e2e8f0; box-shadow: 0 4px 20px rgba(30,58,95,.08); }
+      .emp-performance-card .emp-chart-header { padding: 1.25rem 1.5rem; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); border-bottom: 2px solid #e2e8f0; }
+      .emp-performance-card .emp-chart-header h6 { font-size: 1.15rem; font-weight: 800; color: #000 !important; letter-spacing: 0.02em; }
+      .emp-performance-card .emp-chart-header small { font-size: .875rem; color: #000 !important; font-weight: 700; }
+      .emp-performance-card .apexcharts-legend-text { font-size: 14px !important; font-weight: 700 !important; color: #000 !important; }
+      .emp-performance-card .apexcharts-datalabel-value { font-size: 16px !important; font-weight: 800 !important; color: #000 !important; }
+      .emp-chart-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,.08); border: 1px solid #e2e8f0; transition: box-shadow .2s; }
+      .emp-chart-card:hover { box-shadow: 0 8px 28px rgba(30,58,95,.12); }
+      .emp-chart-compact .emp-chart-body { padding: 1.25rem; }
+      .emp-chart-compact .emp-chart-header { padding: 1rem 1.25rem; }
+      .emp-charts-row { margin-bottom: 0 !important; }
+      .emp-chart-compact .emp-chart-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .25rem; }
+      .emp-chart-header { padding: 1.25rem 1.5rem; border-bottom: 2px solid #e2e8f0; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); color: #000; }
+      .emp-chart-header h6 { color: #000 !important; font-weight: 800; font-size: 1.05rem; }
+      .emp-chart-header small { color: #000 !important; font-weight: 700; }
+      .employee-modal-body .text-muted { color: #000 !important; font-weight: 700 !important; }
+      .emp-chart-body { padding: 1.5rem; color: #000; }
+      .emp-tasks-section { margin-top: 2rem; }
+      .emp-section-title { font-weight: 800; color: #000 !important; font-size: 1.1rem; letter-spacing: 0.02em; }
+      .emp-tasks-table-wrap { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,.08); border: 2px solid #e2e8f0; max-height: 280px; overflow-y: auto; }
+      .emp-tasks-table { margin: 0; color: #000; }
+      .emp-tasks-table thead { position: sticky; top: 0; background: linear-gradient(180deg, #1e3a5f 0%, #152a47 100%); z-index: 1; }
+      .emp-tasks-table th { padding: .9rem 1.25rem; font-size: .8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #fff !important; font-weight: 800; }
+      .emp-tasks-table td { padding: 1rem 1.25rem; vertical-align: middle; color: #000 !important; font-weight: 700; font-size: 0.95rem; }
+      .emp-tasks-table tbody tr { transition: background .15s; border-bottom: 1px solid #e2e8f0; }
+      .emp-tasks-table tbody tr:hover { background: #f1f5f9; }
+      .emp-tasks-table .text-muted { color: #000 !important; font-weight: 700 !important; }
+      .employee-modal-footer { padding: 1.25rem 2rem; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); border-top: 2px solid #e2e8f0; }
+      .employee-modal-footer .btn { color: #0f172a; font-weight: 700; padding: 0.5rem 1.25rem; }
+      #employeeDetailsModal .employee-modal-body { color: #000 !important; font-weight: 700 !important; }
+      #employeeDetailsModal .employee-modal-body p, #employeeDetailsModal .employee-modal-body h6, #employeeDetailsModal .employee-modal-body small, #employeeDetailsModal .employee-modal-body span, #employeeDetailsModal .employee-modal-body .emp-section-title { color: #000 !important; font-weight: 700 !important; }
+      #employeeDetailsModal .employee-modal-body .emp-chart-header h6, #employeeDetailsModal .employee-modal-body .emp-chart-header small { color: #000 !important; font-weight: 800 !important; }
+      #employeeDetailsModal .employee-modal-body .emp-tasks-table td { color: #000 !important; font-weight: 700 !important; }
+      #employeeDetailsModal .employee-modal-body .apexcharts-legend-text, #employeeDetailsModal .employee-modal-body .apexcharts-datalabel-label, #employeeDetailsModal .employee-modal-body .apexcharts-datalabel-value { color: #000 !important; font-weight: 800 !important; fill: #000 !important; }
+      #employeeDetailsModal .employee-modal-body .apexcharts-text tspan { fill: #000 !important; font-weight: 800 !important; }
+      #employeeDetailsModal .employee-modal-body .apexcharts-canvas text { fill: #000 !important; }
+      .kanban-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+      #kanbanCalendarModal .modal-body, #kanban-day-detail-body { color: #000; }
+      #kanban-day-detail-title { color: #000; font-weight: 700; }
+      .kanban-calendar .cal-day-name { padding: .5rem; text-align: center; font-size: .75rem; font-weight: 700; color: #000; }
+      .kanban-calendar .cal-day { min-height: 48px; padding: 4px; border-radius: 8px; cursor: pointer; transition: background .15s; border: 1px solid transparent; color: #000; }
+      .kanban-calendar .cal-day:hover { background: #e2e8f0; }
+      .kanban-calendar .cal-day.has-tasks { background: rgba(30,58,95,.1); color: #000; }
+      .kanban-calendar .cal-day.selected { background: rgba(30,58,95,.2); border-color: #1e3a5f; }
+      .kanban-calendar .cal-day .cal-num { font-size: .875rem; font-weight: 600; color: #000; }
+      .kanban-calendar .cal-day .cal-count { font-size: .65rem; color: #000; }
+      .cal-icon { display: inline-flex; align-items: center; margin-left: 2px; font-size: .75rem; }
+      .cal-icon-meeting { color: #2563eb; }
+      .cal-icon-drive { color: #16a34a; }
+      .cal-icon-doc { color: #64748b; }
+      .cal-day-link { display: inline-flex; align-items: center; color: var(--bs-primary); text-decoration: none; font-weight: 500; }
+      .cal-day-link:hover { text-decoration: underline; color: var(--bs-primary); }
+      .kanban-calendar-hints { background: linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%); border: 1px solid #93c5fd; }
+      .cal-hints-title { font-size: .8rem; font-weight: 700; color: #1e40af; margin-bottom: .35rem; }
+      .cal-hint-item { font-size: .8rem; color: #1e293b; margin-bottom: .2rem; }
+      .cal-hint-badge { display: inline-block; padding: .1rem .4rem; border-radius: 6px; font-size: .7rem; font-weight: 600; margin-right: .25rem; }
+      .cal-hint-item .cal-hint-badge-meeting { background: #2563eb; color: #fff; }
+      .cal-hint-item .cal-hint-badge-drive { background: #16a34a; color: #fff; }
+      .cal-hint-item .cal-hint-badge:not(.cal-hint-badge-meeting):not(.cal-hint-badge-drive) { background: #64748b; color: #fff; }
+      .cal-hint-day { color: #64748b; font-size: .75rem; }
+      .deadline-picker-trigger { display: flex; align-items: center; justify-content: center; padding: .75rem 1rem; border: 2px dashed #cbd5e1; border-radius: 12px; background: linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%); cursor: pointer; transition: all .2s; font-weight: 600; color: #475569; }
+      .deadline-picker-trigger:hover { border-color: #1e3a5f; background: linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%); color: #1e3a5f; }
+      .deadline-picker-modal-dialog { max-width: 420px; }
+      .deadline-picker-modal-content { border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.15); }
+      .deadline-picker-header { background: linear-gradient(135deg,#1e3a5f 0%,#152a47 100%); color: #fff; border-bottom: 0; padding: 1rem 1.25rem; }
+      .deadline-picker-header .modal-title { font-weight: 700; }
+      .deadline-picker-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem; }
+      .deadline-section-title { font-size: .9rem; font-weight: 700; color: #1e3a5f; margin-bottom: .5rem; }
+      .deadline-calendar-wrap { background: #f8fafc; border-radius: 12px; padding: .75rem; border: 1px solid #e2e8f0; }
+      .deadline-calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; }
+      .deadline-cal-month { font-weight: 700; color: #1e293b; font-size: .95rem; }
+      .deadline-cal-daynames { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: .7rem; font-weight: 700; color: #64748b; margin-bottom: 4px; }
+      .deadline-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+      .deadline-cal-day { min-height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: .85rem; font-weight: 600; cursor: pointer; transition: all .15s; color: #334155; }
+      .deadline-cal-day:hover { background: #e2e8f0; }
+      .deadline-cal-day.other-month { color: #94a3b8; }
+      .deadline-cal-day.selected { background: linear-gradient(135deg,#1e3a5f,#152a47); color: #fff; }
+      .deadline-cal-day.today { border: 2px solid #1e3a5f; }
+      .deadline-time-digital-wrap { padding: .5rem 0; }
+      .deadline-time-input { font-size: 2rem; font-weight: 600; letter-spacing: .08em; text-align: center; max-width: 200px; padding: .75rem 1rem; margin: 0 auto; display: block; }
+      .deadline-picker-footer { border-top: 1px solid #e2e8f0; padding: 1rem 1.25rem; }
+      .card-task-modal-dialog { max-width: 520px; max-height: 90vh; margin: 1rem auto; display: flex; }
+      .card-task-modal-content { max-height: 90vh; display: flex; flex-direction: column; }
+      .card-task-modal-header { flex-shrink: 0; }
+      .card-task-modal-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; max-height: calc(90vh - 140px); padding: 0.75rem 1rem; }
+      .card-task-modal-body .form-label { margin-bottom: 0.2rem; font-size: 0.875rem; }
+      #assignee-dropdown { border: 1px solid #d0d5dd; border-radius: 0.375rem; margin-top: 2px; }
+      #assignee-dropdown.assignee-dropdown-above { top: auto; bottom: 100%; margin-top: 0; margin-bottom: 2px; }
+      #assignee-dropdown .dropdown-item { padding: 0.5rem 1rem; cursor: pointer; font-size: 0.875rem; color: #000; }
+      #assignee-dropdown .dropdown-item:hover { background-color: #f1f5f9; color: #000; }
+      #upcoming-assignee-dropdown, #checkins-assignee-dropdown { border: 1px solid #d0d5dd; border-radius: 0.375rem; max-height: 200px; overflow-y: auto; z-index: 1050; }
+      #upcoming-assignee-dropdown .dropdown-item, #checkins-assignee-dropdown .dropdown-item { padding: 0.5rem 1rem; cursor: pointer; font-size: 0.875rem; color: #000; }
+      #upcoming-assignee-dropdown .dropdown-item:hover, #checkins-assignee-dropdown .dropdown-item:hover { background-color: #f1f5f9; color: #000; }
+      .dropdown-menu .dropdown-item { color: #000; }
+      .dropdown-menu .dropdown-header { color: #000; font-weight: 700; }
+      #kanban-search-input, #global-search-input { border-right: 0; }
+      #kanban-search-clear, #global-search-clear { border-left: 0; }
+      #layout-navbar #current-role-label { font-size: 1rem; font-weight: 700; color: #1e3a5f; }
+      #layout-navbar .navbar-nav-right > .text-muted.small { font-size: 1rem !important; font-weight: 600 !important; color: #1e3a5f !important; }
+      .team-accuracy-modal-content { border: none; border-radius: 16px; box-shadow: 0 24px 48px -12px rgba(0,0,0,.25); }
+      .team-accuracy-modal-header { background: linear-gradient(135deg, #1e3a5f 0%, #152a47 100%); color: #fff; padding: 1.25rem 1.5rem; border-radius: 16px 16px 0 0; }
+      .team-accuracy-modal-header .modal-title { font-weight: 800; font-size: 1.25rem; color: #fff !important; }
+      .team-accuracy-modal-body { background: linear-gradient(180deg, #f8fafc 0%, #fff 100%); padding: 1.5rem 1.75rem; }
+      .team-accuracy-summary { font-size: 1.35rem; font-weight: 800; color: #1e3a5f; margin: 0; }
+      .team-accuracy-hint { font-size: 0.875rem; font-weight: 600; color: #475569; }
+      .team-accuracy-bars { display: flex; flex-direction: column; gap: 0.85rem; }
+      .team-accuracy-row { display: flex; flex-direction: row; align-items: stretch; width: 100%; height: 60px; min-height: 60px; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.12); cursor: pointer; transition: box-shadow 0.2s, transform 0.15s; }
+      .team-accuracy-row:hover { box-shadow: 0 4px 18px rgba(0,0,0,.16); transform: translateY(-1px); }
+      .team-accuracy-row-left { display: flex; align-items: center; gap: 0.85rem; padding: 0 1rem; min-width: 200px; max-width: 240px; flex-shrink: 0; }
+      .team-accuracy-row-avatar { width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 50%; background: rgba(255,255,255,.28); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; color: #fff; flex-shrink: 0; border: 2px solid rgba(255,255,255,.5); box-sizing: border-box; }
+      .team-accuracy-row-info { min-width: 0; }
+      .team-accuracy-row-name { font-weight: 800; font-size: 0.95rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25; }
+      .team-accuracy-row-meta { font-size: 0.7rem; color: rgba(255,255,255,.9); margin-top: 0.2rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .team-accuracy-row-bar-wrap { display: flex; flex: 1; min-width: 0; align-items: stretch; }
+      .team-accuracy-row-fill { min-width: 0; transition: min-width 0.3s ease; }
+      .team-accuracy-row-remain { flex: 1; min-width: 0; transition: flex 0.3s ease; }
+      .team-accuracy-row-pct-end { display: flex; align-items: center; justify-content: center; min-width: 64px; padding: 0 1rem; font-weight: 800; font-size: 1.2rem; color: #1e3a5f; background: #f8fafc; border-left: 1px solid #e2e8f0; flex-shrink: 0; }
+      .team-accuracy-modal-footer { padding: 1rem 1.5rem; background: #f1f5f9; border-top: 1px solid #e2e8f0; border-radius: 0 0 16px 16px; }
+      /* Comment panel – slide-in popup with blur background */
+      .task-comments-book-wrap { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1060; pointer-events: none; visibility: hidden; }
+      .task-comments-book-wrap.active,
+      .task-comments-book-wrap.closing { visibility: visible; }
+      .task-comments-book-wrap.active { pointer-events: auto; }
+      .task-comments-book-backdrop {
+        position: absolute; inset: 0;
+        background: rgba(15,23,42,0.25);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        opacity: 0;
+        transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .task-comments-book-wrap.active .task-comments-book-backdrop { opacity: 1; }
+      .task-comments-book-perspective {
+        position: absolute; top: 0; right: 0; bottom: 0;
+        width: 400px;
+        max-width: calc(100vw - 48px);
+        display: flex; justify-content: flex-end; align-items: stretch;
+        padding: 24px 24px 24px 0;
+        box-sizing: border-box;
+      }
+      .task-comments-book-page {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 48px);
+        max-height: calc(100vh - 48px);
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 24px 48px -12px rgba(0,0,0,0.25), 0 12px 24px -8px rgba(0,0,0,0.15);
+        transform: translateX(120%);
+        opacity: 0;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease, box-shadow 0.35s ease;
+        display: flex; flex-direction: column; overflow: hidden;
+      }
+      .task-comments-book-wrap.active .task-comments-book-page {
+        transform: translateX(0);
+        opacity: 1;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.04), 0 32px 64px -12px rgba(0,0,0,0.2), 0 16px 32px -8px rgba(0,0,0,0.12);
+      }
+      .task-comments-book-inner { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+      .task-comments-book-header { flex-shrink: 0; background: linear-gradient(135deg, #1e3a5f 0%, #152a47 100%); color: #fff; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; border-radius: 20px 20px 0 0; }
+      .task-comments-book-title { font-weight: 800; font-size: 1.1rem; color: #fff !important; margin: 0; display: flex; align-items: center; }
+      .task-comments-book-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: rgba(255,255,255,0.2); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, transform 0.2s; font-size: 1.25rem; }
+      .task-comments-book-close:hover { background: rgba(255,255,255,0.35); transform: scale(1.05); }
+      .task-comments-book-body { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 0; background: linear-gradient(180deg, #f8fafc 0%, #fff 100%); overflow: hidden; }
+      .task-comments-task-title { flex-shrink: 0; font-weight: 800; font-size: 0.95rem; color: #0f172a; background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0.75rem 1rem; }
+      .task-comments-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0.75rem 1rem; background: #fff; -webkit-overflow-scrolling: touch; }
+      .task-comments-compose { flex-shrink: 0; background: #fff; border-top: 2px solid #e2e8f0; padding: 1rem; }
+      .task-comment-item { display: flex; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9; align-items: flex-start; }
+      .task-comments-list .task-comment-item:last-child { border-bottom: 0; }
+      .task-comment-avatar { width: 38px; height: 38px; min-width: 38px; min-height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; color: #fff; flex-shrink: 0; background: linear-gradient(135deg, #1e3a5f, #2563eb); box-shadow: 0 2px 8px rgba(30,58,95,0.25); }
+      .task-comment-body { min-width: 0; flex: 1; }
+      .task-comment-author { font-weight: 800; font-size: 0.88rem; color: #0f172a; margin-bottom: 0.2rem; }
+      .task-comment-text { font-weight: 600; font-size: 0.9rem; color: #1e293b; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+      .task-comment-link { display: inline-block; margin-top: 0.35rem; font-weight: 600; font-size: 0.82rem; color: #2563eb; text-decoration: none; }
+      .task-comment-link:hover { text-decoration: underline; color: #1d4ed8; }
+      .task-comment-time { font-size: 0.72rem; font-weight: 600; color: #64748b; margin-top: 0.25rem; }
+      .task-comments-empty { padding: 1.5rem; text-align: center; font-weight: 600; color: #64748b; font-size: 0.9rem; }
+      .task-comments-message-input { font-weight: 600; }
+      #accuracy-widget { cursor: pointer; }
+      #accuracy-widget .accuracy-circle-wrap { width: 36px; height: 36px; }
+      #accuracy-widget .accuracy-circle-svg { width: 36px; height: 36px; }
+      #accuracy-widget .accuracy-circle-text { font-size: 0.85rem; font-weight: 800; color: #1e3a5f; }
+      #accuracy-widget #accuracy-badge { font-size: 0.9rem; font-weight: 700; color: #1e3a5f; }
+      #open-kanban-calendar-btn { border-radius: 10px; font-weight: 600; }
+      #kanban-board > p.text-muted { padding: 3rem 2rem !important; text-align: center; font-size: 1rem; color: #64748b; background: linear-gradient(135deg,#fafbfc,#f8fafc); border-radius: 16px; border: 2px dashed #e2e8f0; margin: 1rem 0; }
+      .employee-name-link:hover { text-decoration: underline; }
+      .accuracy-click-wrap:hover { background: rgba(105,108,255,0.1); }
+      .employee-modal-avatar-wrap { position: relative; }
+      .employee-modal-avatar-wrap .employee-modal-avatar { display: flex; }
+      .employee-modal-avatar-wrap .employee-profile-pic.d-none + .employee-modal-avatar { display: flex; }
+      .employee-modal-avatar-wrap .employee-profile-pic:not(.d-none) + .employee-modal-avatar { display: none; }
+      #employee-modal-profile-pic { width: 64px !important; height: 64px !important; border-radius: 16px !important; border: 3px solid rgba(255,255,255,.5) !important; }
+      #employee-edit-profile-btn { font-weight: 700 !important; }
+      #employee-edit-profile-btn:hover { background: rgba(255,255,255,.35) !important; border-color: #fff !important; color: #fff !important; }
+      #navbar-edit-profile-btn { opacity: 0.85; }
+      #navbar-edit-profile-btn:hover { opacity: 1; color: #1e3a5f !important; }
+      .notif-btn-glass {
+        background: rgba(0,0,0,0.35) !important;
+        border: 1px solid rgba(255,255,255,0.15);
+        color: #fff !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+      .notif-btn-glass:hover {
+        background: rgba(0,0,0,0.5) !important;
+        color: #fff !important;
+        border-color: rgba(255,255,255,0.2);
+      }
+      .stored-table { font-family: var(--app-font) !important; font-size: 0.95rem; color: #000; }
+      .stored-table thead th { background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%); color: #000; font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+      .stored-table tbody td { color: #000; font-weight: 700; font-size: 0.95rem; }
+      #stored-data-tables h6 { font-weight: 800; font-size: 1.05rem; color: #000; margin-bottom: 0.5rem; }
+      #stored-data-view .card-header h5 { color: #000; font-weight: 800; }
+      #stored-data-view .text-muted { color: #000 !important; font-weight: 600; }
+      .card-header h5 { font-weight: 600; letter-spacing: 0.02em; color: #1e293b; }
+      .list-group-item { font-family: var(--app-font); font-weight: 500; }
+      .navbar-brand, #page-title { font-weight: 700; letter-spacing: 0.02em; color: #1e3a5f; }
+      .form-control, .form-select { border-color: #e2e8f0; border-radius: 8px; }
+      .form-control:focus, .form-select:focus { border-color: #1e3a5f; box-shadow: 0 0 0 3px rgba(30,58,95,.12); }
+      .login-card .card-title { font-weight: 700; font-size: 1.25rem; }
+      .form-label { font-weight: 500; color: #475569; }
+      #login-page h2 { font-weight: 700; letter-spacing: 0.02em; }
+      #manager-view .table th, #manager-view .table td { font-family: var(--app-font); font-weight: 600; color: #000; }
+      #manager-view .table th { font-weight: 700; font-size: 0.85rem; }
+      #manager-view .card-body p, #manager-view .card-header h5, #manager-view .list-group-item, #manager-view .text-muted { color: #000 !important; }
+      #manager-view #recurring-tasks-list { color: #000; }
+      .modal-content { border: 1px solid var(--pro-border); border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.12); }
+      .modal-header { background: linear-gradient(180deg, #fafbfc 0%, #f8fafc 100%); border-bottom: 1px solid var(--pro-border); border-radius: 12px 12px 0 0; }
+      .modal-header .modal-title { color: #0f172a !important; font-weight: 800 !important; font-size: 1.2rem !important; }
+      .modal-body { color: #000; background: #fff; font-weight: 700; }
+      .modal-body .form-label { color: #000 !important; font-weight: 800 !important; font-size: 0.95rem !important; }
+      .modal-body .form-control, .modal-body .form-select { color: #000; font-weight: 700; }
+      .modal-body .text-muted { color: #1e293b !important; font-weight: 700 !important; }
+      .modal-body p, .modal-body span, .modal-body td, .modal-body li, .modal-body .detail-value, .modal-body .detail-label { color: #000 !important; font-weight: 700 !important; }
+      .modal-body .detail-label { font-weight: 800 !important; color: #000 !important; }
+      .modal-body h1, .modal-body h2, .modal-body h3, .modal-body h4, .modal-body h5, .modal-body h6 { color: #000 !important; font-weight: 800 !important; }
+      .modal-footer { border-top-color: #e2e8f0; }
+      .modal-footer .btn { font-weight: 700; }
+      #taskDetailsModal .modal-body { color: #000 !important; font-weight: 700 !important; }
+      #taskDetailsModal .detail-label { font-weight: 800 !important; color: #000 !important; font-size: 0.9rem !important; }
+      #taskDetailsModal .detail-value { font-weight: 700 !important; color: #000 !important; font-size: 1rem !important; }
+      #taskDetailsModal .detail-value#detail-title { font-size: 1.2rem !important; font-weight: 800 !important; color: #000 !important; }
+      #taskDetailsModal #detail-description { color: #000 !important; font-weight: 700 !important; }
+      .team-accuracy-modal-body .team-accuracy-summary { color: #000 !important; font-weight: 800 !important; }
+      .team-accuracy-modal-body .team-accuracy-hint { color: #000 !important; font-weight: 700 !important; }
+      .card-task-modal-body .form-label { font-weight: 800 !important; color: #000 !important; }
+      .deadline-picker-body .deadline-section-title { font-weight: 800 !important; color: #0f172a !important; }
+      #kanbanCalendarModal .modal-body { color: #000 !important; font-weight: 700 !important; }
+      #kanbanCalendarModal .modal-body .cal-num, #kanbanCalendarModal .modal-body .cal-count { font-weight: 700 !important; color: #000 !important; }
+      .btn-primary { background: linear-gradient(180deg, #1e3a5f 0%, #152a47 100%); border-color: #1e3a5f; }
+      .btn-primary:hover { background: linear-gradient(180deg, #152a47 0%, #0f2038 100%); border-color: #152a47; opacity: 0.95; }
+      .dropdown-menu { border: 1px solid var(--pro-border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+      .btn-outline-primary { border-color: #1e3a5f; color: #1e3a5f; }
+      .btn-outline-primary:hover { background: rgba(30,58,95,.08); border-color: #1e3a5f; color: #1e3a5f; }
+      .table { --bs-table-border-color: #e2e8f0; }
+      .stored-table { border: 1px solid var(--pro-border); border-radius: 8px; overflow: hidden; }
+    </style>
+    <script src="/assets/vendor/js/helpers.js"></script>
+    <script src="/assets/js/config.js"></script>
+  </head>
+  <body>
+    <div id="login-page">
+      <div id="storage-setup-banner" class="storage-setup-banner d-none" role="alert">
+        <div class="storage-setup-content">
+          <i class="bx bx-error-circle"></i>
+          <div>
+            <strong>Storage not configured</strong> – Employee logins will not work until you connect Upstash Redis.
+            <a href="https://vercel.com/integrations/upstash" target="_blank" rel="noopener noreferrer">Connect Redis (Storage → Create Database → Upstash Redis)</a> (Create Database → Upstash Redis), then redeploy.
+          </div>
+        </div>
+      </div>
+      <div class="login-page-content">
+        <div class="login-brand">
+          <h1 class="login-title">Task Manager</h1>
+          <p class="login-college">Ramachandra College of Engineering, Eluru</p>
+          <p class="login-dept">Training &amp; Placement Dept.</p>
+        </div>
+        <div class="card">
+          <div class="card-body p-4">
+            <div class="login-icon-wrap"><i class="bx bx-log-in-circle"></i></div>
+            <h5 class="card-title text-center">Login</h5>
+            <div class="d-flex justify-content-center mb-4">
+              <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="login-role" id="login-role-dean" value="dean" checked autocomplete="off" />
+                <label class="btn btn-outline-primary" for="login-role-dean"><i class="bx bx-user-circle me-1"></i> Dean / Manager</label>
+                <input type="radio" class="btn-check" name="login-role" id="login-role-employee" value="employee" autocomplete="off" />
+                <label class="btn btn-outline-primary" for="login-role-employee"><i class="bx bx-id-card me-1"></i> Employee</label>
+              </div>
+            </div>
+            <form id="login-form" autocomplete="off">
+              <div class="mb-3">
+                <label class="form-label" for="login-email">Email</label>
+                <input type="email" class="form-control" id="login-email" required placeholder="Enter your email" autocomplete="off" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="login-password">Password</label>
+                <input type="password" class="form-control" id="login-password" required placeholder="Enter your password" autocomplete="off" />
+              </div>
+              <button type="submit" class="btn btn-primary w-100"><i class="bx bx-log-in me-1"></i> Sign in</button>
+            </form>
+            <p class="small text-muted mt-3 mb-0 text-center">Default Dean: manager@company.com / Manager@123</p>
+            <p class="small text-muted mt-2 mb-0 text-center" id="login-role-hint">Employees with task assignment rights: use <strong>Dean / Manager</strong> above.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="app-page" class="layout-wrapper layout-content-navbar">
+      <div class="layout-container">
+        <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+          <div class="app-brand demo">
+            <a href="/" class="app-brand-link">
+              <span class="app-brand-text demo menu-text fw-bold">Task Manager</span>
+            </a>
+            <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">
+              <i class="bx bx-chevron-left d-block d-xl-none align-middle"></i>
+            </a>
+          </div>
+          <div class="menu-divider mt-0"></div>
+          <div class="menu-inner-shadow"></div>
+          <ul class="menu-inner py-1">
+            <li class="menu-item active" data-tab="kanban">
+              <a href="javascript:void(0);" class="menu-link tab-link">
+                <i class="menu-icon tf-icons bx bx-grid"></i>
+                <div class="text-truncate" data-i18n="Kanban">Kanban</div>
+              </a>
+            </li>
+            <li class="menu-item" data-tab="tasks">
+              <a href="javascript:void(0);" class="menu-link tab-link">
+                <i class="menu-icon tf-icons bx bx-list-check"></i>
+                <div class="text-truncate" data-i18n="Tasks">Tasks</div>
+              </a>
+            </li>
+            <li class="menu-item" data-tab="check-ins">
+              <a href="javascript:void(0);" class="menu-link tab-link">
+                <i class="menu-icon tf-icons bx bx-calendar-check"></i>
+                <div class="text-truncate">Check_in's</div>
+              </a>
+            </li>
+            <li class="menu-item d-none" id="menu-item-manager" data-tab="manager">
+              <a href="javascript:void(0);" class="menu-link tab-link">
+                <i class="menu-icon tf-icons bx bx-cog"></i>
+                <div class="text-truncate">Manager</div>
+              </a>
+            </li>
+            <li class="menu-item d-none" id="menu-item-stored-data" data-tab="stored-data">
+              <a href="javascript:void(0);" class="menu-link tab-link">
+                <i class="menu-icon tf-icons bx bx-data"></i>
+                <div class="text-truncate">Stored data</div>
+              </a>
+            </li>
+          </ul>
+        </aside>
+
+        <div class="layout-page">
+          <nav class="layout-navbar container-xxl navbar navbar-expand-xl align-items-center bg-navbar-theme" id="layout-navbar">
+            <div class="layout-menu-toggle navbar-nav align-items-xl-center me-4 me-xl-0 d-xl-none">
+              <a class="nav-item nav-link px-0 me-xl-6" href="javascript:void(0)"><i class="bx bx-menu"></i></a>
+            </div>
+            <div class="navbar-nav-right d-flex align-items-center gap-2 ms-4 flex-grow-1 pe-2">
+              <span class="text-muted small me-2 d-flex align-items-center gap-1"><i class="bx bx-user me-1"></i><span id="current-role-label">Manager</span><button type="button" class="btn btn-link btn-sm p-0 ms-1 text-body" id="navbar-edit-profile-btn" title="Edit my profile" aria-label="Edit my profile"><i class="bx bx-edit-alt" style="font-size:1.1rem;"></i></button></span>
+              <div class="d-flex align-items-center gap-2 me-2" id="accuracy-widget" title="Task completion accuracy (yours or team)">
+                <div class="accuracy-circle-wrap" id="accuracy-circle-wrap">
+                  <svg class="accuracy-circle-svg" viewBox="0 0 36 36" width="32" height="32">
+                    <path class="accuracy-circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="accuracy-circle-fill" id="accuracy-circle-fill" pathLength="100" stroke-dasharray="0 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  </svg>
+                  <span class="accuracy-circle-text" id="accuracy-circle-text">0%</span>
+                </div>
+                <span class="small text-body-secondary" id="accuracy-badge">accuracy</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="btn-change-password" title="Change password">
+                <i class="bx bx-lock-alt"></i> Change password
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-logout" title="Sign out">
+                <i class="bx bx-log-out"></i> Logout
+              </button>
+              <h5 class="mb-0 text-body" id="page-title">Kanban Board</h5>
+              <div class="input-group global-search-wrap ms-auto" style="max-width: 240px; min-width: 140px;">
+                <span class="input-group-text"><i class="bx bx-search"></i></span>
+                <input type="text" class="form-control" id="global-search-input" placeholder="Search task, employee, task ID..." />
+                <button type="button" class="btn btn-outline-secondary" id="global-search-clear" title="Clear search"><i class="bx bx-x"></i></button>
+              </div>
+            </div>
+          </nav>
+
+          <div class="content-wrapper">
+            <div class="container-xxl flex-grow-1 container-p-y">
+              <div id="kanban-view" class="tab-pane active">
+                <div class="d-flex justify-content-between align-items-center mb-3 gap-3">
+                  <div class="d-none" id="kanban-calendar-btn-wrap">
+                    <button type="button" class="btn btn-outline-primary" id="open-kanban-calendar-btn" title="View day-wise tasks calendar">
+                      <i class="bx bx-calendar me-1"></i> Calendar
+                    </button>
+                  </div>
+                </div>
+                <div id="kanban-board" class="kanban-board"><p class="text-muted py-5">Loading board…</p></div>
+              </div>
+              <div id="stored-data-view" class="tab-pane">
+                <div class="card">
+                  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0">Stored task data (Manager only)</h5>
+                    <div class="d-flex gap-2">
+                      <div class="dropdown" id="export-dropdown-wrap">
+                        <button class="btn btn-sm btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Export to Excel">
+                          <i class="bx bx-download me-1"></i> Export to Excel
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                          <li><a class="dropdown-item" href="#" id="export-stored-data">Stored data (all columns)</a></li>
+                          <li><hr class="dropdown-divider"></li>
+                          <li><a class="dropdown-item" href="#" id="export-day">Day-wise</a></li>
+                          <li><a class="dropdown-item" href="#" id="export-week">Week-wise</a></li>
+                          <li><a class="dropdown-item" href="#" id="export-month">Month-wise</a></li>
+                          <li><hr class="dropdown-divider"></li>
+                          <li><a class="dropdown-item" href="#" id="export-overall">Overall</a></li>
+                        </ul>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-primary" id="refresh-stored-data" title="Reload from server">
+                        <i class="bx bx-refresh"></i> Refresh
+                      </button>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div id="stored-data-tables"></div>
+                  </div>
+                </div>
+              </div>
+              <div id="manager-view" class="tab-pane">
+                <div class="row g-4">
+                  <div class="col-12">
+                    <div class="card mb-4">
+                      <div class="card-header">
+                        <h5 class="mb-0"><i class="bx bx-user-plus me-2"></i>Create employee login</h5>
+                      </div>
+                      <div class="card-body">
+                        <p class="text-muted small mb-3">Create logins for employees using their email. Choose whether they can create and assign tasks (like manager) or only view and update tasks.</p>
+                        <form id="create-employee-login-form" class="row g-3 mb-4">
+                          <div class="col-12 col-md-4">
+                            <label class="form-label" for="emp-login-email">Employee email</label>
+                            <input type="email" class="form-control" id="emp-login-email" required placeholder="employee@company.com" />
+                          </div>
+                          <div class="col-12 col-md-3">
+                            <label class="form-label" for="emp-login-password">Password</label>
+                            <input type="text" class="form-control" id="emp-login-password" required minlength="6" placeholder="Min 6 characters (visible for manager)" autocomplete="off" />
+                          </div>
+                          <div class="col-12 col-md-3">
+                            <label class="form-label" for="emp-login-name">Display name</label>
+                            <input type="text" class="form-control" id="emp-login-name" placeholder="Employee name" />
+                          </div>
+                          <div class="col-12 col-md-2 d-flex align-items-end">
+                            <div class="form-check form-switch mb-2">
+                              <input class="form-check-input" type="checkbox" id="emp-login-can-create-assign" title="Can create and assign tasks (same as manager)" />
+                              <label class="form-check-label small" for="emp-login-can-create-assign">Can create & assign tasks</label>
+                            </div>
+                          </div>
+                          <div class="col-12">
+                            <button type="submit" class="btn btn-primary"><i class="bx bx-plus me-1"></i>Create login</button>
+                          </div>
+                        </form>
+                        <div id="employee-logins-list-wrap">
+                          <h6 class="mb-2">Employee logins</h6>
+                          <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0">
+                              <thead><tr><th>Email</th><th>Name</th><th>Rights</th><th>Actions</th></tr></thead>
+                              <tbody id="employee-logins-tbody"></tbody>
+                            </table>
+                          </div>
+                          <p class="text-muted small mt-2 mb-0" id="employee-logins-empty">No employee logins yet. Create one above.</p>
+                        </div>
+                        <div class="modal fade" id="edit-employee-login-modal" tabindex="-1" aria-labelledby="edit-employee-login-modal-label" aria-hidden="true">
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="edit-employee-login-modal-label"><i class="bx bx-edit me-2"></i>Edit employee login</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <form id="edit-employee-login-form">
+                                <div class="modal-body">
+                                  <input type="hidden" id="edit-emp-id" name="id" />
+                                  <div class="mb-3">
+                                    <label class="form-label" for="edit-emp-email">Employee email</label>
+                                    <input type="email" class="form-control" id="edit-emp-email" required placeholder="employee@company.com" />
+                                  </div>
+                                  <div class="mb-3">
+                                    <label class="form-label" for="edit-emp-name">Display name</label>
+                                    <input type="text" class="form-control" id="edit-emp-name" placeholder="Employee name" />
+                                  </div>
+                                  <div class="mb-3">
+                                    <label class="form-label" for="edit-emp-password">New password</label>
+                                    <input type="text" class="form-control" id="edit-emp-password" minlength="6" placeholder="Leave blank to keep current password" autocomplete="off" />
+                                    <div class="form-text">Only fill this if you want to change the password.</div>
+                                  </div>
+                                  <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" id="edit-emp-can-create-assign" title="Can create and assign tasks" />
+                                    <label class="form-check-label" for="edit-emp-can-create-assign">Can create & assign tasks</label>
+                                  </div>
+                                </div>
+                                <div class="modal-footer">
+                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                  <button type="submit" class="btn btn-primary"><i class="bx bx-save me-1"></i>Save changes</button>
+                                </div>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="card mb-4">
+                      <div class="card-header">
+                        <h5 class="mb-0">Employee accuracy</h5>
+                      </div>
+                      <div class="card-body">
+                        <p class="text-muted small mb-3">Completion rate: tasks completed (in Done) ÷ tasks ever assigned.</p>
+                        <div class="table-responsive">
+                          <table class="table table-sm table-bordered mb-0">
+                            <thead><tr><th>Employee</th><th>Assigned</th><th>Completed</th><th>On time</th><th>Accuracy</th></tr></thead>
+                            <tbody id="manager-accuracy-tbody"></tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12 col-lg-6">
+                    <div class="card">
+                      <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Departments</h5>
+                        <button type="button" class="btn btn-sm btn-primary" id="add-dept-btn" title="Create department">
+                          <i class="bx bx-plus"></i> Create dept
+                        </button>
+                      </div>
+                      <div class="card-body">
+                        <p class="text-muted small mb-3">Departments appear in the Assign to dropdown on cards. Edit or remove departments below.</p>
+                        <div class="table-responsive">
+                          <table class="table table-sm table-bordered mb-0">
+                            <thead><tr><th>Department</th><th>Actions</th></tr></thead>
+                            <tbody id="manager-depts-tbody"></tbody>
+                          </table>
+                        </div>
+                        <p class="text-muted small mt-2 mb-0 d-none" id="manager-depts-empty">No departments yet. Create one below.</p>
+                        <div class="mt-3 d-none" id="add-dept-form-wrap">
+                          <div class="input-group input-group-sm">
+                            <input type="text" class="form-control" id="new-dept-name" placeholder="Department name" />
+                            <button type="button" class="btn btn-primary" id="add-dept-save">Add</button>
+                            <button type="button" class="btn btn-outline-secondary" id="add-dept-cancel">Cancel</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="card">
+                      <div class="card-header">
+                        <h5 class="mb-0"><i class="bx bx-refresh me-2"></i>Recurring Tasks</h5>
+                      </div>
+                      <div class="card-body">
+                        <p class="text-muted small mb-3">Tasks auto-generate daily, weekly, or monthly for assigned employees. Toggle to activate/deactivate.</p>
+                        <div id="recurring-tasks-list"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="card border-danger">
+                      <div class="card-header bg-danger bg-opacity-10">
+                        <h5 class="mb-0 text-danger"><i class="bx bx-trash me-2"></i>Clear task database</h5>
+                      </div>
+                      <div class="card-body">
+                        <p class="text-muted small mb-3">Remove all tasks, task comments, uploaded task links/documents, assignment history (notifications), and recurring task templates. <strong>Logins (manager and employees), departments, and employee accuracy are kept.</strong> Use this when you want to start fresh with new tasks only.</p>
+                        <button type="button" class="btn btn-danger" id="clear-task-database-btn" title="Clear all task-related data (manager only)">
+                          <i class="bx bx-trash me-1"></i> Clear task database
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div id="tasks-view" class="tab-pane">
+                <div class="card">
+                  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0">Tasks by department (assign to employees)</h5>
+                    <div class="d-flex gap-2 align-items-center">
+                      <button type="button" class="btn btn-outline-primary btn-sm" id="tasks-tab-calendar-btn" title="View day-wise tasks calendar">
+                        <i class="bx bx-calendar me-1"></i> Calendar
+                      </button>
+                      <button type="button" class="btn btn-outline-primary btn-sm d-none" id="add-dept-tasks-btn" title="Create department">
+                        <i class="bx bx-building-house me-1"></i> Create dept
+                      </button>
+                      <button type="button" class="btn btn-primary btn-sm" id="add-upcoming-task" title="Add task – choose department in form">
+                        <i class="bx bx-plus me-1"></i> Add task
+                      </button>
+                    </div>
+                  </div>
+                  <div class="card-body p-0" id="tasks-tab-body">
+                    <div class="p-3 border-bottom bg-light d-flex align-items-center gap-2 flex-wrap">
+                      <div class="input-group input-group-sm" style="max-width: 360px;">
+                        <span class="input-group-text bg-white"><i class="bx bx-search text-muted"></i></span>
+                        <input type="text" class="form-control" id="tasks-tab-search" placeholder="Search tasks by title, description, department, assignee..." />
+                      </div>
+                    </div>
+                    <div class="d-none p-3 border-bottom bg-light" id="tasks-create-dept-wrap">
+                      <label class="form-label small mb-2">New department</label>
+                      <div class="input-group input-group-sm" style="max-width: 320px;">
+                        <input type="text" class="form-control" id="tasks-new-dept-name" placeholder="Department name" />
+                        <button type="button" class="btn btn-primary" id="tasks-new-dept-save">Add</button>
+                        <button type="button" class="btn btn-outline-secondary" id="tasks-new-dept-cancel">Cancel</button>
+                      </div>
+                    </div>
+                    <div id="tasks-tab-content"><p class="text-muted text-center py-4 mb-0 px-3">Loading…</p></div>
+                    <div id="upcoming-assignee-dropdown" class="dropdown-menu shadow-sm" style="position: fixed; display: none;"></div>
+                  </div>
+                </div>
+              </div>
+              <div id="check-ins-view" class="tab-pane">
+                <div class="card">
+                  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0"><i class="bx bx-calendar-check me-2"></i>Check_in's</h5>
+                    <p class="text-muted small mb-0">Recurring tasks and tasks in Check ins department</p>
+                  </div>
+                  <div class="card-body p-0">
+                    <div class="p-3 border-bottom bg-light d-flex align-items-center gap-2 flex-wrap">
+                      <div class="input-group input-group-sm" style="max-width: 360px;">
+                        <span class="input-group-text bg-white"><i class="bx bx-search text-muted"></i></span>
+                        <input type="text" class="form-control" id="checkins-tab-search" placeholder="Search by title, description, department, assignee..." />
+                      </div>
+                    </div>
+                    <div id="checkins-tab-content"><p class="text-muted text-center py-4 mb-0 px-3">Loading…</p></div>
+                    <div id="checkins-assignee-dropdown" class="dropdown-menu shadow-sm" style="position: fixed; display: none; max-height: 200px; overflow-y: auto; z-index: 1050;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div class="modal fade" id="cardModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable card-task-modal-dialog">
+        <div class="modal-content card-task-modal-content">
+          <div class="modal-header card-task-modal-header">
+            <h5 class="modal-title">Card</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="cardForm">
+            <div class="modal-body card-task-modal-body">
+              <div class="mb-2">
+                <label class="form-label" for="cardTitle">Title</label>
+                <input type="text" class="form-control form-control-sm" id="cardTitle" required placeholder="Card title" />
+              </div>
+              <div class="mb-2">
+                <label class="form-label" for="cardDescription">Description</label>
+                <textarea class="form-control form-control-sm" id="cardDescription" rows="2" placeholder="Optional description"></textarea>
+              </div>
+              <div class="mb-2">
+                <label class="form-label" for="cardUrgency">Urgency</label>
+                <select class="form-select form-select-sm" id="cardUrgency">
+                  <option value="high">High (Red)</option>
+                  <option value="medium" selected>Medium (Yellow)</option>
+                  <option value="low">Low (Green)</option>
+                </select>
+              </div>
+              <div class="mb-2" id="department-group">
+                <label class="form-label" for="cardDepartment">Department (Manager only)</label>
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                  <select class="form-select flex-grow-1" id="cardDepartment" style="max-width: 220px;">
+                    <option value="">— Select department —</option>
+                  </select>
+                  <button type="button" class="btn btn-sm btn-outline-primary" id="card-create-dept-btn" title="Create new department"><i class="bx bx-plus"></i></button>
+                </div>
+                <div class="mt-2 d-none" id="card-new-dept-wrap">
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" id="card-new-dept-name" placeholder="New department name" />
+                    <button type="button" class="btn btn-outline-primary" id="card-new-dept-add">Add</button>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-2" id="assignee-name-group">
+                <label class="form-label">Assign to (multiple people)</label>
+                <div class="d-flex flex-wrap gap-2 align-items-center mb-2" id="card-assignees-chips"></div>
+                <div class="input-group input-group-sm position-relative">
+                  <input type="text" class="form-control" id="cardAssignee" placeholder="Type name to search..." autocomplete="off" />
+                  <button type="button" class="btn btn-outline-primary" id="card-add-assignee-btn">Add</button>
+                  <div class="dropdown-menu shadow-sm" id="assignee-dropdown" style="position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; z-index: 1000;"></div>
+                </div>
+              </div>
+              <div class="mb-2" id="deadline-group">
+                <label class="form-label">Deadline (date & time)</label>
+                <div class="deadline-picker-trigger" id="deadline-picker-trigger" role="button" tabindex="0">
+                  <i class="bx bx-calendar-alt me-2"></i>
+                  <span id="deadline-picker-display">Select date and time</span>
+                  <i class="bx bx-time-five ms-2"></i>
+                </div>
+                <input type="hidden" id="cardDeadline" />
+              </div>
+              <div class="mb-2" id="link-group">
+                <label class="form-label" for="cardLinkType">Link type (meeting / drive / document)</label>
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                  <select class="form-select" id="cardLinkType" style="max-width: 160px;">
+                    <option value="">— None —</option>
+                    <option value="meeting">Meeting</option>
+                    <option value="drive">Drive</option>
+                    <option value="document">Document</option>
+                  </select>
+                  <input type="url" class="form-control flex-grow-1" id="cardLink" placeholder="https://meet.google.com/... or drive link or doc link" style="min-width: 200px;" />
+                </div>
+                <small class="text-muted">Add a meeting link, Google Drive link, or document link. It will show on the calendar with an icon.</small>
+              </div>
+              <div class="mb-2" id="recurring-task-group">
+                <div class="form-check form-switch mb-2">
+                  <input class="form-check-input" type="checkbox" id="cardRecurring" />
+                  <label class="form-check-label" for="cardRecurring">
+                    <strong>Recurring Task</strong>
+                    <small class="d-block text-muted">Auto-add task for assigned employees</small>
+                  </label>
+                </div>
+                <div class="d-none ms-4" id="recurring-frequency-wrap">
+                  <label class="form-label small mb-1">Frequency</label>
+                  <select class="form-select form-select-sm" id="cardRecurringFrequency" style="max-width: 200px;">
+                    <option value="daily">Daily (every day)</option>
+                    <option value="weekly">Weekly (same day each week)</option>
+                    <option value="monthly">Monthly (same date each month)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mb-0 small text-muted" id="assigned-by-info" style="display: none;">Assigned by <span id="assigned-by-name"></span></div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between card-task-modal-footer flex-shrink-0">
+              <button type="button" class="btn btn-outline-danger d-none" id="card-modal-delete-btn">Delete</button>
+              <div class="ms-auto d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="deadlinePickerModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered deadline-picker-modal-dialog">
+        <div class="modal-content deadline-picker-modal-content">
+          <div class="modal-header deadline-picker-header">
+            <h5 class="modal-title"><i class="bx bx-calendar-check me-2"></i>Select date and time</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body deadline-picker-body">
+            <div class="deadline-section">
+              <h6 class="deadline-section-title"><i class="bx bx-calendar me-1"></i>Date</h6>
+              <div class="deadline-calendar-wrap">
+                <div class="deadline-calendar-nav">
+                  <button type="button" class="btn btn-sm btn-outline-secondary deadline-cal-prev" id="deadline-cal-prev" aria-label="Previous month"><i class="bx bx-chevron-left"></i></button>
+                  <span class="deadline-cal-month" id="deadline-cal-month"></span>
+                  <button type="button" class="btn btn-sm btn-outline-secondary deadline-cal-next" id="deadline-cal-next" aria-label="Next month"><i class="bx bx-chevron-right"></i></button>
+                </div>
+                <div class="deadline-cal-daynames">
+                  <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                </div>
+                <div class="deadline-cal-grid" id="deadline-cal-grid"></div>
+              </div>
+            </div>
+            <div class="deadline-section deadline-time-section">
+              <h6 class="deadline-section-title"><i class="bx bx-time-five me-1"></i>Time (digital)</h6>
+              <div class="deadline-time-digital-wrap">
+                <input type="time" class="form-control form-control-lg deadline-time-input" id="deadline-time-input" value="09:00" step="60" title="Type or select time (HH:MM)" />
+                <small class="text-muted d-block mt-1">Type time (e.g. 14:30) or use the picker</small>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer deadline-picker-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="deadline-picker-ok"><i class="bx bx-check me-1"></i>OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="taskDetailsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header border-bottom">
+            <h5 class="modal-title">Task details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body py-4" id="taskDetailsBody">
+            <div class="detail-row">
+              <div class="detail-label">Title</div>
+              <div class="detail-value" id="detail-title"></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Description</div>
+              <div class="detail-value" id="detail-description"></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Urgency</div>
+              <div class="detail-value" id="detail-urgency"></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Department</div>
+              <div class="detail-value" id="detail-department"></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Deadline</div>
+              <div class="detail-value" id="detail-deadline"></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Assigned to</div>
+              <div class="detail-value" id="detail-assignee"></div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Assigned by</div>
+              <div class="detail-value" id="detail-assigned-by"></div>
+            </div>
+          </div>
+          <div class="modal-footer border-top d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-outline-primary" id="task-details-open-comments-btn" title="Open comments"><i class="bx bx-message-dots me-1"></i>Comments</button>
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comment panel: slide-in with scale, fade and glass backdrop -->
+    <div id="taskCommentsBookWrap" class="task-comments-book-wrap">
+      <div class="task-comments-book-backdrop" id="taskCommentsBookBackdrop" aria-hidden="true"></div>
+      <div class="task-comments-book-perspective">
+        <div class="task-comments-book-page" id="taskCommentsOffcanvas" aria-labelledby="taskCommentsOffcanvasLabel">
+          <div class="task-comments-book-inner">
+            <div class="task-comments-book-header">
+              <h5 class="task-comments-book-title" id="taskCommentsOffcanvasLabel"><i class="bx bx-message-dots me-2"></i>Comments</h5>
+              <button type="button" class="task-comments-book-close" id="taskCommentsBookClose" aria-label="Close"><i class="bx bx-x"></i></button>
+            </div>
+            <div class="task-comments-book-body">
+              <div class="task-comments-task-title" id="taskCommentsTaskTitle">—</div>
+              <div class="task-comments-list" id="taskCommentsList"></div>
+              <div class="task-comments-compose">
+                <div class="mb-2">
+                  <label class="form-label small fw-bold mb-1">Message</label>
+                  <textarea class="form-control task-comments-message-input" id="taskCommentsMessageInput" rows="2" placeholder="Add a message, note, or instruction..."></textarea>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label small fw-bold mb-1">Link (optional)</label>
+                  <input type="url" class="form-control form-control-sm" id="taskCommentsLinkInput" placeholder="https://..." />
+                </div>
+                <button type="button" class="btn btn-primary w-100" id="taskCommentsSendBtn"><i class="bx bx-send me-1"></i>Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="kanbanCalendarModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bx bx-calendar me-2"></i>Day-wise tasks</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="kanban-calendar-prev"><i class="bx bx-chevron-left"></i></button>
+              <span id="kanban-calendar-month" class="fw-semibold" style="min-width: 160px; text-align: center;"></span>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="kanban-calendar-next"><i class="bx bx-chevron-right"></i></button>
+            </div>
+            <div id="kanban-calendar-hints" class="kanban-calendar-hints mb-2 p-2 rounded d-none"></div>
+            <div id="kanban-calendar" class="kanban-calendar"></div>
+            <div id="kanban-calendar-day-detail" class="mt-3 p-3 rounded bg-light d-none">
+              <h6 class="mb-2" id="kanban-day-detail-title">Tasks for selected day</h6>
+              <div id="kanban-day-detail-body"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="employeeDetailsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content employee-modal-content">
+          <div class="modal-header employee-modal-header">
+            <div class="d-flex align-items-center gap-3">
+              <div class="employee-modal-avatar-wrap" id="employee-modal-avatar-wrap">
+                <img id="employee-modal-profile-pic" class="employee-profile-pic d-none" src="" alt="" style="width:56px;height:56px;border-radius:14px;object-fit:cover;border:2px solid rgba(255,255,255,0.5);" />
+                <div class="employee-modal-avatar" id="employee-modal-avatar">A</div>
+              </div>
+              <div class="flex-grow-1">
+                <h5 class="modal-title mb-0"><span id="employee-modal-name">Employee</span></h5>
+                <div class="employee-modal-header-details mt-2">
+                  <p class="mb-0" id="employee-modal-designation"></p>
+                  <div class="small mt-1" id="employee-modal-contact">
+                    <span id="employee-modal-dept"></span>
+                    <span id="employee-modal-mobile" class="ms-2"></span>
+                    <span id="employee-modal-mail" class="ms-2"></span>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-sm ms-auto d-none employee-modal-edit-btn" id="employee-edit-profile-btn" title="Edit my profile">
+                <i class="bx bx-edit me-1"></i> Edit Profile
+              </button>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body employee-modal-body">
+            <div class="row g-3 mb-3">
+              <div class="col-12">
+                <div class="emp-chart-card emp-chart-compact emp-stats-circle-wrap emp-performance-card">
+                  <div class="emp-chart-header"><h6 class="mb-0"><i class="bx bx-trending-up me-2"></i>Performance</h6><small class="text-muted">Assigned · Completed · On time · Accuracy</small></div>
+                  <div class="emp-chart-body d-flex justify-content-center"><div id="employeeStatsChart" style="min-height: 280px; width: 100%; max-width: 360px;"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="row g-3 emp-charts-row">
+              <div class="col-12">
+                <div class="emp-chart-card emp-chart-compact">
+                  <div class="emp-chart-header"><h6 class="mb-0"><i class="bx bx-task me-2"></i>Tasks</h6><small class="text-muted">Target: 100%</small></div>
+                  <div class="emp-chart-body"><div id="employeeChart" style="min-height: 180px;"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="emp-tasks-section">
+              <h6 class="emp-section-title mb-3"><i class="bx bx-list-check me-2"></i>Assigned tasks</h6>
+              <div class="emp-tasks-table-wrap">
+                <table class="table emp-tasks-table">
+                  <thead><tr><th>Task</th><th>Status</th><th>Urgency</th><th>Deadline</th></tr></thead>
+                  <tbody id="employee-tasks-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer employee-modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="teamAccuracyModal" tabindex="-1" aria-labelledby="teamAccuracyModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content team-accuracy-modal-content">
+          <div class="modal-header team-accuracy-modal-header">
+            <h5 class="modal-title" id="teamAccuracyModalLabel"><i class="bx bx-pie-chart-alt me-2"></i>Team accuracy</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body team-accuracy-modal-body">
+            <p class="team-accuracy-summary mb-3 mb-4" id="team-accuracy-summary">Team accuracy: 0%</p>
+            <p class="team-accuracy-hint mb-3">Each bar shows an employee&apos;s completion rate (completed ÷ assigned). Click a row to view that employee&apos;s performance.</p>
+            <div class="team-accuracy-bars" id="team-accuracy-bars"></div>
+            <p class="text-muted small mt-3 mb-0 d-none" id="team-accuracy-empty">No employees with assigned tasks yet.</p>
+          </div>
+          <div class="modal-footer team-accuracy-modal-footer">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="employeeProfileModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bx bx-user me-2"></i>Edit Profile</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="employeeProfileForm">
+            <div class="modal-body">
+              <div class="text-center mb-3">
+                <div class="position-relative d-inline-block">
+                  <img id="profile-pic-preview" class="rounded-circle d-none" src="" alt="Profile" style="width:100px;height:100px;object-fit:cover;border:4px solid var(--bs-primary);" />
+                  <div id="profile-pic-placeholder" class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width:100px;height:100px;font-size:2.5rem;color:#999;">?</div>
+                  <label class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-pill" style="cursor:pointer;">
+                    <i class="bx bx-camera"></i>
+                    <input type="file" id="profile-pic-input" accept="image/*" class="d-none" />
+                  </label>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="profile-name">Name</label>
+                <input type="text" class="form-control" id="profile-name" required placeholder="Full name" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="profile-department">Department</label>
+                <select class="form-select" id="profile-department">
+                  <option value="">— Select —</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="profile-designation">Designation</label>
+                <input type="text" class="form-control" id="profile-designation" placeholder="Job title" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="profile-mobile">Mobile</label>
+                <input type="text" class="form-control" id="profile-mobile" placeholder="Phone number" />
+              </div>
+              <div class="mb-0">
+                <label class="form-label" for="profile-mail">Email</label>
+                <input type="email" class="form-control" id="profile-mail" placeholder="Email address" />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Change password</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="change-password-form">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label" for="cp-email">Email</label>
+                <input type="email" class="form-control" id="cp-email" required readonly />
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="cp-current">Current password</label>
+                <input type="password" class="form-control" id="cp-current" required placeholder="Current password" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="cp-new">New password</label>
+                <input type="password" class="form-control" id="cp-new" required minlength="6" placeholder="At least 6 characters" />
+              </div>
+              <div class="mb-0">
+                <label class="form-label" for="cp-confirm">Confirm new password</label>
+                <input type="password" class="form-control" id="cp-confirm" required minlength="6" placeholder="Confirm new password" />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Change password</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="/assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="/assets/vendor/libs/popper/popper.js"></script>
+    <script src="/assets/vendor/js/bootstrap.js"></script>
+    <script src="/assets/vendor/libs/apex-charts/apexcharts.js"></script>
+    <script src="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="/assets/vendor/js/menu.js"></script>
+    <script src="/assets/js/main.js"></script>
+    <script src="/assets/vendor/libs/xlsx/xlsx.full.min.js"></script>
+    <script src="/assets/js/app-kanban.js"></script>
+  </body>
+</html>
