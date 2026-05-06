@@ -44,8 +44,7 @@ module.exports = async (req, res) => {
       return res.status(503).json({
         error: 'Store check timed out',
         backend: store.getStoreBackend(),
-        hint:
-          'If REDIS_URL is set on Vercel, TCP Redis connect can hang. Remove REDIS_URL or add Upstash REST (UPSTASH_REDIS_REST_URL + TOKEN) and redeploy.'
+        hint: 'Store is currently file-based only.'
       });
     }
     res.status(500).json({ error: 'Store check failed', backend: store.getStoreBackend() });

@@ -33,18 +33,7 @@ module.exports = async (req, res) => {
   const employees = await store.getEmployees();
   const emp = employees.find(e => (e.email || '').toLowerCase() === email.toLowerCase());
   if (!emp) {
-    const backend = store.getStoreBackend();
-    const onVercel = !!process.env.VERCEL;
-    let hint = '';
-    if (backend === 'file' && onVercel) {
-      hint =
-        ' This deployment is not using shared Redis (each server is separate). Connect Upstash under Vercel → Storage, add UPSTASH_* REST env vars, redeploy, then ask your manager to create your login again.';
-    } else if (backend === 'file') {
-      hint = ' If you were just added, ask your manager to confirm the account was saved.';
-    }
-    return res.status(401).json({
-      error: 'Invalid email or password' + hint
-    });
+    return res.status(401).json({ error: 'Invalid email or password' });
   }
   const inputHash = hashPassword(password);
   if (emp.passwordHash !== inputHash) {

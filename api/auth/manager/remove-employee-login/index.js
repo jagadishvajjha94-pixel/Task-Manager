@@ -1,6 +1,5 @@
 const store = require('../../../_store');
 const { parseJsonBody } = require('../../../_parseBody');
-const { blockIfEphemeralVercelStorage } = require('../../../_vercelStorageGuard');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -14,8 +13,6 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-
-  if (blockIfEphemeralVercelStorage(res)) return;
 
   const body = await parseJsonBody(req);
 

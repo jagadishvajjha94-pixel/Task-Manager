@@ -4964,9 +4964,7 @@
             } else {
               const msg =
                 data.error ||
-                (res.status === 503
-                  ? 'Storage is not ready on Vercel (shared Redis required). Connect Upstash in Vercel → Storage, add REST env vars, redeploy, then try again.'
-                  : res.status === 404
+                (res.status === 404
                     ? 'Create-employee API not found. If deployed on Vercel, ensure api/auth/manager/create-employee-login.js is deployed.'
                     : 'Failed to create employee login.');
               alert(msg);
