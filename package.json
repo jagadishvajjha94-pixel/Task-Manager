@@ -48,6 +48,7 @@
     "@iconify/types": "^2.0.0",
     "@iconify/utils": "^2.3.0",
     "@popperjs/core": "^2.11.8",
+    "@upstash/redis": "^1.38.0",
     "apexcharts": "~4.2.0",
     "bootstrap": "~5.3.3",
     "dotenv": "^16.3.1",
@@ -56,6 +57,7 @@
     "jquery": "~3.7.1",
     "masonry-layout": "~4.2.2",
     "perfect-scrollbar": "~1.5.6",
+    "redis": "^4.7.1",
     "sql.js": "^1.11.0"
   },
   "devDependencies": {
